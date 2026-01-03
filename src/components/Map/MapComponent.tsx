@@ -19,6 +19,7 @@ interface PointOfInterest {
   team: string;
   ispezionabile: boolean;
   tipo: string;
+  note?: string;
   latitudine: number;
   longitudine: number;
   created_at: string;
@@ -32,10 +33,12 @@ interface MapComponentProps {
   onPoiUpdated?: () => void;
   currentTeam?: string;
   newPoiLocation?: { lat: number; lng: number } | null;
-  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string) => void;
+  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string) => void;
   onCancelAddPoi?: () => void;
   filterShowInspectable?: boolean;
   filterShowNonInspectable?: boolean;
+  filterShowCantiere?: boolean;
+  filterShowAltro?: boolean;
   height?: string;
 }
 
@@ -72,13 +75,14 @@ const redIcon = L.icon({
 const MapClickHandler: React.FC<{
   onMapClick: (lat: number, lng: number) => void;
   newPoiLocation?: { lat: number; lng: number } | null;
-  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string) => void;
+  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string) => void;
   onCancelAddPoi?: () => void;
 }> = ({ onMapClick, newPoiLocation, onAddPoi, onCancelAddPoi }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [clickPosition, setClickPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [ispezionabile, setIspezionabile] = useState('1');
   const [tipo, setTipo] = useState('cantiere');
+  const [note, setNote] = useState('');
 
   useMapEvents({
     click: (e) => {
@@ -97,6 +101,7 @@ const MapClickHandler: React.FC<{
       // Reset form state when opening
       setIspezionabile('1');
       setTipo('cantiere');
+      setNote('');
     }
   }, [newPoiLocation]);
 
@@ -106,6 +111,7 @@ const MapClickHandler: React.FC<{
     console.log('onAddPoi:', onAddPoi);
     console.log('ispezionabile:', ispezionabile);
     console.log('tipo:', tipo);
+    console.log('note:', note);
 
     if (!clickPosition) {
       console.error('clickPosition is null');
@@ -117,10 +123,10 @@ const MapClickHandler: React.FC<{
     }
 
     const indirizzo = `Lat: ${clickPosition.lat.toFixed(6)}, Lng: ${clickPosition.lng.toFixed(6)}`;
-    console.log('Calling onAddPoi with:', indirizzo, Number(ispezionabile), tipo);
+    console.log('Calling onAddPoi with:', indirizzo, Number(ispezionabile), tipo, note);
 
     try {
-      onAddPoi(indirizzo, Number(ispezionabile), tipo);
+      onAddPoi(indirizzo, Number(ispezionabile), tipo, note);
       console.log('onAddPoi completed successfully');
     } catch (error) {
       console.error('Error in onAddPoi:', error);
@@ -176,6 +182,19 @@ const MapClickHandler: React.FC<{
                   <option value="altro">Altro</option>
                 </select>
               </div>
+              <div>
+                <label htmlFor="add-poi-note" className="block text-sm font-medium text-gray-700 mb-1">
+                  Note
+                </label>
+                <textarea
+                  id="add-poi-note"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Inserisci eventuali note..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
               <div className="flex space-x-2">
                 <button
                   onClick={handleAddPoi}
@@ -198,7 +217,7 @@ const MapClickHandler: React.FC<{
   );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, onPoiUpdated, currentTeam, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, height }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, onPoiUpdated, currentTeam, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowCantiere = true, filterShowAltro = true, height }) => {
   // Use initial position if provided, otherwise default to Rome coordinates
   const centerPosition: [number, number] = initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
@@ -227,6 +246,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
           // Filter POIs based on filter settings
           if (poi.ispezionabile && !filterShowInspectable) return false;
           if (!poi.ispezionabile && !filterShowNonInspectable) return false;
+          if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;
+          if (poi.tipo === 'altro' && !filterShowAltro) return false;
           return true;
         })
         .map((poi) => {
@@ -252,7 +273,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                 <p className="text-sm text-gray-600">Username: {poi.username || 'N/D'}</p>
                 <p className="text-sm text-gray-600">Team: {poi.team || 'N/D'}</p>
                 <p className="text-sm text-gray-600">Tipo: {poi.tipo || 'N/D'}</p>
-                <div className="mt-2 space-y-2">
+                {poi.note && <p className="text-sm text-gray-600">Note: {poi.note}</p>}
+                <div className="mt-2 space-y-4">
                   {/* Share button */}
                   <button
                     onClick={(e) => {
@@ -288,43 +310,50 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                     📤 Condividi
                   </button>
 
-                  <button
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      try {
-                        // Toggle the ispezionabile value
-                        const newValue = poi.ispezionabile ? 0 : 1;
-                        const { error } = await supabase
-                          .from('points')
-                          .update({
-                            ispezionabile: newValue,
-                            created_at: new Date().toISOString(),
-                            team: currentTeam || poi.team
-                          })
-                          .eq('id', poi.id);
+                  {poi.ispezionabile && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
 
-                        if (error) {
-                          console.error('Error updating ispezionabile:', error);
-                        } else {
-                          // Force re-render to update the marker color
-                          setMapKey(Date.now());
-                          // Refresh the POI data in the parent component
-                          if (onPoiUpdated) {
-                            onPoiUpdated();
+                        // Ask for confirmation before changing status
+                        const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
+                        if (!confirmed) return;
+
+                        try {
+                          // Toggle the ispezionabile value
+                          const newValue = poi.ispezionabile ? 0 : 1;
+                          const { error } = await supabase
+                            .from('points')
+                            .update({
+                              ispezionabile: newValue,
+                              created_at: new Date().toISOString(),
+                              team: currentTeam || poi.team
+                            })
+                            .eq('id', poi.id);
+
+                          if (error) {
+                            console.error('Error updating ispezionabile:', error);
+                          } else {
+                            // Force re-render to update the marker color
+                            setMapKey(Date.now());
+                            // Refresh the POI data in the parent component
+                            if (onPoiUpdated) {
+                              onPoiUpdated();
+                            }
                           }
+                        } catch (err) {
+                          console.error('Error toggling ispezionabile:', err);
                         }
-                      } catch (err) {
-                        console.error('Error toggling ispezionabile:', err);
-                      }
-                    }}
-                    className={`text-sm px-3 py-2 rounded w-full font-medium shadow-sm ${
-                      poi.ispezionabile
-                        ? 'bg-green-500 text-white hover:bg-green-600'
-                        : 'bg-red-500 text-white hover:bg-red-600'
-                    }`}
-                  >
-                    {poi.ispezionabile ? '🟢 Ispezionabile' : '🔴 Non Ispezionabile'}
-                  </button>
+                      }}
+                      className={`text-sm px-3 py-2 rounded w-full font-medium shadow-sm ${
+                        poi.ispezionabile
+                          ? 'bg-green-500 text-white hover:bg-green-600'
+                          : 'bg-red-500 text-white hover:bg-red-600'
+                      }`}
+                    >
+                      Cambia Stato
+                    </button>
+                  )}
 
                   {/* Delete button - only visible for records created today */}
                   {(() => {
@@ -339,6 +368,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
+
+                          // Ask for confirmation before deleting
+                          const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
+                          if (!confirmed) return;
+
                           try {
                             const { error } = await supabase
                               .from('points')
@@ -423,6 +457,17 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                   <option value="altro">Altro</option>
                 </select>
               </div>
+              <div>
+                <label htmlFor="add-poi-note" className="block text-sm font-medium text-gray-700 mb-1">
+                  Note
+                </label>
+                <textarea
+                  id="add-poi-note"
+                  placeholder="Inserisci eventuali note..."
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
               <div className="flex space-x-2">
                 <button
                   onClick={(e) => {
@@ -430,8 +475,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                     const indirizzo = `Lat: ${newPoiLocation.lat.toFixed(6)}, Lng: ${newPoiLocation.lng.toFixed(6)}`;
                     const ispezionabile = (document.getElementById('add-poi-ispezionabile') as HTMLSelectElement).value;
                     const tipo = (document.getElementById('add-poi-tipo') as HTMLSelectElement).value;
+                    const note = (document.getElementById('add-poi-note') as HTMLTextAreaElement)?.value || '';
                     if (onAddPoi) {
-                      onAddPoi(indirizzo, Number(ispezionabile), tipo);
+                      onAddPoi(indirizzo, Number(ispezionabile), tipo, note);
                     }
                   }}
                   className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 font-medium shadow-sm text-sm"

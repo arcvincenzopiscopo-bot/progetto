@@ -10,6 +10,7 @@ interface PointOfInterest {
   team: string;
   ispezionabile: boolean;
   tipo: string;
+  note?: string;
   latitudine: number;
   longitudine: number;
   created_at: string;
@@ -23,6 +24,8 @@ const DashboardPage: React.FC = () => {
   const [currentPosition, setCurrentPosition] = useState<[number, number] | undefined>(undefined);
   const [filterShowInspectable, setFilterShowInspectable] = useState(true);
   const [filterShowNonInspectable, setFilterShowNonInspectable] = useState(true);
+  const [filterShowCantiere, setFilterShowCantiere] = useState(true);
+  const [filterShowAltro, setFilterShowAltro] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -72,13 +75,14 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleAddPoi = async (indirizzo: string, ispezionabile: number, tipo: string) => {
+  const handleAddPoi = async (indirizzo: string, ispezionabile: number, tipo: string, note?: string) => {
     if (!newPoiLocation || !user) return;
 
     console.log('Adding POI with data:', {
       indirizzo,
       ispezionabile,
       tipo,
+      note,
       lat: newPoiLocation.lat,
       lng: newPoiLocation.lng
     });
@@ -93,6 +97,7 @@ const DashboardPage: React.FC = () => {
             team: user.team || "", // Usa il team dall'utente loggato
             ispezionabile: ispezionabile,
             tipo: tipo,
+            note: note || "",
             latitudine: newPoiLocation.lat,
             longitudine: newPoiLocation.lng,
           },
@@ -184,6 +189,8 @@ const DashboardPage: React.FC = () => {
                 onCancelAddPoi={() => setShowAddForm(false)}
                 filterShowInspectable={filterShowInspectable}
                 filterShowNonInspectable={filterShowNonInspectable}
+                filterShowCantiere={filterShowCantiere}
+                filterShowAltro={filterShowAltro}
                 height="66vh"
               />
             </div>
@@ -191,8 +198,13 @@ const DashboardPage: React.FC = () => {
 
           {/* Bottom Row - Controls and Filters */}
           <div className="bg-gray-200 border border-indigo-200 rounded-lg p-6 shadow-sm">
-            <div className="flex flex-col md:flex-row gap-6 items-center justify-center">
-              {/* Center Map Button */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+              {/* Left Column - Empty for balance */}
+              <div className="hidden md:block">
+                {/* Empty left column for balance */}
+              </div>
+
+              {/* Center Column - Center Map Button */}
               <div className="text-center">
                 <button
                   onClick={() => {
@@ -223,7 +235,7 @@ const DashboardPage: React.FC = () => {
                 </button>
               </div>
 
-              {/* Filters Section */}
+              {/* Right Column - Filters Section */}
               <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
                 <h3 className="font-medium text-indigo-800 mb-3 text-center">Filtri</h3>
                 <div className="space-y-3">
@@ -249,6 +261,34 @@ const DashboardPage: React.FC = () => {
                     />
                     <label htmlFor="filter-non-inspectable" className="text-sm font-medium text-gray-700">
                       🔴 Non ispezionabili
+                    </label>
+                  </div>
+                </div>
+
+                <h4 className="font-medium text-indigo-800 mb-2 text-sm">Tipo</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="filter-cantiere"
+                      checked={filterShowCantiere}
+                      onChange={(e) => setFilterShowCantiere(e.target.checked)}
+                      className="h-5 w-5 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                    />
+                    <label htmlFor="filter-cantiere" className="text-sm font-medium text-gray-700">
+                      🏗️ Cantiere
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="filter-altro"
+                      checked={filterShowAltro}
+                      onChange={(e) => setFilterShowAltro(e.target.checked)}
+                      className="h-5 w-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    />
+                    <label htmlFor="filter-altro" className="text-sm font-medium text-gray-700">
+                      🔵 Altro
                     </label>
                   </div>
                 </div>

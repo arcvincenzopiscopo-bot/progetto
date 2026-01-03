@@ -7,6 +7,8 @@ interface PointOfInterest {
   username: string;
   team: string;
   ispezionabile: boolean;
+  tipo: string;
+  note?: string;
   latitudine: number;
   longitudine: number;
   created_at: string;
