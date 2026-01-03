@@ -35,6 +35,7 @@ interface MapComponentProps {
   onCancelAddPoi?: () => void;
   filterShowInspectable?: boolean;
   filterShowNonInspectable?: boolean;
+  height?: string;
 }
 
 // Fix for default marker icons in React
@@ -156,7 +157,7 @@ const MapClickHandler: React.FC<{
   );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, onPoiUpdated, currentTeam, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, onPoiUpdated, currentTeam, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, height }) => {
   // Use initial position if provided, otherwise default to Rome coordinates
   const centerPosition: [number, number] = initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
@@ -173,7 +174,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
       key={mapKey}
       center={centerPosition}
       zoom={13}
-      style={{ height: '100%', width: '100%' }}
+      style={{ height: height || '100%', width: '100%' }}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -238,13 +239,13 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                         console.error('Error toggling ispezionabile:', err);
                       }
                     }}
-                    className={`text-sm px-2 py-1 rounded w-full ${
+                    className={`text-sm px-3 py-2 rounded w-full font-medium shadow-sm ${
                       poi.ispezionabile
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
+                        ? 'bg-green-500 text-white hover:bg-green-600'
+                        : 'bg-red-500 text-white hover:bg-red-600'
                     }`}
                   >
-                    Ispezionabile: {poi.ispezionabile ? 'Sì' : 'No'}
+                    {poi.ispezionabile ? '🟢 Ispezionabile' : '🔴 Non Ispezionabile'}
                   </button>
 
                   {/* Delete button - only visible for records created today */}
@@ -278,9 +279,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                             console.error('Error deleting POI:', err);
                           }
                         }}
-                        className="text-sm px-2 py-1 rounded w-full bg-red-500 text-white hover:bg-red-600"
+                        className="text-sm px-3 py-2 rounded w-full font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
                       >
-                        Elimina
+                        🗑️ Elimina Punto
                       </button>
                     );
                   })()}
@@ -341,9 +342,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                       onAddPoi(indirizzo, Number(ispezionabile));
                     }
                   }}
-                  className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm"
+                  className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 font-medium shadow-sm text-sm"
                 >
-                  Aggiungi
+                  📍 Aggiungi Punto
                 </button>
                 <button
                   onClick={(e) => {
@@ -352,9 +353,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                       onCancelAddPoi();
                     }
                   }}
-                  className="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 text-sm"
+                  className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 font-medium shadow-sm text-sm"
                 >
-                  Annulla
+                  ❌ Annulla
                 </button>
               </div>
             </div>

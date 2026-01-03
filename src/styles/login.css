@@ -1,0 +1,125 @@
+/* Login Page - Minimal Three Column Layout */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  flex: 1;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .login-grid {
+    grid-template-columns: 1fr 400px 1fr;
+  }
+}
+
+.login-column {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.login-column-left,
+.login-column-right {
+  background-color: var(--color-background);
+}
+
+.login-column-center {
+  background-color: #e5e7eb; /* Gray background for center column */
+  border-left: 1px solid var(--color-border);
+  border-right: 1px solid var(--color-border);
+}
+
+/* Login Form - Minimal Style */
+.login-form-container {
+  width: 100%;
+  max-width: 400px;
+  background-color: var(--color-surface);
+  padding: 2rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.login-title {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: var(--color-text);
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.form-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.form-input {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  transition: border-color 0.2s ease-in-out;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+.login-button {
+  padding: 0.75rem 1rem;
+  background-color: var(--color-primary);
+  color: white;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.login-button:hover {
+  background-color: var(--color-primary-hover);
+}
+
+.login-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: var(--color-danger);
+  text-align: center;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+  .login-column-center {
+    border-left: none;
+    border-right: none;
+  }
+
+  .login-form-container {
+    box-shadow: none;
+    padding: 1.5rem;
+  }
+}

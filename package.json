@@ -43,8 +43,12 @@
     ]
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.18",
+    "autoprefixer": "^10.4.23",
     "css-loader": "^7.1.2",
     "html-webpack-plugin": "^5.6.5",
+    "postcss": "^8.5.6",
+    "postcss-loader": "^8.2.0",
     "style-loader": "^4.0.0",
     "ts-loader": "^9.5.4",
     "webpack": "^5.104.1",
