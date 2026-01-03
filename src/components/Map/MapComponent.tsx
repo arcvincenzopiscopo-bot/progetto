@@ -208,6 +208,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
             <Popup>
               <div>
                 <h3 className="font-bold">{new Date(poi.created_at).toLocaleString()}</h3>
+                <p className="text-sm text-gray-600">Username: {poi.username || 'N/D'}</p>
                 <p className="text-sm text-gray-600">Team: {poi.team || 'N/D'}</p>
                 <div className="mt-2 space-y-2">
                   <button

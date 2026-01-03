@@ -42,6 +42,9 @@ const POIList: React.FC<POIListProps> = ({ pois, onPoiSelect, onPoiDeleted }) =>
           >
             <h3 className="font-medium text-gray-900">{poi.indirizzo}</h3>
             <p className="text-xs text-gray-500 mt-1">
+              Username: {poi.username || 'N/D'}
+            </p>
+            <p className="text-xs text-gray-500">
               {new Date(poi.created_at).toLocaleString()} | Team: {poi.team || 'N/D'}
             </p>
             <p className="text-xs text-gray-500">
