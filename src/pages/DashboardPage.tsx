@@ -260,7 +260,7 @@ const DashboardPage: React.FC = () => {
                       className="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
                     />
                     <label htmlFor="filter-non-inspectable" className="text-sm font-medium text-gray-700">
-                      🔴 Non ispezionabili
+                      🔴 Già ispezionati
                     </label>
                   </div>
                 </div>
