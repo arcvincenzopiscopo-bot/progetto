@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 interface AddPOIFormProps {
-  onSubmit: (indirizzo: string, ispezionabile: number) => void;
+  onSubmit: (indirizzo: string, ispezionabile: number, tipo: string) => void;
   onCancel: () => void;
   initialIndirizzo?: string;
 }
@@ -9,13 +9,15 @@ interface AddPOIFormProps {
 const AddPOIForm: React.FC<AddPOIFormProps> = ({ onSubmit, onCancel, initialIndirizzo = '' }) => {
   const [indirizzo, setIndirizzo] = useState(initialIndirizzo);
   const [ispezionabile, setIspezionabile] = useState(1); // Default to 1 (Sì)
+  const [tipo, setTipo] = useState('cantiere'); // Default to 'cantiere'
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (indirizzo.trim()) {
-      onSubmit(indirizzo, ispezionabile);
+      onSubmit(indirizzo, ispezionabile, tipo);
       setIndirizzo('');
       setIspezionabile(1);
+      setTipo('cantiere');
     }
   };
 
@@ -48,6 +50,20 @@ const AddPOIForm: React.FC<AddPOIFormProps> = ({ onSubmit, onCancel, initialIndi
           >
             <option value={1}>Sì</option>
             <option value={0}>No</option>
+          </select>
+        </div>
+        <div>
+          <label htmlFor="tipo" className="block text-sm font-medium text-gray-700 mb-1">
+            Tipo
+          </label>
+          <select
+            id="tipo"
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="cantiere">Cantiere</option>
+            <option value="altro">Altro</option>
           </select>
         </div>
         <div className="flex space-x-2">

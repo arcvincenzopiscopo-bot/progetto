@@ -18,6 +18,7 @@ interface PointOfInterest {
   username: string;
   team: string;
   ispezionabile: boolean;
+  tipo: string;
   latitudine: number;
   longitudine: number;
   created_at: string;
@@ -31,7 +32,7 @@ interface MapComponentProps {
   onPoiUpdated?: () => void;
   currentTeam?: string;
   newPoiLocation?: { lat: number; lng: number } | null;
-  onAddPoi?: (indirizzo: string, ispezionabile: number) => void;
+  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string) => void;
   onCancelAddPoi?: () => void;
   filterShowInspectable?: boolean;
   filterShowNonInspectable?: boolean;
@@ -71,13 +72,15 @@ const redIcon = L.icon({
 const MapClickHandler: React.FC<{
   onMapClick: (lat: number, lng: number) => void;
   newPoiLocation?: { lat: number; lng: number } | null;
-  onAddPoi?: (indirizzo: string, ispezionabile: number) => void;
+  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string) => void;
   onCancelAddPoi?: () => void;
 }> = ({ onMapClick, newPoiLocation, onAddPoi, onCancelAddPoi }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [clickPosition, setClickPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [ispezionabile, setIspezionabile] = useState('1');
+  const [tipo, setTipo] = useState('cantiere');
 
-  const map = useMapEvents({
+  useMapEvents({
     click: (e) => {
       const { lat, lng } = e.latlng;
       setClickPosition({ lat, lng });
@@ -91,8 +94,40 @@ const MapClickHandler: React.FC<{
     if (newPoiLocation) {
       setClickPosition(newPoiLocation);
       setShowPopup(true);
+      // Reset form state when opening
+      setIspezionabile('1');
+      setTipo('cantiere');
     }
   }, [newPoiLocation]);
+
+  const handleAddPoi = () => {
+    console.log('handleAddPoi called');
+    console.log('clickPosition:', clickPosition);
+    console.log('onAddPoi:', onAddPoi);
+    console.log('ispezionabile:', ispezionabile);
+    console.log('tipo:', tipo);
+
+    if (!clickPosition) {
+      console.error('clickPosition is null');
+      return;
+    }
+    if (!onAddPoi) {
+      console.error('onAddPoi is not defined');
+      return;
+    }
+
+    const indirizzo = `Lat: ${clickPosition.lat.toFixed(6)}, Lng: ${clickPosition.lng.toFixed(6)}`;
+    console.log('Calling onAddPoi with:', indirizzo, Number(ispezionabile), tipo);
+
+    try {
+      onAddPoi(indirizzo, Number(ispezionabile), tipo);
+      console.log('onAddPoi completed successfully');
+    } catch (error) {
+      console.error('Error in onAddPoi:', error);
+    }
+
+    setShowPopup(false);
+  };
 
   return (
     <>
@@ -108,7 +143,7 @@ const MapClickHandler: React.FC<{
                 <input
                   id="add-poi-indirizzo"
                   type="text"
-                  defaultValue={`Lat: ${clickPosition.lat.toFixed(6)}, Lng: ${clickPosition.lng.toFixed(6)}`}
+                  value={`Lat: ${clickPosition.lat.toFixed(6)}, Lng: ${clickPosition.lng.toFixed(6)}`}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                   readOnly
                 />
@@ -119,34 +154,40 @@ const MapClickHandler: React.FC<{
                 </label>
                 <select
                   id="add-poi-ispezionabile"
-                  defaultValue={1}
+                  value={ispezionabile}
+                  onChange={(e) => setIspezionabile(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 >
-                  <option value={1}>Sì</option>
-                  <option value={0}>No</option>
+                  <option value="1">Sì</option>
+                  <option value="0">No</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="add-poi-tipo" className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo
+                </label>
+                <select
+                  id="add-poi-tipo"
+                  value={tipo}
+                  onChange={(e) => setTipo(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="cantiere">Cantiere</option>
+                  <option value="altro">Altro</option>
                 </select>
               </div>
               <div className="flex space-x-2">
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const indirizzo = `Lat: ${clickPosition.lat.toFixed(6)}, Lng: ${clickPosition.lng.toFixed(6)}`;
-                    const ispezionabile = (document.getElementById('add-poi-ispezionabile') as HTMLSelectElement).value;
-                    if (onAddPoi) {
-                      onAddPoi(indirizzo, Number(ispezionabile));
-                    }
-                    setShowPopup(false);
-                  }}
+                  onClick={handleAddPoi}
+                  className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 font-medium shadow-sm text-sm"
                 >
-                  Aggiungi
+                  📍 Aggiungi Punto
                 </button>
                 <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowPopup(false);
-                  }}
+                  onClick={() => setShowPopup(false)}
+                  className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 font-medium shadow-sm text-sm"
                 >
-                  Annulla
+                  ❌ Annulla
                 </button>
               </div>
             </div>
@@ -210,6 +251,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                 <h3 className="font-bold">{new Date(poi.created_at).toLocaleString()}</h3>
                 <p className="text-sm text-gray-600">Username: {poi.username || 'N/D'}</p>
                 <p className="text-sm text-gray-600">Team: {poi.team || 'N/D'}</p>
+                <p className="text-sm text-gray-600">Tipo: {poi.tipo || 'N/D'}</p>
                 <div className="mt-2 space-y-2">
                   <button
                     onClick={async (e) => {
@@ -333,14 +375,28 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                   <option value={0}>No</option>
                 </select>
               </div>
+              <div>
+                <label htmlFor="add-poi-tipo" className="block text-sm font-medium text-gray-700 mb-1">
+                  Tipo
+                </label>
+                <select
+                  id="add-poi-tipo"
+                  defaultValue="cantiere"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="cantiere">Cantiere</option>
+                  <option value="altro">Altro</option>
+                </select>
+              </div>
               <div className="flex space-x-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     const indirizzo = `Lat: ${newPoiLocation.lat.toFixed(6)}, Lng: ${newPoiLocation.lng.toFixed(6)}`;
                     const ispezionabile = (document.getElementById('add-poi-ispezionabile') as HTMLSelectElement).value;
+                    const tipo = (document.getElementById('add-poi-tipo') as HTMLSelectElement).value;
                     if (onAddPoi) {
-                      onAddPoi(indirizzo, Number(ispezionabile));
+                      onAddPoi(indirizzo, Number(ispezionabile), tipo);
                     }
                   }}
                   className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 font-medium shadow-sm text-sm"
@@ -364,7 +420,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
         </Marker>
       )}
 
-      <MapClickHandler onMapClick={onMapClick} />
+      <MapClickHandler onMapClick={onMapClick} onAddPoi={onAddPoi} onCancelAddPoi={onCancelAddPoi} />
     </MapContainer>
   );
 };

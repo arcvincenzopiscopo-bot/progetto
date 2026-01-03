@@ -9,6 +9,7 @@ interface PointOfInterest {
   username: string;
   team: string;
   ispezionabile: boolean;
+  tipo: string;
   latitudine: number;
   longitudine: number;
   created_at: string;
@@ -71,8 +72,16 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleAddPoi = async (indirizzo: string, ispezionabile: number) => {
+  const handleAddPoi = async (indirizzo: string, ispezionabile: number, tipo: string) => {
     if (!newPoiLocation || !user) return;
+
+    console.log('Adding POI with data:', {
+      indirizzo,
+      ispezionabile,
+      tipo,
+      lat: newPoiLocation.lat,
+      lng: newPoiLocation.lng
+    });
 
     try {
       const { data, error } = await supabase
@@ -83,23 +92,26 @@ const DashboardPage: React.FC = () => {
             username: user.username,
             team: user.team || "", // Usa il team dall'utente loggato
             ispezionabile: ispezionabile,
+            tipo: tipo,
             latitudine: newPoiLocation.lat,
             longitudine: newPoiLocation.lng,
           },
         ])
         .select();
 
+      console.log('Supabase response:', { data, error });
+
       if (error) {
         throw error;
       }
 
       if (data) {
+        console.log('POI added successfully:', data[0]);
         setPois([...pois, data[0]]);
         setShowAddForm(false);
         setNewPoiLocation(null);
       }
     } catch (err) {
-      console.error('Error adding POI:', err);
       console.error('Error adding POI:', err);
     }
   };
