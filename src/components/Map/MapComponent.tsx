@@ -257,7 +257,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      const shareText = `${poi.longitudine}, ${poi.latitudine}`;
+                      const shareText = `${poi.latitudine}, ${poi.longitudine}`;
 
                       if (navigator.share) {
                         // Use Web Share API for modern browsers
