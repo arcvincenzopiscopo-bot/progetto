@@ -253,6 +253,41 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                 <p className="text-sm text-gray-600">Team: {poi.team || 'N/D'}</p>
                 <p className="text-sm text-gray-600">Tipo: {poi.tipo || 'N/D'}</p>
                 <div className="mt-2 space-y-2">
+                  {/* Share button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const shareText = `${poi.longitudine}, ${poi.latitudine}`;
+
+                      if (navigator.share) {
+                        // Use Web Share API for modern browsers
+                        navigator.share({
+                          title: `Punto di Interesse - ${poi.indirizzo}`,
+                          text: `Coordinate: ${shareText}`,
+                          url: `https://www.google.com/maps/search/?api=1&query=${poi.latitudine},${poi.longitudine}`
+                        })
+                        .then(() => console.log('Share successful'))
+                        .catch((error) => {
+                          console.error('Error sharing:', error);
+                          // Fallback to clipboard if share fails
+                          navigator.clipboard.writeText(shareText);
+                          alert('Coordinate copiate negli appunti: ' + shareText);
+                        });
+                      } else {
+                        // Fallback for browsers that don't support Web Share API
+                        navigator.clipboard.writeText(shareText)
+                          .then(() => alert('Coordinate copiate negli appunti: ' + shareText))
+                          .catch((error) => {
+                            console.error('Error copying to clipboard:', error);
+                            alert('Coordinate: ' + shareText);
+                          });
+                      }
+                    }}
+                    className="text-sm px-3 py-2 rounded w-full font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
+                  >
+                    📤 Condividi
+                  </button>
+
                   <button
                     onClick={async (e) => {
                       e.stopPropagation();
