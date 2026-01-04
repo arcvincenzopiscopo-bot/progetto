@@ -1,5 +1,6 @@
 import React from 'react';
 import { supabase } from '../../services/supabaseClient';
+import { deletePhotoFromCloudinary } from '../../services/authService';
 
 interface PointOfInterest {
   id: string;
@@ -12,6 +13,7 @@ interface PointOfInterest {
   latitudine: number;
   longitudine: number;
   created_at: string;
+  photo_url?: string;
 }
 
 interface POIListProps {
@@ -59,6 +61,17 @@ const POIList: React.FC<POIListProps> = ({ pois, onPoiSelect, onPoiDeleted }) =>
                 onClick={async (e) => {
                   e.stopPropagation(); // Prevent triggering the onPoiSelect
                   try {
+                    // First, delete the photo from Cloudinary if it exists
+                    if (poi.photo_url) {
+                      try {
+                        await deletePhotoFromCloudinary(poi.photo_url);
+                      } catch (photoError) {
+                        console.error('Error deleting photo from Cloudinary:', photoError);
+                        // Continue with POI deletion even if photo deletion fails
+                      }
+                    }
+
+                    // Then delete the POI from the database
                     const { error } = await supabase
                       .from('points')
                       .delete()

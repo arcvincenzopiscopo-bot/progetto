@@ -5,6 +5,7 @@ interface User {
   id: string;
   username: string;
   team?: string;
+  admin?: number;
   created_at: string;
 }
 

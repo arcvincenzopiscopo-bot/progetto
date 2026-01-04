@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCustomAuth } from '../context/CustomAuthContext';
 import { supabase } from '../services/supabaseClient';
+import { compressImage, uploadPhoto } from '../services/authService';
 import MapComponent from '../components/Map/MapComponent';
 
 interface PointOfInterest {
@@ -13,6 +14,8 @@ interface PointOfInterest {
   note?: string;
   latitudine: number;
   longitudine: number;
+  da_approvare?: number;
+  photo_url?: string;
   created_at: string;
 }
 
@@ -24,6 +27,7 @@ const DashboardPage: React.FC = () => {
   const [currentPosition, setCurrentPosition] = useState<[number, number] | undefined>(undefined);
   const [filterShowInspectable, setFilterShowInspectable] = useState(true);
   const [filterShowNonInspectable, setFilterShowNonInspectable] = useState(true);
+  const [filterShowPendingApproval, setFilterShowPendingApproval] = useState(true);
   const [filterShowCantiere, setFilterShowCantiere] = useState(true);
   const [filterShowAltro, setFilterShowAltro] = useState(true);
 
@@ -59,11 +63,19 @@ const DashboardPage: React.FC = () => {
 
   const fetchPois = async () => {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('points')
         .select('*')
-        .eq('username', user?.username)
         .order('created_at', { ascending: false });
+
+      // Filtra i POI in base ai privilegi dell'utente
+      if (user?.admin === 0) {
+        // Utenti non admin possono vedere tutti i propri POI (inclusi quelli con da_approvare = 2)
+        query = query.eq('username', user.username);
+      }
+      // Utenti admin possono vedere tutti i POI (nessun filtro aggiuntivo)
+
+      const { data, error } = await query;
 
       if (error) {
         throw error;
@@ -75,33 +87,47 @@ const DashboardPage: React.FC = () => {
     }
   };
 
-  const handleAddPoi = async (indirizzo: string, ispezionabile: number, tipo: string, note?: string) => {
+  const handleAddPoi = async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
     if (!newPoiLocation || !user) return;
+
+    // Determina il valore di da_approvare basato sui privilegi dell'utente
+    // Utenti admin (admin = 1) possono inserire POI senza approvazione (da_approvare = null o 0)
+    // Utenti non admin (admin = 0) devono avere i POI approvati (da_approvare = 2)
+    const daApprovare = user.admin === 0 ? 2 : null;
 
     console.log('Adding POI with data:', {
       indirizzo,
       ispezionabile,
       tipo,
       note,
+      da_approvare: daApprovare,
+      photo: photo ? `${photo.name} (${(photo.size / 1024 / 1024).toFixed(2)}MB)` : 'Nessuna foto',
       lat: newPoiLocation.lat,
-      lng: newPoiLocation.lng
+      lng: newPoiLocation.lng,
+      user_admin: user.admin
     });
 
     try {
+      const poiData: any = {
+        indirizzo: "vuoto",
+        username: user.username,
+        team: user.team || "", // Usa il team dall'utente loggato
+        ispezionabile: ispezionabile,
+        tipo: tipo,
+        note: note || "",
+        latitudine: newPoiLocation.lat,
+        longitudine: newPoiLocation.lng,
+      };
+
+      // Aggiungi il campo da_approvare solo se necessario
+      if (daApprovare !== null) {
+        poiData.da_approvare = daApprovare;
+      }
+
+      // Crea il POI nel database
       const { data, error } = await supabase
         .from('points')
-        .insert([
-          {
-            indirizzo: "vuoto",
-            username: user.username,
-            team: user.team || "", // Usa il team dall'utente loggato
-            ispezionabile: ispezionabile,
-            tipo: tipo,
-            note: note || "",
-            latitudine: newPoiLocation.lat,
-            longitudine: newPoiLocation.lng,
-          },
-        ])
+        .insert([poiData])
         .select();
 
       console.log('Supabase response:', { data, error });
@@ -110,7 +136,36 @@ const DashboardPage: React.FC = () => {
         throw error;
       }
 
-      if (data) {
+      if (data && data[0]) {
+        const poiId = data[0].id;
+        let photoUrl: string | undefined;
+
+        // Se è presente una foto, comprimila e caricala
+        if (photo) {
+          try {
+            console.log('Comprimendo e caricando foto...');
+            photoUrl = await uploadPhoto(photo, poiId);
+            console.log('Foto caricata:', photoUrl);
+
+            // Aggiorna il POI con l'URL della foto
+            const { error: updateError } = await supabase
+              .from('points')
+              .update({ photo_url: photoUrl })
+              .eq('id', poiId);
+
+            if (updateError) {
+              console.error('Errore nell\'aggiornamento dell\'URL foto:', updateError);
+              // Non bloccare la creazione del POI per errori nell'upload foto
+            } else {
+              // Aggiorna il POI nella lista locale con l'URL della foto
+              data[0].photo_url = photoUrl;
+            }
+          } catch (photoError) {
+            console.error('Errore nell\'upload della foto:', photoError);
+            alert('POI creato ma errore nel caricamento della foto. Puoi riprovare modificando il POI.');
+          }
+        }
+
         console.log('POI added successfully:', data[0]);
         setPois([...pois, data[0]]);
         setShowAddForm(false);
@@ -118,6 +173,7 @@ const DashboardPage: React.FC = () => {
       }
     } catch (err) {
       console.error('Error adding POI:', err);
+      alert('Errore nella creazione del POI. Riprova.');
     }
   };
 
@@ -184,11 +240,13 @@ const DashboardPage: React.FC = () => {
                 initialPosition={currentPosition}
                 onPoiUpdated={refreshPois}
                 currentTeam={user?.team}
+                isAdmin={user?.admin === 1}
                 newPoiLocation={showAddForm ? newPoiLocation : null}
                 onAddPoi={handleAddPoi}
                 onCancelAddPoi={() => setShowAddForm(false)}
                 filterShowInspectable={filterShowInspectable}
                 filterShowNonInspectable={filterShowNonInspectable}
+                filterShowPendingApproval={filterShowPendingApproval}
                 filterShowCantiere={filterShowCantiere}
                 filterShowAltro={filterShowAltro}
                 height="66vh"
@@ -261,6 +319,18 @@ const DashboardPage: React.FC = () => {
                     />
                     <label htmlFor="filter-non-inspectable" className="text-sm font-medium text-gray-700">
                       🔴 Già ispezionati
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="filter-pending-approval"
+                      checked={filterShowPendingApproval}
+                      onChange={(e) => setFilterShowPendingApproval(e.target.checked)}
+                      className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                    />
+                    <label htmlFor="filter-pending-approval" className="text-sm font-medium text-gray-700">
+                      🟡 In attesa di approvazione
                     </label>
                   </div>
                 </div>

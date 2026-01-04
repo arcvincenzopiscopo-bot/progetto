@@ -3,6 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaf
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../services/supabaseClient';
+import { deletePhotoFromCloudinary } from '../../services/authService';
 
 // Fix for missing marker icons in production
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -22,6 +23,8 @@ interface PointOfInterest {
   note?: string;
   latitudine: number;
   longitudine: number;
+  da_approvare?: number;
+  photo_url?: string;
   created_at: string;
 }
 
@@ -32,11 +35,13 @@ interface MapComponentProps {
   initialPosition?: [number, number];
   onPoiUpdated?: () => void;
   currentTeam?: string;
+  isAdmin?: boolean;
   newPoiLocation?: { lat: number; lng: number } | null;
-  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string) => void;
+  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => void;
   onCancelAddPoi?: () => void;
   filterShowInspectable?: boolean;
   filterShowNonInspectable?: boolean;
+  filterShowPendingApproval?: boolean;
   filterShowCantiere?: boolean;
   filterShowAltro?: boolean;
   height?: string;
@@ -53,7 +58,7 @@ const defaultIcon = L.icon({
   shadowSize: [41, 41]
 });
 
-// Custom icons for inspectable and non-inspectable points
+// Custom icons for inspectable, non-inspectable and pending approval points
 const greenIcon = L.icon({
   iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
@@ -72,10 +77,53 @@ const redIcon = L.icon({
   shadowSize: [41, 41]
 });
 
+const yellowIcon = L.icon({
+  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const blueIcon = L.icon({
+  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Custom circular icon for user's location with police officer
+const userLocationIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: #2563eb;
+      border: 3px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    ">
+      👮‍♂️
+    </div>
+  `,
+  className: 'custom-user-location-icon',
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19]
+});
+
 const MapClickHandler: React.FC<{
   onMapClick: (lat: number, lng: number) => void;
   newPoiLocation?: { lat: number; lng: number } | null;
-  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string) => void;
+  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => void;
   onCancelAddPoi?: () => void;
 }> = ({ onMapClick, newPoiLocation, onAddPoi, onCancelAddPoi }) => {
   const [showPopup, setShowPopup] = useState(false);
@@ -83,6 +131,7 @@ const MapClickHandler: React.FC<{
   const [ispezionabile, setIspezionabile] = useState('1');
   const [tipo, setTipo] = useState('cantiere');
   const [note, setNote] = useState('');
+  const [photo, setPhoto] = useState<File | null>(null);
 
   useMapEvents({
     click: (e) => {
@@ -126,7 +175,7 @@ const MapClickHandler: React.FC<{
     console.log('Calling onAddPoi with:', indirizzo, Number(ispezionabile), tipo, note);
 
     try {
-      onAddPoi(indirizzo, Number(ispezionabile), tipo, note);
+      onAddPoi(indirizzo, Number(ispezionabile), tipo, note, photo || undefined);
       console.log('onAddPoi completed successfully');
     } catch (error) {
       console.error('Error in onAddPoi:', error);
@@ -139,8 +188,8 @@ const MapClickHandler: React.FC<{
     <>
       {showPopup && clickPosition && (
         <Marker position={[clickPosition.lat, clickPosition.lng]} icon={defaultIcon}>
-          <Popup>
-            <div className="space-y-2">
+          <Popup maxWidth={350} minWidth={300}>
+            <div className="space-y-3">
               <h3 className="font-bold text-center bg-indigo-600 text-white py-2 rounded">Aggiungi Punto di Interesse</h3>
               <div>
                 <label htmlFor="add-poi-indirizzo" className="block text-sm font-medium text-gray-700 mb-1">
@@ -186,14 +235,34 @@ const MapClickHandler: React.FC<{
                 <label htmlFor="add-poi-note" className="block text-sm font-medium text-gray-700 mb-1">
                   Note
                 </label>
-                <textarea
+                <input
                   id="add-poi-note"
+                  type="text"
                   value={note}
                   onChange={(e) => setNote(e.target.value)}
-                  placeholder="Inserisci eventuali note..."
-                  rows={3}
+                  placeholder="Inserisci note (max 20 caratteri)..."
+                  maxLength={20}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
+              </div>
+              <div>
+                <label htmlFor="add-poi-photo" className="block text-sm font-medium text-gray-700 mb-1">
+                  📷 Foto (opzionale)
+                </label>
+                <input
+                  id="add-poi-photo"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0] || null;
+                    setPhoto(file);
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Puoi scattare una foto o selezionare dalla galleria
+                </p>
               </div>
               <div className="flex space-x-2">
                 <button
@@ -217,7 +286,7 @@ const MapClickHandler: React.FC<{
   );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, onPoiUpdated, currentTeam, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowCantiere = true, filterShowAltro = true, height }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, onPoiUpdated, currentTeam, isAdmin = false, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, height }) => {
   // Use initial position if provided, otherwise default to Rome coordinates
   const centerPosition: [number, number] = initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
@@ -241,20 +310,50 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
 
+      {/* User's current location marker */}
+      {initialPosition && (
+        <Marker
+          position={initialPosition}
+          icon={userLocationIcon}
+          eventHandlers={{
+            click: () => {
+              // Optional click handling for user location
+            },
+          }}
+        >
+          <Popup>
+            <div className="text-center">
+              <h3 className="font-bold text-blue-600">📍 La Tua Posizione</h3>
+              <p className="text-sm text-gray-600">
+                Lat: {initialPosition[0].toFixed(6)}<br />
+                Lng: {initialPosition[1].toFixed(6)}
+              </p>
+            </div>
+          </Popup>
+        </Marker>
+      )}
+
       {pois
         .filter((poi) => {
           // Filter POIs based on filter settings
           if (poi.ispezionabile && !filterShowInspectable) return false;
           if (!poi.ispezionabile && !filterShowNonInspectable) return false;
+          if (poi.da_approvare === 2 && !filterShowPendingApproval) return false;
           if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;
           if (poi.tipo === 'altro' && !filterShowAltro) return false;
           return true;
         })
         .map((poi) => {
-        // Determine which icon to use based on ispezionabile field
-        // ispezionabile = 1 (true) -> green marker
-        // ispezionabile = 0 (false) -> red marker
-        const markerIcon = poi.ispezionabile ? greenIcon : redIcon;
+        // Determine which icon to use based on da_approvare and ispezionabile fields
+        // Priority: da_approvare = 2 -> yellow marker (pending approval)
+        // Then: ispezionabile = 1 (true) -> green marker
+        //       ispezionabile = 0 (false) -> red marker
+        let markerIcon;
+        if (poi.da_approvare === 2) {
+          markerIcon = yellowIcon;
+        } else {
+          markerIcon = poi.ispezionabile ? greenIcon : redIcon;
+        }
 
         return (
           <Marker
@@ -274,7 +373,24 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                 <p className="text-sm text-gray-600">Team: {poi.team || 'N/D'}</p>
                 <p className="text-sm text-gray-600">Tipo: {poi.tipo || 'N/D'}</p>
                 {poi.note && <p className="text-sm text-gray-600">Note: {poi.note}</p>}
-                <div className="mt-2 space-y-4">
+                {poi.photo_url && (
+                  <div className="mt-2 mb-2">
+                    <a href={poi.photo_url} target="_blank" rel="noopener noreferrer" className="block">
+                      <img
+                        src={poi.photo_url}
+                        alt="Foto POI"
+                        className="w-24 h-24 object-cover rounded-md border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                        style={{ width: '100px', height: '100px' }}
+                        onError={(e) => {
+                          console.error('Errore nel caricamento della foto:', poi.photo_url);
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </a>
+                    <p className="text-xs text-gray-500 text-center mt-1">Clicca per ingrandire</p>
+                  </div>
+                )}
+                <div className="mt-2 space-y-6">
                   {/* Share button */}
                   <button
                     onClick={(e) => {
@@ -310,7 +426,49 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                     📤 Condividi
                   </button>
 
-                  {poi.ispezionabile && (
+                  {/* Approve button - only for admins and POIs with da_approvare = 2 */}
+                  {isAdmin && poi.da_approvare === 2 && (
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+
+                        // Ask for confirmation before approving
+                        const confirmed = window.confirm('Sei sicuro di voler approvare questo punto di interesse?');
+                        if (!confirmed) return;
+
+                        try {
+                          const { error } = await supabase
+                            .from('points')
+                            .update({
+                              da_approvare: 1,
+                              created_at: new Date().toISOString()
+                            })
+                            .eq('id', poi.id);
+
+                          if (error) {
+                            console.error('Error approving POI:', error);
+                            alert('Errore durante l\'approvazione del POI');
+                          } else {
+                            // Force re-render to update the marker color
+                            setMapKey(Date.now());
+                            // Refresh the POI data in the parent component
+                            if (onPoiUpdated) {
+                              onPoiUpdated();
+                            }
+                            alert('POI approvato con successo!');
+                          }
+                        } catch (err) {
+                          console.error('Error approving POI:', err);
+                          alert('Errore durante l\'approvazione del POI');
+                        }
+                      }}
+                      className="text-sm px-3 py-2 rounded w-full font-medium bg-green-600 text-white hover:bg-green-700 shadow-sm"
+                    >
+                      ✅ Approva
+                    </button>
+                  )}
+
+                  {poi.ispezionabile && poi.da_approvare !== 2 && (
                     <button
                       onClick={async (e) => {
                         e.stopPropagation();
@@ -374,6 +532,17 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                           if (!confirmed) return;
 
                           try {
+                            // First, delete the photo from Cloudinary if it exists
+                            if (poi.photo_url) {
+                              try {
+                                await deletePhotoFromCloudinary(poi.photo_url);
+                              } catch (photoError) {
+                                console.error('Error deleting photo from Cloudinary:', photoError);
+                                // Continue with POI deletion even if photo deletion fails
+                              }
+                            }
+
+                            // Then delete the POI from the database
                             const { error } = await supabase
                               .from('points')
                               .delete()
@@ -468,6 +637,21 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
+              <div>
+                <label htmlFor="add-poi-photo-fixed" className="block text-sm font-medium text-gray-700 mb-1">
+                  📷 Foto (opzionale)
+                </label>
+                <input
+                  id="add-poi-photo-fixed"
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Puoi scattare una foto o selezionare dalla galleria
+                </p>
+              </div>
               <div className="flex space-x-2">
                 <button
                   onClick={(e) => {
@@ -476,8 +660,10 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                     const ispezionabile = (document.getElementById('add-poi-ispezionabile') as HTMLSelectElement).value;
                     const tipo = (document.getElementById('add-poi-tipo') as HTMLSelectElement).value;
                     const note = (document.getElementById('add-poi-note') as HTMLTextAreaElement)?.value || '';
+                    const photoInput = document.getElementById('add-poi-photo-fixed') as HTMLInputElement;
+                    const photo = photoInput?.files?.[0] || undefined;
                     if (onAddPoi) {
-                      onAddPoi(indirizzo, Number(ispezionabile), tipo, note);
+                      onAddPoi(indirizzo, Number(ispezionabile), tipo, note, photo);
                     }
                   }}
                   className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 font-medium shadow-sm text-sm"
