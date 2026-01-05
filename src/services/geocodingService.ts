@@ -312,12 +312,13 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
       q: trimmedQuery,
       format: 'json',
       addressdetails: '1',
-      limit: '8', // Increased limit for better house number results
+      limit: '12', // Increased limit to show more house number variations
       countrycodes: 'IT', // Focus on Italy for this app
       'accept-language': 'it,en',
       bounded: '1', // Restrict search to country boundaries
       viewbox: '6.627,47.092,18.521,36.619', // Italy bounding box (approximate)
-      dedupe: '1' // Remove duplicates
+      dedupe: '1', // Remove duplicates
+      extratags: '1' // Include extra tags that might have house number info
     });
 
     const url = `https://nominatim.openstreetmap.org/search?${searchParams.toString()}`;

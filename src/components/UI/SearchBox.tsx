@@ -45,9 +45,35 @@ const SearchBox: React.FC<SearchBoxProps> = ({
   const resultsRef = useRef<HTMLDivElement>(null);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Debounced search function
+  // Debounced search function with house number suggestions
   const performSearch = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim() || searchQuery.length < 2) {
+    if (!searchQuery.trim()) {
+      setResults([]);
+      setIsLoading(false);
+      return;
+    }
+
+    // For very short queries (2-3 chars), show suggestions for common Italian addresses
+    if (searchQuery.length >= 2 && searchQuery.length <= 4) {
+      setIsLoading(true);
+      try {
+        // Try to get suggestions with partial matching
+        const searchResults = await searchAddress(searchQuery);
+        setResults(searchResults);
+        setIsOpen(searchResults.length > 0);
+        setSelectedIndex(-1);
+      } catch (error) {
+        console.error('Search error:', error);
+        setResults([]);
+        setIsOpen(false);
+      } finally {
+        setIsLoading(false);
+      }
+      return;
+    }
+
+    // For longer queries, do full search
+    if (searchQuery.length < 4) {
       setResults([]);
       setIsLoading(false);
       return;
