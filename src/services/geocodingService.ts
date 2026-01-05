@@ -283,7 +283,7 @@ export async function getAddressWithCache(lat: number, lng: number): Promise<Geo
 }
 
 /**
- * Search for addresses using Nominatim search API
+ * Search for addresses using Nominatim search API with enhanced house number support
  * @param query The search query (address, place name, etc.)
  * @returns Promise<SearchResult[]> Array of search results
  */
@@ -305,25 +305,37 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout for search
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout for enhanced search
 
-    // Build search URL with parameters optimized for Italian addresses with house numbers
-    const searchParams = new URLSearchParams({
-      q: trimmedQuery,
+    // Check if query contains a house number (digit at the end)
+    const houseNumberMatch = trimmedQuery.match(/(\d+)\s*$/);
+    const hasHouseNumber = !!houseNumberMatch;
+    const houseNumber = houseNumberMatch ? houseNumberMatch[1] : null;
+    const baseQuery = hasHouseNumber ? trimmedQuery.replace(/\s+\d+\s*$/, '').trim() : trimmedQuery;
+
+    let allResults: SearchResult[] = [];
+
+    // First, search for the base address (without house number if present)
+    const baseSearchParams = new URLSearchParams({
+      q: baseQuery,
       format: 'json',
       addressdetails: '1',
-      limit: '12', // Increased limit to show more house number variations
-      countrycodes: 'IT', // Focus on Italy for this app
+      limit: hasHouseNumber ? '20' : '12', // More results when looking for specific house number
+      countrycodes: 'IT',
       'accept-language': 'it,en',
-      bounded: '1', // Restrict search to country boundaries
-      viewbox: '6.627,47.092,18.521,36.619', // Italy bounding box (approximate)
-      dedupe: '1', // Remove duplicates
-      extratags: '1' // Include extra tags that might have house number info
+      bounded: '1',
+      viewbox: '6.627,47.092,18.521,36.619',
+      dedupe: '1',
+      extratags: '1'
     });
 
-    const url = `https://nominatim.openstreetmap.org/search?${searchParams.toString()}`;
+    const baseUrl = `https://nominatim.openstreetmap.org/search?${baseSearchParams.toString()}`;
 
-    const response = await fetch(url, {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Searching for base address:', baseQuery);
+    }
+
+    const baseResponse = await fetch(baseUrl, {
       method: 'GET',
       headers: {
         'Accept': 'application/json',
@@ -332,22 +344,91 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
       signal: controller.signal
     });
 
+    if (baseResponse.ok) {
+      const baseData: SearchResult[] = await baseResponse.json();
+      allResults = baseData;
+
+      // If user specified a house number, try to find or create specific results
+      if (hasHouseNumber && houseNumber) {
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Looking for house number:', houseNumber, 'in results');
+        }
+
+        // Check if any results already have the exact house number
+        const exactMatches = baseData.filter(result =>
+          result.address.house_number === houseNumber
+        );
+
+        if (exactMatches.length > 0) {
+          // Prioritize exact matches
+          allResults = [
+            ...exactMatches,
+            ...baseData.filter(result => result.address.house_number !== houseNumber)
+          ];
+        } else {
+          // Try a more specific search with the house number
+          const specificSearchParams = new URLSearchParams({
+            q: trimmedQuery,
+            format: 'json',
+            addressdetails: '1',
+            limit: '10',
+            countrycodes: 'IT',
+            'accept-language': 'it,en',
+            bounded: '1',
+            viewbox: '6.627,47.092,18.521,36.619',
+            dedupe: '1',
+            extratags: '1'
+          });
+
+          try {
+            const specificUrl = `https://nominatim.openstreetmap.org/search?${specificSearchParams.toString()}`;
+            const specificResponse = await fetch(specificUrl, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'PuntiInteresseApp/1.0 (contact@puntiinteresse.it)'
+              },
+              signal: controller.signal
+            });
+
+            if (specificResponse.ok) {
+              const specificData: SearchResult[] = await specificResponse.json();
+              if (specificData.length > 0) {
+                // Add specific results and remove duplicates
+                const combinedResults = [...specificData];
+                baseData.forEach(baseResult => {
+                  if (!combinedResults.some(specificResult =>
+                    specificResult.place_id === baseResult.place_id
+                  )) {
+                    combinedResults.push(baseResult);
+                  }
+                });
+                allResults = combinedResults;
+              }
+            }
+          } catch (specificError) {
+            if (process.env.NODE_ENV === 'development') {
+              console.warn('Specific house number search failed:', specificError);
+            }
+            // Continue with base results
+          }
+        }
+      }
+    }
+
     clearTimeout(timeoutId);
 
-    if (!response.ok) {
-      throw new Error(`Nominatim search request failed with status ${response.status}`);
-    }
-
-    const data: SearchResult[] = await response.json();
+    // Limit final results to 12 for UI
+    const finalResults = allResults.slice(0, 12);
 
     // Cache successful results
-    searchCache.set(trimmedQuery, data);
+    searchCache.set(trimmedQuery, finalResults);
 
     if (process.env.NODE_ENV === 'development') {
-      console.log(`Found ${data.length} search results for "${trimmedQuery}"`);
+      console.log(`Found ${finalResults.length} search results for "${trimmedQuery}" (house number: ${hasHouseNumber ? houseNumber : 'none'})`);
     }
 
-    return data;
+    return finalResults;
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown search error';
