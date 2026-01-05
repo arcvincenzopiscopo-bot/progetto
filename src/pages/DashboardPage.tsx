@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCustomAuth } from '../context/CustomAuthContext';
 import { supabase } from '../services/supabaseClient';
-import { compressImage, uploadPhoto } from '../services/authService';
+import { uploadPhoto } from '../services/authService';
 import { getAddressWithCache } from '../services/geocodingService';
 import MapComponent from '../components/Map/MapComponent';
 
@@ -207,174 +207,149 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <nav className="bg-indigo-600 text-white p-4 shadow-md">
-        <div className="container mx-auto">
-          {/* Navigation bar is now empty as requested */}
-        </div>
-      </nav>
 
       <div className="container mx-auto px-2 py-4">
+        {/* Two Horizontal Sections Layout */}
 
-        {/* Three Horizontal Rows Layout */}
-        <div className="flex flex-col gap-3">
-
-          {/* Top Row - Three Columns with Logout in Right Column */}
-          <div className="bg-gray-200 border border-indigo-200 rounded-lg p-4 shadow-sm">
-            <div className="grid grid-cols-3 gap-4 items-center">
-              {/* Left Column - Empty */}
-              <div className="text-left">
-                {/* Empty left column */}
-              </div>
-
-              {/* Center Column - Empty */}
-              <div className="text-center">
-                {/* Empty center column */}
-              </div>
-
-              {/* Right Column - Logout Button */}
-              <div className="text-right">
-                <button
-                  onClick={handleLogout}
-                  className="bg-white text-indigo-600 px-6 py-2 rounded-lg border border-indigo-300 hover:bg-indigo-50 font-medium transition-colors inline-flex items-center space-x-2"
-                >
-                  <span>🚪</span>
-                  <span>Logout</span>
-                </button>
-              </div>
-            </div>
+        {/* Top Section - Map with rounded gray borders */}
+        <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm mb-4">
+          <div className="h-[66vh] w-full">
+            <MapComponent
+              pois={pois}
+              onMapClick={handleMapClick}
+              initialPosition={currentPosition}
+              onPoiUpdated={refreshPois}
+              currentTeam={user?.team}
+              isAdmin={user?.admin === 1}
+              newPoiLocation={showAddForm ? newPoiLocation : null}
+              onAddPoi={handleAddPoi}
+              onCancelAddPoi={() => setShowAddForm(false)}
+              filterShowInspectable={filterShowInspectable}
+              filterShowNonInspectable={filterShowNonInspectable}
+              filterShowPendingApproval={filterShowPendingApproval}
+              filterShowCantiere={filterShowCantiere}
+              filterShowAltro={filterShowAltro}
+              height="66vh"
+            />
           </div>
+        </div>
 
-          {/* Center Row - Map (2/3 of screen height) */}
-          <div className="h-[66vh] bg-white border-2 border-indigo-300 rounded-lg overflow-hidden shadow-sm">
-            <div style={{ height: '66vh', width: '100%' }}>
-              <MapComponent
-                pois={pois}
-                onMapClick={handleMapClick}
-                initialPosition={currentPosition}
-                onPoiUpdated={refreshPois}
-                currentTeam={user?.team}
-                isAdmin={user?.admin === 1}
-                newPoiLocation={showAddForm ? newPoiLocation : null}
-                onAddPoi={handleAddPoi}
-                onCancelAddPoi={() => setShowAddForm(false)}
-                filterShowInspectable={filterShowInspectable}
-                filterShowNonInspectable={filterShowNonInspectable}
-                filterShowPendingApproval={filterShowPendingApproval}
-                filterShowCantiere={filterShowCantiere}
-                filterShowAltro={filterShowAltro}
-                height="66vh"
-              />
+        {/* Bottom Section - Filters with rounded gray borders */}
+        <div className="bg-gray-200 border border-gray-300 rounded-lg p-6 shadow-sm">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            {/* Logout Button - moved to top of filters section */}
+            <div className="flex-1 md:text-left">
+              <button
+                onClick={handleLogout}
+                className="bg-white text-indigo-600 px-6 py-2 rounded-lg border border-indigo-300 hover:bg-indigo-50 font-medium transition-colors inline-flex items-center space-x-2"
+              >
+                <span>🚪</span>
+                <span>Logout</span>
+              </button>
             </div>
-          </div>
 
-          {/* Bottom Row - Controls and Filters */}
-          <div className="bg-gray-200 border border-indigo-200 rounded-lg p-6 shadow-sm">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-              {/* Left Column - Empty for balance */}
-              <div className="hidden md:block">
-                {/* Empty left column for balance */}
-              </div>
-
-              {/* Center Column - Center Map Button */}
-              <div className="text-center">
-                <button
-                  onClick={() => {
-                    if (currentPosition) {
-                      setCurrentPosition([...currentPosition]);
+            {/* Center Map Button */}
+            <div className="flex-1 text-center">
+              <button
+                onClick={() => {
+                  if (currentPosition) {
+                    setCurrentPosition([...currentPosition]);
+                  } else {
+                    if (navigator.geolocation) {
+                      navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                          const { latitude, longitude } = position.coords;
+                          setCurrentPosition([latitude, longitude]);
+                        },
+                        (error) => {
+                          console.error('Error getting location:', error);
+                          alert('Impossibile ottenere la posizione corrente');
+                        },
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                      );
                     } else {
-                      if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(
-                          (position) => {
-                            const { latitude, longitude } = position.coords;
-                            setCurrentPosition([latitude, longitude]);
-                          },
-                          (error) => {
-                            console.error('Error getting location:', error);
-                            alert('Impossibile ottenere la posizione corrente');
-                          },
-                          { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                        );
-                      } else {
-                        alert('La geolocalizzazione non è supportata dal browser');
-                      }
+                      alert('La geolocalizzazione non è supportata dal browser');
                     }
-                  }}
-                  className="bg-indigo-600 text-white px-10 py-4 rounded-lg hover:bg-indigo-700 text-lg font-medium transition-colors flex items-center justify-center space-x-2 shadow-md"
-                >
-                  <span>📍</span>
-                  <span>Centra la mappa</span>
-                </button>
+                  }
+                }}
+                className="bg-indigo-600 text-white px-8 py-3 rounded-lg hover:bg-indigo-700 font-medium transition-colors flex items-center justify-center space-x-2 shadow-md mx-auto"
+              >
+                <span>📍</span>
+                <span>Centra la mappa</span>
+              </button>
+            </div>
+
+            {/* Empty div for balance */}
+            <div className="flex-1 hidden md:block"></div>
+          </div>
+
+          {/* Filters Section */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <h3 className="font-medium text-indigo-800 mb-3 text-center">Filtri</h3>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="filter-inspectable"
+                  checked={filterShowInspectable}
+                  onChange={(e) => setFilterShowInspectable(e.target.checked)}
+                  className="h-5 w-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
+                />
+                <label htmlFor="filter-inspectable" className="text-sm font-medium text-gray-700">
+                  🟢 Ispezionabili
+                </label>
               </div>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="filter-non-inspectable"
+                  checked={filterShowNonInspectable}
+                  onChange={(e) => setFilterShowNonInspectable(e.target.checked)}
+                  className="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
+                />
+                <label htmlFor="filter-non-inspectable" className="text-sm font-medium text-gray-700">
+                  🔴 Già ispezionati
+                </label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="filter-pending-approval"
+                  checked={filterShowPendingApproval}
+                  onChange={(e) => setFilterShowPendingApproval(e.target.checked)}
+                  className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                />
+                <label htmlFor="filter-pending-approval" className="text-sm font-medium text-gray-700">
+                  🟡 In attesa di approvazione
+                </label>
+              </div>
+            </div>
 
-              {/* Right Column - Filters Section */}
-              <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                <h3 className="font-medium text-indigo-800 mb-3 text-center">Filtri</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="filter-inspectable"
-                      checked={filterShowInspectable}
-                      onChange={(e) => setFilterShowInspectable(e.target.checked)}
-                      className="h-5 w-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                    />
-                    <label htmlFor="filter-inspectable" className="text-sm font-medium text-gray-700">
-                      🟢 Ispezionabili
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="filter-non-inspectable"
-                      checked={filterShowNonInspectable}
-                      onChange={(e) => setFilterShowNonInspectable(e.target.checked)}
-                      className="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                    />
-                    <label htmlFor="filter-non-inspectable" className="text-sm font-medium text-gray-700">
-                      🔴 Già ispezionati
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="filter-pending-approval"
-                      checked={filterShowPendingApproval}
-                      onChange={(e) => setFilterShowPendingApproval(e.target.checked)}
-                      className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
-                    />
-                    <label htmlFor="filter-pending-approval" className="text-sm font-medium text-gray-700">
-                      🟡 In attesa di approvazione
-                    </label>
-                  </div>
-                </div>
-
-                <h4 className="font-medium text-indigo-800 mb-2 text-sm">Tipo</h4>
-                <div className="space-y-2">
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="filter-cantiere"
-                      checked={filterShowCantiere}
-                      onChange={(e) => setFilterShowCantiere(e.target.checked)}
-                      className="h-5 w-5 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-                    />
-                    <label htmlFor="filter-cantiere" className="text-sm font-medium text-gray-700">
-                      🏗️ Cantiere
-                    </label>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="filter-altro"
-                      checked={filterShowAltro}
-                      onChange={(e) => setFilterShowAltro(e.target.checked)}
-                      className="h-5 w-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                    />
-                    <label htmlFor="filter-altro" className="text-sm font-medium text-gray-700">
-                      🔵 Altro
-                    </label>
-                  </div>
-                </div>
+            <h4 className="font-medium text-indigo-800 mb-2 text-sm">Tipo</h4>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="filter-cantiere"
+                  checked={filterShowCantiere}
+                  onChange={(e) => setFilterShowCantiere(e.target.checked)}
+                  className="h-5 w-5 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
+                />
+                <label htmlFor="filter-cantiere" className="text-sm font-medium text-gray-700">
+                  🏗️ Cantiere
+                </label>
+              </div>
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="filter-altro"
+                  checked={filterShowAltro}
+                  onChange={(e) => setFilterShowAltro(e.target.checked)}
+                  className="h-5 w-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                />
+                <label htmlFor="filter-altro" className="text-sm font-medium text-gray-700">
+                  🔵 Altro
+                </label>
               </div>
             </div>
           </div>

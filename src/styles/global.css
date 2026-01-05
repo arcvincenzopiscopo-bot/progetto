@@ -1,4 +1,8 @@
 /* Global Base Styles - Minimal Reset */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --color-primary: #4f46e5;
   --color-primary-hover: #4338ca;
