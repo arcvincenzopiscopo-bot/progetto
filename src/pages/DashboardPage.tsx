@@ -263,15 +263,6 @@ const DashboardPage: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
 
       <div className="container mx-auto px-2 py-4">
-        {/* Search Box Section */}
-        <div className="mb-4">
-          <SearchBox
-            onLocationSelect={handleLocationSelect}
-            placeholder="Cerca indirizzo, città, luogo..."
-            className="max-w-md mx-auto"
-          />
-        </div>
-
         {/* Map Section with rounded gray borders */}
         <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm mb-4">
           <div className="h-[66vh] w-full">
@@ -347,6 +338,15 @@ const DashboardPage: React.FC = () => {
               <span>Installa App</span>
             </button>
           )}
+        </div>
+
+        {/* Search Box Section - Below buttons */}
+        <div className="mb-4">
+          <SearchBox
+            onLocationSelect={handleLocationSelect}
+            placeholder="Cerca indirizzo, città, luogo..."
+            className="max-w-md mx-auto"
+          />
         </div>
 
         {/* Bottom Section - Filters with rounded gray borders */}
