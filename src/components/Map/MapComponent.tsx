@@ -335,8 +335,8 @@ const MapClickHandler: React.FC<{
   );
 };
 
-// Component for the fixed POI form popup that uses geocoding
-const FixedPOIFormPopup: React.FC<{
+// Unified POI Form Popup component with consistent styling
+const POIFormPopup: React.FC<{
   location: { lat: number; lng: number };
   onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => void;
   onCancelAddPoi?: () => void;
@@ -380,90 +380,99 @@ const FixedPOIFormPopup: React.FC<{
   };
 
   return (
-    <div className="space-y-4">
-      <div className="bg-gray-50 p-4 rounded border border-gray-200">
-          <label htmlFor="add-poi-indirizzo-fixed" className="block text-sm font-medium text-gray-700 mb-2">
+    <div className="border-2 border-indigo-600 rounded-lg p-3 bg-white">
+      <div className="space-y-3">
+
+        <div>
+          <label htmlFor="add-poi-indirizzo" className="block text-sm font-medium text-gray-700 mb-1">
             Indirizzo
           </label>
           <input
-            id="add-poi-indirizzo-fixed"
+            id="add-poi-indirizzo"
             type="text"
             value={isLoadingAddress ? "Caricamento indirizzo..." : address}
-            className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-12"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             readOnly
             maxLength={20}
           />
-      </div>
-      <div className="bg-white p-4 rounded border border-gray-200">
-        <label htmlFor="add-poi-ispezionabile" className="block text-sm font-medium text-gray-700 mb-2">
-          Ispezionabile
-        </label>
-        <select
-          id="add-poi-ispezionabile"
-          value={ispezionabile}
-          onChange={(e) => setIspezionabile(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-        >
-          <option value="1">Sì</option>
-          <option value="0">No</option>
-        </select>
-      </div>
-      <div className="bg-gray-50 p-4 rounded border border-gray-200">
-        <label htmlFor="add-poi-tipo" className="block text-sm font-medium text-gray-700 mb-2">
-          Tipo
-        </label>
-        <select
-          id="add-poi-tipo"
-          value={tipo}
-          onChange={(e) => setTipo(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-        >
-          <option value="cantiere">Cantiere</option>
-          <option value="altro">Altro</option>
-        </select>
-      </div>
-      <div className="bg-white p-4 rounded border border-gray-200">
-        <label htmlFor="add-poi-note" className="block text-sm font-medium text-gray-700 mb-2">
-          Note
-        </label>
-        <textarea
-          id="add-poi-note"
-          placeholder="Inserisci eventuali note..."
-          rows={3}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-        />
-      </div>
-      <div className="bg-gray-50 p-4 rounded border border-gray-200">
-        <label htmlFor="add-poi-photo-fixed" className="block text-sm font-medium text-gray-700 mb-2">
-          📷 Foto (opzionale)
-        </label>
-        <input
-          id="add-poi-photo-fixed"
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={(e) => {
-            const file = e.target.files?.[0] || null;
-            setPhoto(file);
-          }}
-          className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-        />
-      </div>
-      <div className="flex flex-row space-x-3">
-        <button
-          onClick={handleAddPoi}
-          className="bg-green-500 text-white py-1 px-2 rounded-md hover:bg-green-600 font-medium shadow-sm text-xs"
-        >
-          📍 Aggiungi Punto
-        </button>
-        <button
-          onClick={() => onCancelAddPoi && onCancelAddPoi()}
-          className="bg-red-500 text-white py-1 px-2 rounded-md hover:bg-red-600 font-medium shadow-sm text-xs"
-        >
-          ❌ Annulla
-        </button>
+        </div>
+
+        <div>
+          <label htmlFor="add-poi-ispezionabile" className="block text-sm font-medium text-gray-700 mb-1">
+            Ispezionabile
+          </label>
+          <select
+            id="add-poi-ispezionabile"
+            value={ispezionabile}
+            onChange={(e) => setIspezionabile(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="1">Sì</option>
+            <option value="0">No</option>
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="add-poi-tipo" className="block text-sm font-medium text-gray-700 mb-1">
+            Tipo
+          </label>
+          <select
+            id="add-poi-tipo"
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            <option value="cantiere">Cantiere</option>
+            <option value="altro">Altro</option>
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="add-poi-note" className="block text-sm font-medium text-gray-700 mb-1">
+            Note (max 20 caratteri)
+          </label>
+          <input
+            id="add-poi-note"
+            type="text"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="Inserisci note..."
+            maxLength={20}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="add-poi-photo" className="block text-sm font-medium text-gray-700 mb-1">
+            📷 Foto (opzionale)
+          </label>
+          <input
+            id="add-poi-photo"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              setPhoto(file);
+            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+          />
+        </div>
+
+        <div className="flex space-x-2 pt-2">
+          <button
+            onClick={handleAddPoi}
+            className="bg-green-500 text-white py-1 px-2 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-xs font-medium"
+          >
+            📍 Aggiungi Punto
+          </button>
+          <button
+            onClick={() => onCancelAddPoi && onCancelAddPoi()}
+            className="bg-red-500 text-white py-1 px-2 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-xs font-medium"
+          >
+            ❌ Annulla
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -828,7 +837,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
           }}
         >
           <Popup autoPan={true} autoClose={false}>
-            <FixedPOIFormPopup
+            <POIFormPopup
               location={newPoiLocation}
               onAddPoi={onAddPoi}
               onCancelAddPoi={onCancelAddPoi}
