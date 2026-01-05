@@ -12,6 +12,11 @@ dist/
 .env.test
 .env.production
 
+# Import scripts (not part of the project)
+import-csv.js
+import-*.js
+*.csv
+
 # Logs
 logs
 *.log
