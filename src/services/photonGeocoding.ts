@@ -10,14 +10,19 @@ export interface GeocodingResult {
 }
 
 export const photonGeocoding = async (query: string): Promise<GeocodingResult> => {
+  // TEMP: Photon ha problemi di stabilità, forziamo fallback immediato
   // Photon ha una sintassi API diversa e bbox può causare errori
+  console.log('Photon temporarily disabled - going to Nominatim fallback');
+  throw new Error('Photon temporarily disabled for stability');
+
+  // Codice commentato - sarà riabilitato quando Photon sarà stabile
+  /*
   const url = `https://photon.komoot.io/api?q=${encodeURIComponent(query)}&limit=1&lang=it`;
 
   try {
     const response = await fetch(url);
 
     if (!response.ok) {
-      // Se Photon fallisce completamente, lanciamo un errore per andare al fallback
       throw new Error(`Photon API error: ${response.status}`);
     }
 
@@ -42,7 +47,7 @@ export const photonGeocoding = async (query: string): Promise<GeocodingResult> =
     };
 
   } catch (error) {
-    // Rilanciamo l'errore per permettere il fallback a Nominatim
     throw error;
   }
+  */
 };
