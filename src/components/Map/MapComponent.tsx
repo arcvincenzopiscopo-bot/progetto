@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../services/supabaseClient';
 import { deletePhotoFromCloudinary } from '../../services/authService';
+import { getAddressWithCache } from '../../services/geocodingService';
 
 // Fix for missing marker icons in production
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -18,7 +19,7 @@ interface PointOfInterest {
   indirizzo: string;
   username: string;
   team: string;
-  ispezionabile: boolean;
+  ispezionabile: number; // 0 = not inspectable, 1 = inspectable, 2 = pending approval
   tipo: string;
   note?: string;
   latitudine: number;
@@ -132,13 +133,32 @@ const MapClickHandler: React.FC<{
   const [tipo, setTipo] = useState('cantiere');
   const [note, setNote] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
+  const [address, setAddress] = useState<string>('');
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
 
   useMapEvents({
-    click: (e) => {
+    click: async (e) => {
       const { lat, lng } = e.latlng;
       setClickPosition({ lat, lng });
       setShowPopup(true);
       onMapClick(lat, lng);
+
+      // Try to get address using geocoding service
+      try {
+        setIsLoadingAddress(true);
+        const result = await getAddressWithCache(lat, lng);
+        if (result.success && result.address) {
+          setAddress(result.address);
+        } else {
+          // Fallback to coordinates if geocoding fails
+          setAddress(`Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`);
+        }
+      } catch (error) {
+        console.error('Error getting address:', error);
+        setAddress(`Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`);
+      } finally {
+        setIsLoadingAddress(false);
+      }
     },
   });
 
@@ -151,6 +171,27 @@ const MapClickHandler: React.FC<{
       setIspezionabile('1');
       setTipo('cantiere');
       setNote('');
+
+      // Try to get address for the new location
+      const fetchAddress = async () => {
+        try {
+          setIsLoadingAddress(true);
+          const result = await getAddressWithCache(newPoiLocation.lat, newPoiLocation.lng);
+          if (result.success && result.address) {
+            setAddress(result.address);
+          } else {
+            // Fallback to coordinates if geocoding fails
+            setAddress(`Lat: ${newPoiLocation.lat.toFixed(6)}, Lng: ${newPoiLocation.lng.toFixed(6)}`);
+          }
+        } catch (error) {
+          console.error('Error getting address:', error);
+          setAddress(`Lat: ${newPoiLocation.lat.toFixed(6)}, Lng: ${newPoiLocation.lng.toFixed(6)}`);
+        } finally {
+          setIsLoadingAddress(false);
+        }
+      };
+
+      fetchAddress();
     }
   }, [newPoiLocation]);
 
@@ -161,6 +202,7 @@ const MapClickHandler: React.FC<{
     console.log('ispezionabile:', ispezionabile);
     console.log('tipo:', tipo);
     console.log('note:', note);
+    console.log('address:', address);
 
     if (!clickPosition) {
       console.error('clickPosition is null');
@@ -171,7 +213,8 @@ const MapClickHandler: React.FC<{
       return;
     }
 
-    const indirizzo = `Lat: ${clickPosition.lat.toFixed(6)}, Lng: ${clickPosition.lng.toFixed(6)}`;
+    // Use the address from geocoding service, fallback to coordinates if not available
+    const indirizzo = address || `Lat: ${clickPosition.lat.toFixed(6)}, Lng: ${clickPosition.lng.toFixed(6)}`;
     console.log('Calling onAddPoi with:', indirizzo, Number(ispezionabile), tipo, note);
 
     try {
@@ -188,101 +231,252 @@ const MapClickHandler: React.FC<{
     <>
       {showPopup && clickPosition && (
         <Marker position={[clickPosition.lat, clickPosition.lng]} icon={defaultIcon}>
-          <Popup maxWidth={350} minWidth={300}>
-            <div className="space-y-3">
-              <h3 className="font-bold text-center bg-indigo-600 text-white py-2 rounded">Aggiungi Punto di Interesse</h3>
-              <div>
-                <label htmlFor="add-poi-indirizzo" className="block text-sm font-medium text-gray-700 mb-1">
-                  Indirizzo
-                </label>
-                <input
-                  id="add-poi-indirizzo"
-                  type="text"
-                  value={`Lat: ${clickPosition.lat.toFixed(6)}, Lng: ${clickPosition.lng.toFixed(6)}`}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  readOnly
-                />
-              </div>
-              <div>
-                <label htmlFor="add-poi-ispezionabile" className="block text-sm font-medium text-gray-700 mb-1">
-                  Ispezionabile
-                </label>
-                <select
-                  id="add-poi-ispezionabile"
-                  value={ispezionabile}
-                  onChange={(e) => setIspezionabile(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="1">Sì</option>
-                  <option value="0">No</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="add-poi-tipo" className="block text-sm font-medium text-gray-700 mb-1">
-                  Tipo
-                </label>
-                <select
-                  id="add-poi-tipo"
-                  value={tipo}
-                  onChange={(e) => setTipo(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="cantiere">Cantiere</option>
-                  <option value="altro">Altro</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="add-poi-note" className="block text-sm font-medium text-gray-700 mb-1">
-                  Note
-                </label>
-                <input
-                  id="add-poi-note"
-                  type="text"
-                  value={note}
-                  onChange={(e) => setNote(e.target.value)}
-                  placeholder="Inserisci note (max 20 caratteri)..."
-                  maxLength={20}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="add-poi-photo" className="block text-sm font-medium text-gray-700 mb-1">
-                  📷 Foto (opzionale)
-                </label>
-                <input
-                  id="add-poi-photo"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0] || null;
-                    setPhoto(file);
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Puoi scattare una foto o selezionare dalla galleria
-                </p>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleAddPoi}
-                  className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 font-medium shadow-sm text-sm"
-                >
-                  📍 Aggiungi Punto
-                </button>
-                <button
-                  onClick={() => setShowPopup(false)}
-                  className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 font-medium shadow-sm text-sm"
-                >
-                  ❌ Annulla
-                </button>
+          <Popup maxWidth={400} minWidth={350} className="leaflet-popup-content-wrapper">
+            <div className="border-2 border-indigo-600 rounded-lg p-3 bg-white">
+              <div className="space-y-3">
+                <h3 className="font-bold text-center bg-indigo-600 text-white py-2 rounded mb-3">Aggiungi Punto di Interesse</h3>
+
+                <div>
+                  <label htmlFor="add-poi-indirizzo" className="block text-sm font-medium text-gray-700 mb-1">
+                    Indirizzo
+                  </label>
+                  <input
+                    id="add-poi-indirizzo"
+                    type="text"
+                    value={isLoadingAddress ? "Caricamento indirizzo..." : address}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    readOnly
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    {clickPosition && `Coordinate: Lat: ${clickPosition.lat.toFixed(6)}, Lng: ${clickPosition.lng.toFixed(6)}`}
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="add-poi-ispezionabile" className="block text-sm font-medium text-gray-700 mb-1">
+                    Ispezionabile
+                  </label>
+                  <select
+                    id="add-poi-ispezionabile"
+                    value={ispezionabile}
+                    onChange={(e) => setIspezionabile(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="1">Sì</option>
+                    <option value="0">No</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="add-poi-tipo" className="block text-sm font-medium text-gray-700 mb-1">
+                    Tipo
+                  </label>
+                  <select
+                    id="add-poi-tipo"
+                    value={tipo}
+                    onChange={(e) => setTipo(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="cantiere">Cantiere</option>
+                    <option value="altro">Altro</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="add-poi-note" className="block text-sm font-medium text-gray-700 mb-1">
+                    Note (max 20 caratteri)
+                  </label>
+                  <input
+                    id="add-poi-note"
+                    type="text"
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Inserisci note..."
+                    maxLength={20}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="add-poi-photo" className="block text-sm font-medium text-gray-700 mb-1">
+                    📷 Foto (opzionale)
+                  </label>
+                  <input
+                    id="add-poi-photo"
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setPhoto(file);
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Puoi scattare una foto o selezionare dalla galleria
+                  </p>
+                </div>
+
+                <div className="flex space-x-2 pt-2">
+                  <button
+                    onClick={handleAddPoi}
+                    className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-sm font-medium"
+                  >
+                    📍 Aggiungi Punto
+                  </button>
+                  <button
+                    onClick={() => setShowPopup(false)}
+                    className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-sm font-medium"
+                  >
+                    ❌ Annulla
+                  </button>
+                </div>
               </div>
             </div>
           </Popup>
         </Marker>
       )}
     </>
+  );
+};
+
+// Component for the fixed POI form popup that uses geocoding
+const FixedPOIFormPopup: React.FC<{
+  location: { lat: number; lng: number };
+  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => void;
+  onCancelAddPoi?: () => void;
+}> = ({ location, onAddPoi, onCancelAddPoi }) => {
+  const [address, setAddress] = useState<string>('');
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+  const [ispezionabile, setIspezionabile] = useState('1');
+  const [tipo, setTipo] = useState('cantiere');
+  const [note, setNote] = useState('');
+  const [photo, setPhoto] = useState<File | null>(null);
+
+  // Fetch address when component mounts
+  useEffect(() => {
+    const fetchAddress = async () => {
+      try {
+        setIsLoadingAddress(true);
+        const result = await getAddressWithCache(location.lat, location.lng);
+        if (result.success && result.address) {
+          setAddress(result.address);
+        } else {
+          // Fallback to coordinates if geocoding fails
+          setAddress(`Lat: ${location.lat.toFixed(6)}, Lng: ${location.lng.toFixed(6)}`);
+        }
+      } catch (error) {
+        console.error('Error getting address:', error);
+        setAddress(`Lat: ${location.lat.toFixed(6)}, Lng: ${location.lng.toFixed(6)}`);
+      } finally {
+        setIsLoadingAddress(false);
+      }
+    };
+
+    fetchAddress();
+  }, [location.lat, location.lng]);
+
+  const handleAddPoi = () => {
+    if (!onAddPoi) return;
+
+    // Use the address from geocoding service, fallback to coordinates if not available
+    const indirizzo = address || `Lat: ${location.lat.toFixed(6)}, Lng: ${location.lng.toFixed(6)}`;
+    onAddPoi(indirizzo, Number(ispezionabile), tipo, note, photo || undefined);
+  };
+
+  return (
+    <div className="space-y-4">
+      <h3 className="font-bold text-center bg-indigo-600 text-white py-3 rounded-t-lg">Aggiungi Punto di Interesse</h3>
+      <div className="bg-gray-50 p-4 rounded border border-gray-200">
+        <label htmlFor="add-poi-indirizzo-fixed" className="block text-sm font-medium text-gray-700 mb-2">
+          Indirizzo
+        </label>
+        <input
+          id="add-poi-indirizzo-fixed"
+          type="text"
+          value={isLoadingAddress ? "Caricamento indirizzo..." : address}
+          className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-12"
+          readOnly
+        />
+        <p className="text-xs text-gray-500 mt-2">
+          Coordinate: Lat: {location.lat.toFixed(6)}, Lng: {location.lng.toFixed(6)}
+        </p>
+      </div>
+      <div className="bg-white p-4 rounded border border-gray-200">
+        <label htmlFor="add-poi-ispezionabile" className="block text-sm font-medium text-gray-700 mb-2">
+          Ispezionabile
+        </label>
+        <select
+          id="add-poi-ispezionabile"
+          value={ispezionabile}
+          onChange={(e) => setIspezionabile(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+        >
+          <option value="1">Sì</option>
+          <option value="0">No</option>
+        </select>
+      </div>
+      <div className="bg-gray-50 p-4 rounded border border-gray-200">
+        <label htmlFor="add-poi-tipo" className="block text-sm font-medium text-gray-700 mb-2">
+          Tipo
+        </label>
+        <select
+          id="add-poi-tipo"
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+        >
+          <option value="cantiere">Cantiere</option>
+          <option value="altro">Altro</option>
+        </select>
+      </div>
+      <div className="bg-white p-4 rounded border border-gray-200">
+        <label htmlFor="add-poi-note" className="block text-sm font-medium text-gray-700 mb-2">
+          Note
+        </label>
+        <textarea
+          id="add-poi-note"
+          placeholder="Inserisci eventuali note..."
+          rows={3}
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+        />
+      </div>
+      <div className="bg-gray-50 p-4 rounded border border-gray-200">
+        <label htmlFor="add-poi-photo-fixed" className="block text-sm font-medium text-gray-700 mb-2">
+          📷 Foto (opzionale)
+        </label>
+        <input
+          id="add-poi-photo-fixed"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={(e) => {
+            const file = e.target.files?.[0] || null;
+            setPhoto(file);
+          }}
+          className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+        />
+        <p className="text-xs text-gray-500 mt-2">
+          Puoi scattare una foto o selezionare dalla galleria
+        </p>
+      </div>
+      <div className="flex flex-col space-y-3">
+        <button
+          onClick={handleAddPoi}
+          className="bg-green-500 text-white py-3 px-4 rounded-md hover:bg-green-600 font-medium shadow-sm text-base"
+        >
+          📍 Aggiungi Punto
+        </button>
+        <button
+          onClick={() => onCancelAddPoi && onCancelAddPoi()}
+          className="bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-600 font-medium shadow-sm text-base"
+        >
+          ❌ Annulla
+        </button>
+      </div>
+    </div>
   );
 };
 
@@ -336,8 +530,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
       {pois
         .filter((poi) => {
           // Filter POIs based on filter settings
-          if (poi.ispezionabile && !filterShowInspectable) return false;
-          if (!poi.ispezionabile && !filterShowNonInspectable) return false;
+          if (poi.ispezionabile === 1 && !filterShowInspectable) return false;
+          if (poi.ispezionabile === 0 && !filterShowNonInspectable) return false;
           if (poi.da_approvare === 2 && !filterShowPendingApproval) return false;
           if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;
           if (poi.tipo === 'altro' && !filterShowAltro) return false;
@@ -346,13 +540,13 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
         .map((poi) => {
         // Determine which icon to use based on da_approvare and ispezionabile fields
         // Priority: da_approvare = 2 -> yellow marker (pending approval)
-        // Then: ispezionabile = 1 (true) -> green marker
-        //       ispezionabile = 0 (false) -> red marker
+        // Then: ispezionabile = 1 -> green marker
+        //       ispezionabile = 0 -> red marker
         let markerIcon;
         if (poi.da_approvare === 2) {
           markerIcon = yellowIcon;
         } else {
-          markerIcon = poi.ispezionabile ? greenIcon : redIcon;
+          markerIcon = poi.ispezionabile === 1 ? greenIcon : redIcon;
         }
 
         return (
@@ -368,7 +562,12 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
           >
             <Popup>
               <div>
-                <h3 className="font-bold">{new Date(poi.created_at).toLocaleString()}</h3>
+                <p className="text-sm text-gray-800">
+                  {poi.ispezionabile === 0 ? 'Ispezionato in data: ' :
+                   poi.ispezionabile === 2 ? 'Creato in data: ' : ''}
+                  {new Date(poi.created_at).toLocaleString()}
+                </p>
+                <p className="text-sm text-gray-600">Indirizzo: {poi.indirizzo || 'N/D'}</p>
                 <p className="text-sm text-gray-600">Username: {poi.username || 'N/D'}</p>
                 <p className="text-sm text-gray-600">Team: {poi.team || 'N/D'}</p>
                 <p className="text-sm text-gray-600">Tipo: {poi.tipo || 'N/D'}</p>
@@ -468,7 +667,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                     </button>
                   )}
 
-                  {poi.ispezionabile && poi.da_approvare !== 2 && (
+                  {poi.ispezionabile === 1 && poi.da_approvare !== 2 && (
                     <button
                       onClick={async (e) => {
                         e.stopPropagation();
@@ -479,7 +678,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
 
                         try {
                           // Toggle the ispezionabile value
-                          const newValue = poi.ispezionabile ? 0 : 1;
+                          const newValue = poi.ispezionabile === 1 ? 0 : 1;
                           const { error } = await supabase
                             .from('points')
                             .update({
@@ -509,7 +708,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                           : 'bg-red-500 text-white hover:bg-red-600'
                       }`}
                     >
-                      Cambia Stato
+                      👮‍♂️ Ispezionato
                     </button>
                   )}
 
@@ -586,103 +785,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
           }}
         >
           <Popup autoPan={true} autoClose={false}>
-            <div className="space-y-2">
-              <h3 className="font-bold text-center bg-indigo-600 text-white py-2 rounded">Aggiungi Punto di Interesse</h3>
-              <div>
-                <label htmlFor="add-poi-indirizzo" className="block text-sm font-medium text-gray-700 mb-1">
-                  Indirizzo
-                </label>
-                <input
-                  id="add-poi-indirizzo"
-                  type="text"
-                  defaultValue={`Lat: ${newPoiLocation.lat.toFixed(6)}, Lng: ${newPoiLocation.lng.toFixed(6)}`}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  readOnly
-                />
-              </div>
-              <div>
-                <label htmlFor="add-poi-ispezionabile" className="block text-sm font-medium text-gray-700 mb-1">
-                  Ispezionabile
-                </label>
-                <select
-                  id="add-poi-ispezionabile"
-                  defaultValue={1}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value={1}>Sì</option>
-                  <option value={0}>No</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="add-poi-tipo" className="block text-sm font-medium text-gray-700 mb-1">
-                  Tipo
-                </label>
-                <select
-                  id="add-poi-tipo"
-                  defaultValue="cantiere"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="cantiere">Cantiere</option>
-                  <option value="altro">Altro</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="add-poi-note" className="block text-sm font-medium text-gray-700 mb-1">
-                  Note
-                </label>
-                <textarea
-                  id="add-poi-note"
-                  placeholder="Inserisci eventuali note..."
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                />
-              </div>
-              <div>
-                <label htmlFor="add-poi-photo-fixed" className="block text-sm font-medium text-gray-700 mb-1">
-                  📷 Foto (opzionale)
-                </label>
-                <input
-                  id="add-poi-photo-fixed"
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Puoi scattare una foto o selezionare dalla galleria
-                </p>
-              </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const indirizzo = `Lat: ${newPoiLocation.lat.toFixed(6)}, Lng: ${newPoiLocation.lng.toFixed(6)}`;
-                    const ispezionabile = (document.getElementById('add-poi-ispezionabile') as HTMLSelectElement).value;
-                    const tipo = (document.getElementById('add-poi-tipo') as HTMLSelectElement).value;
-                    const note = (document.getElementById('add-poi-note') as HTMLTextAreaElement)?.value || '';
-                    const photoInput = document.getElementById('add-poi-photo-fixed') as HTMLInputElement;
-                    const photo = photoInput?.files?.[0] || undefined;
-                    if (onAddPoi) {
-                      onAddPoi(indirizzo, Number(ispezionabile), tipo, note, photo);
-                    }
-                  }}
-                  className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 font-medium shadow-sm text-sm"
-                >
-                  📍 Aggiungi Punto
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (onCancelAddPoi) {
-                      onCancelAddPoi();
-                    }
-                  }}
-                  className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 font-medium shadow-sm text-sm"
-                >
-                  ❌ Annulla
-                </button>
-              </div>
-            </div>
+            <FixedPOIFormPopup
+              location={newPoiLocation}
+              onAddPoi={onAddPoi}
+              onCancelAddPoi={onCancelAddPoi}
+            />
           </Popup>
         </Marker>
       )}

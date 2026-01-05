@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCustomAuth } from '../context/CustomAuthContext';
 import { supabase } from '../services/supabaseClient';
 import { compressImage, uploadPhoto } from '../services/authService';
+import { getAddressWithCache } from '../services/geocodingService';
 import MapComponent from '../components/Map/MapComponent';
 
 interface PointOfInterest {
@@ -9,7 +10,7 @@ interface PointOfInterest {
   indirizzo: string;
   username: string;
   team: string;
-  ispezionabile: boolean;
+  ispezionabile: number; // 0 = not inspectable, 1 = inspectable, 2 = pending approval
   tipo: string;
   note?: string;
   latitudine: number;
@@ -43,7 +44,6 @@ const DashboardPage: React.FC = () => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          console.log('Position obtained:', latitude, longitude);
           setCurrentPosition([latitude, longitude]);
         },
         (error) => {
@@ -59,7 +59,6 @@ const DashboardPage: React.FC = () => {
     }
   }, []);
 
-  console.log('Current position:', currentPosition);
 
   const fetchPois = async () => {
     try {
@@ -95,8 +94,22 @@ const DashboardPage: React.FC = () => {
     // Utenti non admin (admin = 0) devono avere i POI approvati (da_approvare = 2)
     const daApprovare = user.admin === 0 ? 2 : null;
 
+    // Se l'indirizzo è solo coordinate, prova a ottenere l'indirizzo topografico
+    let finalAddress = indirizzo;
+    if (indirizzo.startsWith('Lat:') || indirizzo.startsWith('Coordinate:')) {
+      try {
+        const result = await getAddressWithCache(newPoiLocation.lat, newPoiLocation.lng);
+        if (result.success && result.address) {
+          finalAddress = result.address;
+        }
+      } catch (error) {
+        console.error('Error getting address for POI:', error);
+        // Keep the original address if geocoding fails
+      }
+    }
+
     console.log('Adding POI with data:', {
-      indirizzo,
+      indirizzo: finalAddress,
       ispezionabile,
       tipo,
       note,
@@ -109,7 +122,7 @@ const DashboardPage: React.FC = () => {
 
     try {
       const poiData: any = {
-        indirizzo: "vuoto",
+        indirizzo: finalAddress,
         username: user.username,
         team: user.team || "", // Usa il team dall'utente loggato
         ispezionabile: ispezionabile,
