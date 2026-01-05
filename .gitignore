@@ -14,6 +14,7 @@ dist/
 
 # Import scripts (not part of the project)
 import-csv.js
+import-csv-2025.js
 import-*.js
 *.csv
 
