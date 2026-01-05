@@ -47,10 +47,15 @@ const DashboardPage: React.FC = () => {
   const [filterShowAltro, setFilterShowAltro] = useState(true);
 
   useEffect(() => {
+    console.log('Dashboard: Component mounted, user:', user);
     if (user) {
       fetchPois();
     }
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    console.log('Dashboard: isInstallable changed:', isInstallable);
+  }, [isInstallable]);
 
   useEffect(() => {
     // Get user's current location
