@@ -126,10 +126,15 @@ const DashboardPage: React.FC = () => {
   const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
     if (!newPoiLocation || !user) return;
 
-    // Determina il valore di da_approvare basato sui privilegi dell'utente
-    // Utenti admin (admin = 1) possono inserire POI senza approvazione (da_approvare = null o 0)
-    // Utenti non admin (admin = 0) devono avere i POI approvati (da_approvare = 2)
-    const daApprovare = user.admin === 0 ? 2 : null;
+    // Determina il valore di da_approvare basato sui privilegi dell'utente e sul campo ispezionabile
+    // Utenti admin (admin = 1) possono inserire POI senza approvazione (da_approvare = null)
+    // Utenti non admin (admin = 0):
+    //   - Se ispezionabile = 0 (non ispezionabile): da_approvare = 1 (approvato automaticamente)
+    //   - Se ispezionabile = 1 (ispezionabile): da_approvare = 2 (in attesa di approvazione)
+    let daApprovare: number | null = null;
+    if (user.admin === 0) {
+      daApprovare = ispezionabile === 0 ? 1 : 2;
+    }
 
     // Se l'indirizzo è solo coordinate, prova a ottenere l'indirizzo topografico
     let finalAddress = indirizzo;
