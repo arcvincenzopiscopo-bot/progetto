@@ -42,6 +42,7 @@ interface SearchResult {
   lon: string;
   display_name: string;
   address: {
+    house_number?: string;
     road?: string;
     neighbourhood?: string;
     suburb?: string;
@@ -67,9 +68,16 @@ interface SearchResult {
 function formatAddressFromNominatim(data: NominatimResponse): string {
   const parts: string[] = [];
 
-  // Add road if available
+  // Build address with house number first (for reverse geocoding when clicking on map)
+  let addressPart = '';
+
+  // Add road and house number together
   if (data.address.road) {
-    parts.push(data.address.road);
+    addressPart = data.address.road;
+    if (data.address.house_number) {
+      addressPart += ` ${data.address.house_number}`;
+    }
+    parts.push(addressPart);
   }
 
   // Add city/town/village
@@ -86,8 +94,8 @@ function formatAddressFromNominatim(data: NominatimResponse): string {
     parts.push(data.address.postcode);
   }
 
-  // Add country if available
-  if (data.address.country) {
+  // Add country if available (only if not Italy, to keep it clean)
+  if (data.address.country && data.address.country !== 'Italia') {
     parts.push(data.address.country);
   }
 
@@ -299,14 +307,17 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout for search
 
-    // Build search URL with parameters
+    // Build search URL with parameters optimized for Italian addresses with house numbers
     const searchParams = new URLSearchParams({
       q: trimmedQuery,
       format: 'json',
       addressdetails: '1',
-      limit: '5', // Limit to 5 results for better UX
+      limit: '8', // Increased limit for better house number results
       countrycodes: 'IT', // Focus on Italy for this app
-      'accept-language': 'it,en'
+      'accept-language': 'it,en',
+      bounded: '1', // Restrict search to country boundaries
+      viewbox: '6.627,47.092,18.521,36.619', // Italy bounding box (approximate)
+      dedupe: '1' // Remove duplicates
     });
 
     const url = `https://nominatim.openstreetmap.org/search?${searchParams.toString()}`;
@@ -356,16 +367,23 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
 }
 
 /**
- * Format search result for display
+ * Format search result for display with house number support
  * @param result Search result from Nominatim
  * @returns Formatted display string
  */
 export function formatSearchResult(result: SearchResult): string {
   const parts: string[] = [];
 
-  // Add road if available
+  // Build address with house number first
+  let addressPart = '';
+
+  // Add road and house number together
   if (result.address.road) {
-    parts.push(result.address.road);
+    addressPart = result.address.road;
+    if (result.address.house_number) {
+      addressPart += ` ${result.address.house_number}`;
+    }
+    parts.push(addressPart);
   }
 
   // Add city/town/village

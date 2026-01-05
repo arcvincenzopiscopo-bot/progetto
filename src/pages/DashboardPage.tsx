@@ -345,7 +345,7 @@ const DashboardPage: React.FC = () => {
         <div className="mb-4">
           <SearchBox
             onLocationSelect={handleLocationSelect}
-            placeholder="Cerca indirizzo, città, luogo..."
+            placeholder="Cerca indirizzo (es: Via Roma 123, Milano)"
             className="max-w-md mx-auto"
           />
         </div>
