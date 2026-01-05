@@ -54,8 +54,14 @@ const DashboardPage: React.FC = () => {
   // [x] Implementare callback per centrare mappa sui risultati
 
   useEffect(() => {
-    console.log('Dashboard: Component mounted, user:', user);
+    // Log user info without sensitive data
     if (user) {
+      console.log('Dashboard: Component mounted for user:', {
+        id: user.id,
+        username: user.username,
+        team: user.team,
+        admin: user.admin
+      });
       fetchPois();
     }
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps

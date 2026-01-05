@@ -10,7 +10,7 @@ export interface GeocodingResult {
 }
 
 export const googleMapsGeocoding = async (query: string): Promise<GeocodingResult> => {
-  console.log('🔍 [Google Maps] Starting geocoding for:', query);
+  console.log('🔍 [Google Maps] Starting geocoding...');
 
   const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
