@@ -37,62 +37,6 @@ interface GeocodingResult {
 }
 
 /**
- * Reverse geocode coordinates to get human-readable address
- * @param lat Latitude
- * @param lng Longitude
- * @returns Promise with geocoding result
- */
-export async function reverseGeocode(lat: number, lng: number): Promise<GeocodingResult> {
-  try {
-    // Validate coordinates
-    if (isNaN(lat) || isNaN(lng)) {
-      return {
-        success: false,
-        error: 'Invalid coordinates',
-        address: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`
-      };
-    }
-
-    // Build Nominatim API URL
-    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
-
-    // Make the request to Nominatim
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'User-Agent': 'PuntiInteresseApp/1.0 (contact@puntiinteresse.it)'
-      }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Nominatim request failed with status ${response.status}`);
-    }
-
-    const data: NominatimResponse = await response.json();
-
-    // Extract and format the address
-    const formattedAddress = formatAddressFromNominatim(data);
-    const fullAddress = data.display_name;
-
-    return {
-      success: true,
-      address: formattedAddress,
-      fullAddress: fullAddress,
-      rawData: data
-    };
-
-  } catch (error) {
-    console.error('Geocoding error:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown geocoding error',
-      address: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`
-    };
-  }
-}
-
-/**
  * Format address from Nominatim response
  * @param data Nominatim response data
  * @returns Formatted address string
@@ -133,40 +77,135 @@ function formatAddressFromNominatim(data: NominatimResponse): string {
 }
 
 /**
- * Simple cache for geocoding results to avoid duplicate requests
- * @param lat Latitude
- * @param lng Longitude
- * @returns Cached address or undefined if not in cache
+ * Optimized cache for geocoding results to avoid duplicate requests
+ * Uses LRU-style eviction and better key management
  */
-const geocodingCache: Map<string, GeocodingResult> = new Map();
+class GeocodingCache {
+  private cache: Map<string, { result: GeocodingResult; timestamp: number }> = new Map();
+  private readonly maxSize = 100; // Limit cache size
+  private readonly ttl = 30 * 60 * 1000; // 30 minutes TTL
+
+  private generateKey(lat: number, lng: number): string {
+    // Use more precise rounding for better cache hits
+    return `${lat.toFixed(5)},${lng.toFixed(5)}`;
+  }
+
+  get(lat: number, lng: number): GeocodingResult | undefined {
+    const key = this.generateKey(lat, lng);
+    const entry = this.cache.get(key);
+
+    if (!entry) return undefined;
+
+    // Check if entry has expired
+    if (Date.now() - entry.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return undefined;
+    }
+
+    return entry.result;
+  }
+
+  set(lat: number, lng: number, result: GeocodingResult): void {
+    const key = this.generateKey(lat, lng);
+
+    // Evict oldest entries if cache is full
+    if (this.cache.size >= this.maxSize) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey) {
+        this.cache.delete(oldestKey);
+      }
+    }
+
+    this.cache.set(key, { result, timestamp: Date.now() });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+
+  size(): number {
+    return this.cache.size;
+  }
+}
+
+const geocodingCache = new GeocodingCache();
 
 export function getCachedAddress(lat: number, lng: number): GeocodingResult | undefined {
-  const cacheKey = `${lat.toFixed(6)},${lng.toFixed(6)}`;
-  return geocodingCache.get(cacheKey);
+  return geocodingCache.get(lat, lng);
 }
 
 export function cacheAddress(lat: number, lng: number, result: GeocodingResult): void {
-  const cacheKey = `${lat.toFixed(6)},${lng.toFixed(6)}`;
-  geocodingCache.set(cacheKey, result);
+  geocodingCache.set(lat, lng, result);
 }
 
 /**
- * Get address with caching - tries cache first, then makes API call if needed
+ * Get address with optimized caching - tries cache first, then makes API call if needed
  */
 export async function getAddressWithCache(lat: number, lng: number): Promise<GeocodingResult> {
   // Try cache first
-  const cached = getCachedAddress(lat, lng);
+  const cached = geocodingCache.get(lat, lng);
   if (cached) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Using cached geocoding result for:', lat, lng);
+    }
     return cached;
   }
 
-  // If not in cache, make API call
-  const result = await reverseGeocode(lat, lng);
+  // If not in cache, make API call with timeout
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-  // Cache the result if successful
-  if (result.success) {
-    cacheAddress(lat, lng, result);
+    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'PuntiInteresseApp/1.0 (contact@puntiinteresse.it)'
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Nominatim request failed with status ${response.status}`);
+    }
+
+    const data: NominatimResponse = await response.json();
+    const formattedAddress = formatAddressFromNominatim(data);
+    const fullAddress = data.display_name;
+
+    const result: GeocodingResult = {
+      success: true,
+      address: formattedAddress,
+      fullAddress: fullAddress,
+      rawData: data
+    };
+
+    // Cache successful results
+    geocodingCache.set(lat, lng, result);
+    return result;
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown geocoding error';
+
+    if (error instanceof Error && error.name === 'AbortError') {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Geocoding request timed out for:', lat, lng);
+      }
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Geocoding error:', errorMessage);
+      }
+    }
+
+    // Return fallback result without caching errors
+    return {
+      success: false,
+      error: errorMessage,
+      address: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`
+    };
   }
-
-  return result;
 }

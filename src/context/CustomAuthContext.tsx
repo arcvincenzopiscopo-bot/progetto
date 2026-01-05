@@ -37,7 +37,9 @@ export const CustomAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
             sessionStorage.removeItem('currentUser');
           }
         } catch (err) {
-          console.error('Error parsing stored user:', err);
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Error parsing stored user:', err);
+          }
           sessionStorage.removeItem('currentUser');
         }
       }

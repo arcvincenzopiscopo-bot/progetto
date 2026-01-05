@@ -1,9 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useCustomAuth } from '../context/CustomAuthContext';
 import { supabase } from '../services/supabaseClient';
 import { uploadPhoto } from '../services/authService';
 import { getAddressWithCache } from '../services/geocodingService';
-import MapComponent from '../components/Map/MapComponent';
+
+// Lazy load heavy components
+const MapComponent = React.lazy(() => import('../components/Map/MapComponent'));
+
+// Loading component
+const MapLoadingFallback = () => (
+  <div className="flex items-center justify-center h-[66vh] bg-gray-100">
+    <div className="text-center">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+      <p className="mt-4 text-gray-600">Caricamento mappa...</p>
+    </div>
+  </div>
+);
 
 interface PointOfInterest {
   id: string;
@@ -77,16 +89,21 @@ const DashboardPage: React.FC = () => {
       const { data, error } = await query;
 
       if (error) {
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error fetching POIs:', error);
+        }
         throw error;
       }
 
       setPois(data || []);
     } catch (err) {
-      console.error('Error fetching POIs:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error fetching POIs:', err);
+      }
     }
   };
 
-  const handleAddPoi = async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
+  const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
     if (!newPoiLocation || !user) return;
 
     // Determina il valore di da_approvare basato sui privilegi dell'utente
@@ -103,22 +120,26 @@ const DashboardPage: React.FC = () => {
           finalAddress = result.address;
         }
       } catch (error) {
-        console.error('Error getting address for POI:', error);
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error getting address for POI:', error);
+        }
         // Keep the original address if geocoding fails
       }
     }
 
-    console.log('Adding POI with data:', {
-      indirizzo: finalAddress,
-      ispezionabile,
-      tipo,
-      note,
-      da_approvare: daApprovare,
-      photo: photo ? `${photo.name} (${(photo.size / 1024 / 1024).toFixed(2)}MB)` : 'Nessuna foto',
-      lat: newPoiLocation.lat,
-      lng: newPoiLocation.lng,
-      user_admin: user.admin
-    });
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Adding POI with data:', {
+        indirizzo: finalAddress,
+        ispezionabile,
+        tipo,
+        note,
+        da_approvare: daApprovare,
+        photo: photo ? `${photo.name} (${(photo.size / 1024 / 1024).toFixed(2)}MB)` : 'Nessuna foto',
+        lat: newPoiLocation.lat,
+        lng: newPoiLocation.lng,
+        user_admin: user.admin
+      });
+    }
 
     try {
       const poiData: any = {
@@ -143,7 +164,9 @@ const DashboardPage: React.FC = () => {
         .insert([poiData])
         .select();
 
-      console.log('Supabase response:', { data, error });
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Supabase response:', { data, error });
+      }
 
       if (error) {
         throw error;
@@ -156,9 +179,13 @@ const DashboardPage: React.FC = () => {
         // Se è presente una foto, comprimila e caricala
         if (photo) {
           try {
-            console.log('Comprimendo e caricando foto...');
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Comprimendo e caricando foto...');
+            }
             photoUrl = await uploadPhoto(photo, poiId);
-            console.log('Foto caricata:', photoUrl);
+            if (process.env.NODE_ENV === 'development') {
+              console.log('Foto caricata:', photoUrl);
+            }
 
             // Aggiorna il POI con l'URL della foto
             const { error: updateError } = await supabase
@@ -167,43 +194,50 @@ const DashboardPage: React.FC = () => {
               .eq('id', poiId);
 
             if (updateError) {
-              console.error('Errore nell\'aggiornamento dell\'URL foto:', updateError);
+              if (process.env.NODE_ENV === 'development') {
+                console.error('Errore nell\'aggiornamento dell\'URL foto:', updateError);
+              }
               // Non bloccare la creazione del POI per errori nell'upload foto
             } else {
               // Aggiorna il POI nella lista locale con l'URL della foto
               data[0].photo_url = photoUrl;
             }
           } catch (photoError) {
-            console.error('Errore nell\'upload della foto:', photoError);
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Errore nell\'upload della foto:', photoError);
+            }
             alert('POI creato ma errore nel caricamento della foto. Puoi riprovare modificando il POI.');
           }
         }
 
-        console.log('POI added successfully:', data[0]);
-        setPois([...pois, data[0]]);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('POI added successfully:', data[0]);
+        }
+        setPois(prevPois => [...prevPois, data[0]]);
         setShowAddForm(false);
         setNewPoiLocation(null);
       }
     } catch (err) {
-      console.error('Error adding POI:', err);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error adding POI:', err);
+      }
       alert('Errore nella creazione del POI. Riprova.');
     }
-  };
+  }, [newPoiLocation, user, pois]);
 
-  const handleMapClick = (lat: number, lng: number) => {
+  const handleMapClick = useCallback((lat: number, lng: number) => {
     setNewPoiLocation({ lat, lng });
     setShowAddForm(true);
-  };
+  }, []);
 
   // Function to refresh POI data
-  const refreshPois = () => {
+  const refreshPois = useCallback(() => {
     fetchPois();
-  };
+  }, []);
 
-
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     logout();
-  };
+  }, [logout]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -214,23 +248,25 @@ const DashboardPage: React.FC = () => {
         {/* Top Section - Map with rounded gray borders */}
         <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm mb-4">
           <div className="h-[66vh] w-full">
-            <MapComponent
-              pois={pois}
-              onMapClick={handleMapClick}
-              initialPosition={currentPosition}
-              onPoiUpdated={refreshPois}
-              currentTeam={user?.team}
-              isAdmin={user?.admin === 1}
-              newPoiLocation={showAddForm ? newPoiLocation : null}
-              onAddPoi={handleAddPoi}
-              onCancelAddPoi={() => setShowAddForm(false)}
-              filterShowInspectable={filterShowInspectable}
-              filterShowNonInspectable={filterShowNonInspectable}
-              filterShowPendingApproval={filterShowPendingApproval}
-              filterShowCantiere={filterShowCantiere}
-              filterShowAltro={filterShowAltro}
-              height="66vh"
-            />
+            <Suspense fallback={<MapLoadingFallback />}>
+              <MapComponent
+                pois={pois}
+                onMapClick={handleMapClick}
+                initialPosition={currentPosition}
+                onPoiUpdated={refreshPois}
+                currentTeam={user?.team}
+                isAdmin={user?.admin === 1}
+                newPoiLocation={showAddForm ? newPoiLocation : null}
+                onAddPoi={handleAddPoi}
+                onCancelAddPoi={() => setShowAddForm(false)}
+                filterShowInspectable={filterShowInspectable}
+                filterShowNonInspectable={filterShowNonInspectable}
+                filterShowPendingApproval={filterShowPendingApproval}
+                filterShowCantiere={filterShowCantiere}
+                filterShowAltro={filterShowAltro}
+                height="66vh"
+              />
+            </Suspense>
           </div>
         </div>
 
