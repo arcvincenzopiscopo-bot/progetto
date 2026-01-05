@@ -22,10 +22,10 @@ export const CustomAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Verifica se c'è un utente loggato nel localStorage
+  // Verifica se c'è un utente loggato nel sessionStorage
   useEffect(() => {
     const checkAuth = async () => {
-      const storedUser = localStorage.getItem('currentUser');
+      const storedUser = sessionStorage.getItem('currentUser');
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
@@ -34,11 +34,11 @@ export const CustomAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           if (currentUser) {
             setUser(currentUser);
           } else {
-            localStorage.removeItem('currentUser');
+            sessionStorage.removeItem('currentUser');
           }
         } catch (err) {
           console.error('Error parsing stored user:', err);
-          localStorage.removeItem('currentUser');
+          sessionStorage.removeItem('currentUser');
         }
       }
       setLoading(false);
@@ -47,16 +47,16 @@ export const CustomAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     checkAuth();
   }, []);
 
-  // Note: Removed automatic logout on beforeunload/unload events
-  // to prevent logout on page refresh. User session will persist
-  // until explicit logout or browser is fully closed.
+  // Note: Using sessionStorage instead of localStorage to implement the requirement:
+  // - Session persists across page refreshes (sessionStorage survives page reloads)
+  // - Session is cleared when tab/browser is closed (sessionStorage is cleared on tab/browser close)
 
   const login = async (username: string, password: string) => {
     try {
       const user = await loginUser(username, password);
       if (user) {
-        // Salva l'utente nel localStorage
-        localStorage.setItem('currentUser', JSON.stringify(user));
+        // Salva l'utente nel sessionStorage
+        sessionStorage.setItem('currentUser', JSON.stringify(user));
         setUser(user);
         return { error: null };
       } else {
@@ -69,8 +69,8 @@ export const CustomAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   };
 
   const logout = () => {
-    // Rimuovi l'utente dal localStorage
-    localStorage.removeItem('currentUser');
+    // Rimuovi l'utente dal sessionStorage
+    sessionStorage.removeItem('currentUser');
     setUser(null);
   };
 

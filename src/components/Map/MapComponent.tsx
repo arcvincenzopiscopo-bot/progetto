@@ -27,6 +27,7 @@ interface PointOfInterest {
   da_approvare?: number;
   photo_url?: string;
   created_at: string;
+  data_inattivita?: string;
 }
 
 interface MapComponentProps {
@@ -549,36 +550,42 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
             }}
           >
             <Popup maxWidth={400} minWidth={300} className="existing-poi-popup">
-              <div className="existing-poi-content">
-                <p className="text-sm text-gray-800 mb-1">
-                  {poi.ispezionabile === 0 ? 'Ispezionato in data: ' :
-                   poi.ispezionabile === 2 ? 'Creato in data: ' : ''}
-                  {new Date(poi.created_at).toLocaleString()}
-                </p>
-                <p className="text-sm text-gray-600 mb-1">Indirizzo: {poi.indirizzo || 'N/D'}</p>
-                <p className="text-sm text-gray-600 mb-1">Username: {poi.username || 'N/D'}</p>
-                <p className="text-sm text-gray-600 mb-1">Team: {poi.team || 'N/D'}</p>
-                <p className="text-sm text-gray-600 mb-1">Tipo: {poi.tipo || 'N/D'}</p>
-                {poi.note && <p className="text-sm text-gray-600 mb-1">Note: {poi.note}</p>}
-                {poi.photo_url && (
-                  <div className="mt-1 mb-1">
-                    <a href={poi.photo_url} target="_blank" rel="noopener noreferrer" className="block">
-                      <img
-                        src={poi.photo_url}
-                        alt="Foto POI"
-                        className="w-24 h-24 object-cover rounded-md border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
-                        style={{ width: '100px', height: '100px' }}
-                        onError={(e) => {
-                          console.error('Errore nel caricamento della foto:', poi.photo_url);
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                    </a>
-                    <p className="text-xs text-gray-500 text-center mt-1">Clicca per ingrandire</p>
-                  </div>
-                )}
-                <div className="mt-1 space-y-2">
-                  {/* Buttons row - Condividi and Ispezionato side by side */}
+              <div className="border-2 border-indigo-600 rounded-lg p-3 bg-white">
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-gray-700 mb-1">
+                    {poi.ispezionabile === 0 ? 'Ispezionato in data: ' :
+                     poi.ispezionabile === 2 ? 'Creato in data: ' : ''}
+                    {new Date(poi.created_at).toLocaleString()}
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">Indirizzo: {poi.indirizzo || 'N/D'}</p>
+                  <p className="text-sm text-gray-600 mb-1">Username: {poi.username || 'N/D'}</p>
+                  <p className="text-sm text-gray-600 mb-1">Team: {poi.team || 'N/D'}</p>
+                  <p className="text-sm text-gray-600 mb-1">Tipo: {poi.tipo || 'N/D'}</p>
+                  {poi.note && <p className="text-sm text-gray-600 mb-1">Note: {poi.note}</p>}
+                  {poi.ispezionabile === 1 && !poi.da_approvare && poi.data_inattivita && (
+                    <p className="text-sm text-gray-600 mb-1">
+                      Ultima inattività: {new Date(poi.data_inattivita).toLocaleString()}
+                    </p>
+                  )}
+                  {poi.photo_url && (
+                    <div className="mt-2 mb-2">
+                      <a href={poi.photo_url} target="_blank" rel="noopener noreferrer" className="block">
+                        <img
+                          src={poi.photo_url}
+                          alt="Foto POI"
+                          className="w-24 h-24 object-cover rounded-md border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
+                          style={{ width: '100px', height: '100px' }}
+                          onError={(e) => {
+                            console.error('Errore nel caricamento della foto:', poi.photo_url);
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </a>
+                      <p className="text-xs text-gray-500 text-center mt-1">Clicca per ingrandire</p>
+                    </div>
+                  )}
+                  <div className="mt-2 space-y-2">
+                    {/* Buttons row - Condividi and Ispezionato side by side */}
                   <div className="flex gap-2">
                     {/* Share button - smaller size */}
                     <button
@@ -704,63 +711,107 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                     </button>
                   )}
 
-                  {/* Delete button - only visible for records created today */}
-                  {(() => {
-                    const poiDate = new Date(poi.created_at);
-                    const today = new Date();
-                    const isCreatedToday =
-                      poiDate.getDate() === today.getDate() &&
-                      poiDate.getMonth() === today.getMonth() &&
-                      poiDate.getFullYear() === today.getFullYear();
+                  {/* Delete and Inattività buttons row - side by side */}
+                  <div className="flex gap-2">
+                    {/* Delete button - only visible for records created today */}
+                    {(() => {
+                      const poiDate = new Date(poi.created_at);
+                      const today = new Date();
+                      const isCreatedToday =
+                        poiDate.getDate() === today.getDate() &&
+                        poiDate.getMonth() === today.getMonth() &&
+                        poiDate.getFullYear() === today.getFullYear();
 
-                    return isCreatedToday && (
+                      return isCreatedToday && (
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+
+                            // Ask for confirmation before deleting
+                            const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
+                            if (!confirmed) return;
+
+                            try {
+                              // First, delete the photo from Cloudinary if it exists
+                              if (poi.photo_url) {
+                                try {
+                                  await deletePhotoFromCloudinary(poi.photo_url);
+                                } catch (photoError) {
+                                  console.error('Error deleting photo from Cloudinary:', photoError);
+                                  // Continue with POI deletion even if photo deletion fails
+                                }
+                              }
+
+                              // Then delete the POI from the database
+                              const { error } = await supabase
+                                .from('points')
+                                .delete()
+                                .eq('id', poi.id);
+
+                              if (error) {
+                                console.error('Error deleting POI:', error);
+                              } else {
+                                // Refresh the POI data in the parent component
+                                if (onPoiUpdated) {
+                                  onPoiUpdated();
+                                }
+                              }
+                            } catch (err) {
+                              console.error('Error deleting POI:', err);
+                            }
+                          }}
+                          className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1"
+                        >
+                          🗑️ Elimina Punto
+                        </button>
+                      );
+                    })()}
+
+                    {/* Segnala Inattività button - for POIs with ispezionabile === 1 and da_approvare === 1 */}
+                    {poi.ispezionabile === 1 && poi.da_approvare === 1 && (
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
 
-                          // Ask for confirmation before deleting
-                          const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
+                          // Ask for confirmation before marking as inactive
+                          const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
                           if (!confirmed) return;
 
                           try {
-                            // First, delete the photo from Cloudinary if it exists
-                            if (poi.photo_url) {
-                              try {
-                                await deletePhotoFromCloudinary(poi.photo_url);
-                              } catch (photoError) {
-                                console.error('Error deleting photo from Cloudinary:', photoError);
-                                // Continue with POI deletion even if photo deletion fails
-                              }
-                            }
-
-                            // Then delete the POI from the database
+                            // Update the data_inattivita field with today's date
                             const { error } = await supabase
                               .from('points')
-                              .delete()
+                              .update({
+                                data_inattivita: new Date().toISOString()
+                              })
                               .eq('id', poi.id);
 
                             if (error) {
-                              console.error('Error deleting POI:', error);
+                              console.error('Error updating data_inattivita:', error);
+                              alert('Errore durante la segnalazione di inattività');
                             } else {
                               // Refresh the POI data in the parent component
                               if (onPoiUpdated) {
                                 onPoiUpdated();
                               }
+                              alert('Punto segnato come inattivo con successo!');
                             }
                           } catch (err) {
-                            console.error('Error deleting POI:', err);
+                            console.error('Error updating data_inattivita:', err);
+                            alert('Errore durante la segnalazione di inattività');
                           }
                         }}
-                        className="text-xs px-2 py-1 rounded w-full font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
+                        className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm flex-1"
                       >
-                        🗑️ Elimina Punto
+                        ⚠️ Segnala Inattività
                       </button>
-                    );
-                  })()}
+                    )}
+                  </div>
                 </div>
               </div>
-            </Popup>
-          </Marker>
+            </div>
+          </Popup>
+        </Marker>
         );
       })}
 
