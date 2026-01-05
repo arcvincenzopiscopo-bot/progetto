@@ -421,14 +421,16 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
       if (process.env.NODE_ENV === 'development') {
         console.warn('❌ Photon failed:', errorMessage);
       }
+
+      // Photon spesso fallisce, andiamo direttamente a Nominatim
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔍 Using Nominatim as final fallback...');
+      }
+      return await searchWithNominatim(trimmedQuery);
     }
 
-    // 4. Ultimate fallback to Nominatim (existing logic)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Using Nominatim as final fallback...');
-    }
-
-    return await searchWithNominatim(trimmedQuery);
+    // This should never be reached due to Photon fallback above, but just in case
+    return [];
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown search error';

@@ -10,30 +10,39 @@ export interface GeocodingResult {
 }
 
 export const photonGeocoding = async (query: string): Promise<GeocodingResult> => {
-  const url = `https://photon.komoot.io/api?q=${encodeURIComponent(query)}&limit=1&lang=it&bbox=6.627,36.619,18.521,47.092`;
+  // Photon ha una sintassi API diversa e bbox può causare errori
+  const url = `https://photon.komoot.io/api?q=${encodeURIComponent(query)}&limit=1&lang=it`;
 
-  const response = await fetch(url);
-  const data = await response.json();
+  try {
+    const response = await fetch(url);
 
-  if (!response.ok) {
-    throw new Error(`Photon API error: ${response.status}`);
+    if (!response.ok) {
+      // Se Photon fallisce completamente, lanciamo un errore per andare al fallback
+      throw new Error(`Photon API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.features || data.features.length === 0) {
+      throw new Error('Photon: No results found');
+    }
+
+    const feature = data.features[0];
+    const properties = feature.properties;
+
+    return {
+      lat: feature.geometry.coordinates[1],
+      lng: feature.geometry.coordinates[0],
+      address: properties.name || `${properties.street || ''} ${properties.housenumber || ''}, ${properties.city || ''}`.trim(),
+      houseNumber: properties.housenumber,
+      street: properties.street,
+      city: properties.city,
+      country: 'Italia',
+      source: 'photon'
+    };
+
+  } catch (error) {
+    // Rilanciamo l'errore per permettere il fallback a Nominatim
+    throw error;
   }
-
-  if (!data.features || data.features.length === 0) {
-    throw new Error('Photon: No results found');
-  }
-
-  const feature = data.features[0];
-  const properties = feature.properties;
-
-  return {
-    lat: feature.geometry.coordinates[1],
-    lng: feature.geometry.coordinates[0],
-    address: properties.name || `${properties.street || ''} ${properties.housenumber || ''}, ${properties.city || ''}`.trim(),
-    houseNumber: properties.housenumber,
-    street: properties.street,
-    city: properties.city,
-    country: 'Italia',
-    source: 'photon'
-  };
 };
