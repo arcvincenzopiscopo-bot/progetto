@@ -310,9 +310,7 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
 
   try {
     // 1. Try Google Maps first (highest accuracy for Italian addresses)
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔍 Trying Google Maps geocoding...');
-    }
+    console.log('🔍 [CASCATA] Trying Google Maps geocoding for:', trimmedQuery);
 
     try {
       const googleResult = await googleMapsGeocoding(trimmedQuery);

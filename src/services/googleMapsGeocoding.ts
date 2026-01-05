@@ -10,33 +10,49 @@ export interface GeocodingResult {
 }
 
 export const googleMapsGeocoding = async (query: string): Promise<GeocodingResult> => {
+  console.log('🔍 [Google Maps] Starting geocoding for:', query);
+
   const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
   if (!apiKey) {
+    console.error('❌ [Google Maps] API key not configured');
     throw new Error('Google Maps API key not configured');
   }
 
+  console.log('✅ [Google Maps] API key found, loading Google Maps API...');
+
   // Load Google Maps API dynamically
   if (!window.google?.maps) {
+    console.log('📦 [Google Maps] Loading Google Maps script...');
     await new Promise<void>((resolve, reject) => {
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geocoding`;
       script.async = true;
       script.defer = true;
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Google Maps API'));
+      script.onload = () => {
+        console.log('✅ [Google Maps] Script loaded successfully');
+        resolve();
+      };
+      script.onerror = () => {
+        console.error('❌ [Google Maps] Failed to load script');
+        reject(new Error('Failed to load Google Maps API'));
+      };
       document.head.appendChild(script);
     });
+  } else {
+    console.log('✅ [Google Maps] API already loaded');
   }
 
   const geocoder = new google.maps.Geocoder();
+  console.log('🔎 [Google Maps] Sending geocoding request for:', query);
 
   return new Promise((resolve, reject) => {
     geocoder.geocode({ address: query }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
+      console.log('📡 [Google Maps] Received response - Status:', status);
+
       if (status === google.maps.GeocoderStatus.OK && results && results[0]) {
         const result = results[0];
-
-        resolve({
+        const finalResult = {
           lat: result.geometry.location.lat(),
           lng: result.geometry.location.lng(),
           address: result.formatted_address,
@@ -45,8 +61,19 @@ export const googleMapsGeocoding = async (query: string): Promise<GeocodingResul
           city: extractCity(result.address_components),
           country: extractCountry(result.address_components),
           source: 'google'
+        };
+
+        console.log('✅ [Google Maps] SUCCESS - Found result:', {
+          address: finalResult.address,
+          lat: finalResult.lat,
+          lng: finalResult.lng,
+          houseNumber: finalResult.houseNumber,
+          source: finalResult.source
         });
+
+        resolve(finalResult);
       } else {
+        console.error('❌ [Google Maps] FAILED - Status:', status, '- No results for query:', query);
         reject(new Error(`Google Maps geocoding failed: ${status}`));
       }
     });
