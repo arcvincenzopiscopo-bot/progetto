@@ -253,10 +253,11 @@ const DashboardPage: React.FC = () => {
     logout();
   }, [logout]);
 
-  // Handle location selection from search
+  // Handle location selection from search - creates new POI at searched location
   const handleLocationSelect = useCallback((lat: number, lng: number) => {
     console.log('Location selected from search:', lat, lng);
-    setCurrentPosition([lat, lng]);
+    setNewPoiLocation({ lat, lng });
+    setShowAddForm(true);
   }, []);
 
   return (
