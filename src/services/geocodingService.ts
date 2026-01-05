@@ -215,22 +215,96 @@ export function cacheAddress(lat: number, lng: number, result: GeocodingResult):
 }
 
 /**
- * Get address with optimized caching - tries cache first, then makes API call if needed
+ * Get address with cascaded reverse geocoding: Google Maps → OpenCage → Photon → Nominatim
  */
 export async function getAddressWithCache(lat: number, lng: number): Promise<GeocodingResult> {
   // Try cache first
   const cached = geocodingCache.get(lat, lng);
   if (cached) {
     if (process.env.NODE_ENV === 'development') {
-      console.log('Using cached geocoding result for:', lat, lng);
+      console.log('🔄 Using cached reverse geocoding result for:', lat, lng);
     }
     return cached;
   }
 
-  // If not in cache, make API call with timeout
+  console.log('🔍 [REVERSE] Starting cascaded reverse geocoding for:', lat, lng);
+
+  // Create a text query for forward geocoding (since our cascaded system is forward-only)
+  // We'll search for coordinates formatted as text
+  const coordinateQuery = `${lat.toFixed(6)},${lng.toFixed(6)}`;
+
   try {
+    // 1. Try Google Maps reverse geocoding
+    console.log('🔍 [REVERSE] Trying Google Maps...');
+
+    try {
+      const googleResult = await googleMapsGeocoding(coordinateQuery);
+
+      const result: GeocodingResult = {
+        success: true,
+        address: googleResult.address,
+        fullAddress: googleResult.address,
+        rawData: googleResult
+      };
+
+      console.log('✅ [REVERSE] Google Maps found:', googleResult.address);
+      geocodingCache.set(lat, lng, result);
+      return result;
+
+    } catch (googleError) {
+      const errorMessage = googleError instanceof Error ? googleError.message : 'Unknown Google Maps error';
+      console.warn('❌ [REVERSE] Google Maps failed:', errorMessage);
+    }
+
+    // 2. Fallback to OpenCage
+    console.log('🔍 [REVERSE] Trying OpenCage...');
+
+    try {
+      const openCageResult = await openCageGeocoding(coordinateQuery);
+
+      const result: GeocodingResult = {
+        success: true,
+        address: openCageResult.address,
+        fullAddress: openCageResult.address,
+        rawData: openCageResult
+      };
+
+      console.log('✅ [REVERSE] OpenCage found:', openCageResult.address);
+      geocodingCache.set(lat, lng, result);
+      return result;
+
+    } catch (openCageError) {
+      const errorMessage = openCageError instanceof Error ? openCageError.message : 'Unknown OpenCage error';
+      console.warn('❌ [REVERSE] OpenCage failed:', errorMessage);
+    }
+
+    // 3. Final fallback to Photon
+    console.log('🔍 [REVERSE] Trying Photon...');
+
+    try {
+      const photonResult = await photonGeocoding(coordinateQuery);
+
+      const result: GeocodingResult = {
+        success: true,
+        address: photonResult.address,
+        fullAddress: photonResult.address,
+        rawData: photonResult
+      };
+
+      console.log('✅ [REVERSE] Photon found:', photonResult.address);
+      geocodingCache.set(lat, lng, result);
+      return result;
+
+    } catch (photonError) {
+      const errorMessage = photonError instanceof Error ? photonError.message : 'Unknown Photon error';
+      console.warn('❌ [REVERSE] Photon failed:', errorMessage);
+    }
+
+    // 4. Ultimate fallback to Nominatim (original logic)
+    console.log('🔍 [REVERSE] Using Nominatim fallback...');
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
     const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`;
 
@@ -260,7 +334,7 @@ export async function getAddressWithCache(lat: number, lng: number): Promise<Geo
       rawData: data
     };
 
-    // Cache successful results
+    console.log('✅ [REVERSE] Nominatim found:', formattedAddress);
     geocodingCache.set(lat, lng, result);
     return result;
 
@@ -268,21 +342,19 @@ export async function getAddressWithCache(lat: number, lng: number): Promise<Geo
     const errorMessage = error instanceof Error ? error.message : 'Unknown geocoding error';
 
     if (error instanceof Error && error.name === 'AbortError') {
-      if (process.env.NODE_ENV === 'development') {
-        console.warn('Geocoding request timed out for:', lat, lng);
-      }
+      console.warn('❌ [REVERSE] Request timed out for:', lat, lng);
     } else {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Geocoding error:', errorMessage);
-      }
+      console.error('❌ [REVERSE] All geocoding services failed:', errorMessage);
     }
 
     // Return fallback result without caching errors
-    return {
+    const fallbackResult: GeocodingResult = {
       success: false,
       error: errorMessage,
       address: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`
     };
+
+    return fallbackResult;
   }
 }
 
