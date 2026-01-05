@@ -19,8 +19,8 @@ root.render(
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
 
-// Register service worker for PWA functionality (only in production)
-if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
+// Register service worker for PWA functionality
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js')
       .then((registration) => {

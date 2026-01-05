@@ -36,6 +36,29 @@ interface GeocodingResult {
   rawData?: any;
 }
 
+interface SearchResult {
+  place_id: number;
+  lat: string;
+  lon: string;
+  display_name: string;
+  address: {
+    road?: string;
+    neighbourhood?: string;
+    suburb?: string;
+    city?: string;
+    town?: string;
+    village?: string;
+    municipality?: string;
+    county?: string;
+    state?: string;
+    country?: string;
+    postcode?: string;
+    [key: string]: string | undefined;
+  };
+  importance?: number;
+  boundingbox?: string[];
+}
+
 /**
  * Format address from Nominatim response
  * @param data Nominatim response data
@@ -130,6 +153,47 @@ class GeocodingCache {
 
 const geocodingCache = new GeocodingCache();
 
+// Cache for search results
+class SearchCache {
+  private cache: Map<string, { results: SearchResult[]; timestamp: number }> = new Map();
+  private readonly maxSize = 50; // Limit cache size for search queries
+  private readonly ttl = 15 * 60 * 1000; // 15 minutes TTL for search results
+
+  get(query: string): SearchResult[] | undefined {
+    const entry = this.cache.get(query.toLowerCase().trim());
+
+    if (!entry) return undefined;
+
+    // Check if entry has expired
+    if (Date.now() - entry.timestamp > this.ttl) {
+      this.cache.delete(query.toLowerCase().trim());
+      return undefined;
+    }
+
+    return entry.results;
+  }
+
+  set(query: string, results: SearchResult[]): void {
+    const key = query.toLowerCase().trim();
+
+    // Evict oldest entries if cache is full
+    if (this.cache.size >= this.maxSize) {
+      const oldestKey = this.cache.keys().next().value;
+      if (oldestKey) {
+        this.cache.delete(oldestKey);
+      }
+    }
+
+    this.cache.set(key, { results, timestamp: Date.now() });
+  }
+
+  clear(): void {
+    this.cache.clear();
+  }
+}
+
+const searchCache = new SearchCache();
+
 export function getCachedAddress(lat: number, lng: number): GeocodingResult | undefined {
   return geocodingCache.get(lat, lng);
 }
@@ -207,5 +271,128 @@ export async function getAddressWithCache(lat: number, lng: number): Promise<Geo
       error: errorMessage,
       address: `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`
     };
+  }
+}
+
+/**
+ * Search for addresses using Nominatim search API
+ * @param query The search query (address, place name, etc.)
+ * @returns Promise<SearchResult[]> Array of search results
+ */
+export async function searchAddress(query: string): Promise<SearchResult[]> {
+  // Validate input
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery || trimmedQuery.length < 2) {
+    return [];
+  }
+
+  // Try cache first
+  const cached = searchCache.get(trimmedQuery);
+  if (cached) {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Using cached search results for:', trimmedQuery);
+    }
+    return cached;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout for search
+
+    // Build search URL with parameters
+    const searchParams = new URLSearchParams({
+      q: trimmedQuery,
+      format: 'json',
+      addressdetails: '1',
+      limit: '5', // Limit to 5 results for better UX
+      countrycodes: 'IT', // Focus on Italy for this app
+      'accept-language': 'it,en'
+    });
+
+    const url = `https://nominatim.openstreetmap.org/search?${searchParams.toString()}`;
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'User-Agent': 'PuntiInteresseApp/1.0 (contact@puntiinteresse.it)'
+      },
+      signal: controller.signal
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Nominatim search request failed with status ${response.status}`);
+    }
+
+    const data: SearchResult[] = await response.json();
+
+    // Cache successful results
+    searchCache.set(trimmedQuery, data);
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Found ${data.length} search results for "${trimmedQuery}"`);
+    }
+
+    return data;
+
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown search error';
+
+    if (error instanceof Error && error.name === 'AbortError') {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Search request timed out for:', trimmedQuery);
+      }
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Search error:', errorMessage);
+      }
+    }
+
+    // Return empty array on error (don't cache errors)
+    return [];
+  }
+}
+
+/**
+ * Format search result for display
+ * @param result Search result from Nominatim
+ * @returns Formatted display string
+ */
+export function formatSearchResult(result: SearchResult): string {
+  const parts: string[] = [];
+
+  // Add road if available
+  if (result.address.road) {
+    parts.push(result.address.road);
+  }
+
+  // Add city/town/village
+  if (result.address.city) {
+    parts.push(result.address.city);
+  } else if (result.address.town) {
+    parts.push(result.address.town);
+  } else if (result.address.village) {
+    parts.push(result.address.village);
+  }
+
+  // Add postcode if available
+  if (result.address.postcode) {
+    parts.push(result.address.postcode);
+  }
+
+  // Add state if different from city
+  if (result.address.state && result.address.state !== result.address.city) {
+    parts.push(result.address.state);
+  }
+
+  // If we have parts, join them, otherwise return display_name (truncated)
+  if (parts.length > 0) {
+    return parts.join(', ');
+  } else {
+    // Truncate display_name if too long
+    const displayName = result.display_name;
+    return displayName.length > 60 ? displayName.substring(0, 57) + '...' : displayName;
   }
 }

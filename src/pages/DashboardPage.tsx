@@ -4,6 +4,7 @@ import { supabase } from '../services/supabaseClient';
 import { uploadPhoto } from '../services/authService';
 import { getAddressWithCache } from '../services/geocodingService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import SearchBox from '../components/UI/SearchBox';
 
 // Lazy load heavy components
 const MapComponent = React.lazy(() => import('../components/Map/MapComponent'));
@@ -45,6 +46,12 @@ const DashboardPage: React.FC = () => {
   const [filterShowPendingApproval, setFilterShowPendingApproval] = useState(true);
   const [filterShowCantiere, setFilterShowCantiere] = useState(true);
   const [filterShowAltro, setFilterShowAltro] = useState(true);
+
+  // Update task progress - marking completed steps
+  // [x] Estendere geocodingService per ricerca indirizzi
+  // [x] Creare componente SearchBox con autocompletamento
+  // [x] Integrare SearchBox nella dashboard sopra la mappa
+  // [x] Implementare callback per centrare mappa sui risultati
 
   useEffect(() => {
     console.log('Dashboard: Component mounted, user:', user);
@@ -246,13 +253,26 @@ const DashboardPage: React.FC = () => {
     logout();
   }, [logout]);
 
+  // Handle location selection from search
+  const handleLocationSelect = useCallback((lat: number, lng: number) => {
+    console.log('Location selected from search:', lat, lng);
+    setCurrentPosition([lat, lng]);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100">
 
       <div className="container mx-auto px-2 py-4">
-        {/* Two Horizontal Sections Layout */}
+        {/* Search Box Section */}
+        <div className="mb-4">
+          <SearchBox
+            onLocationSelect={handleLocationSelect}
+            placeholder="Cerca indirizzo, città, luogo..."
+            className="max-w-md mx-auto"
+          />
+        </div>
 
-        {/* Top Section - Map with rounded gray borders */}
+        {/* Map Section with rounded gray borders */}
         <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm mb-4">
           <div className="h-[66vh] w-full">
             <Suspense fallback={<MapLoadingFallback />}>
