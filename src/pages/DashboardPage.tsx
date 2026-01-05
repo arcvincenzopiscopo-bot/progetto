@@ -3,6 +3,7 @@ import { useCustomAuth } from '../context/CustomAuthContext';
 import { supabase } from '../services/supabaseClient';
 import { uploadPhoto } from '../services/authService';
 import { getAddressWithCache } from '../services/geocodingService';
+import { usePWAInstall } from '../hooks/usePWAInstall';
 
 // Lazy load heavy components
 const MapComponent = React.lazy(() => import('../components/Map/MapComponent'));
@@ -34,6 +35,7 @@ interface PointOfInterest {
 
 const DashboardPage: React.FC = () => {
   const { user, logout } = useCustomAuth();
+  const { isInstallable, installPWA } = usePWAInstall();
   const [pois, setPois] = useState<PointOfInterest[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPoiLocation, setNewPoiLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -309,6 +311,17 @@ const DashboardPage: React.FC = () => {
             <span>📍</span>
             <span>Centra la mappa</span>
           </button>
+
+          {/* Install PWA Button - Only show if installable */}
+          {isInstallable && (
+            <button
+              onClick={installPWA}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg border border-green-700 hover:bg-green-700 font-medium transition-colors inline-flex items-center space-x-2 text-sm"
+            >
+              <span>📱</span>
+              <span>Installa App</span>
+            </button>
+          )}
         </div>
 
         {/* Bottom Section - Filters with rounded gray borders */}
