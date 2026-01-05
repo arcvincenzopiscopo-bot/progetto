@@ -144,3 +144,4 @@ Thumbs.db
 
 # Webpack cache
 webpack-cache/
+.vercel

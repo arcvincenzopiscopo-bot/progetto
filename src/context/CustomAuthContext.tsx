@@ -47,21 +47,9 @@ export const CustomAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     checkAuth();
   }, []);
 
-  // Automatic logout when browser closes
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      // Remove user from localStorage when browser closes
-      localStorage.removeItem('currentUser');
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    window.addEventListener('unload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      window.removeEventListener('unload', handleBeforeUnload);
-    };
-  }, []);
+  // Note: Removed automatic logout on beforeunload/unload events
+  // to prevent logout on page refresh. User session will persist
+  // until explicit logout or browser is fully closed.
 
   const login = async (username: string, password: string) => {
     try {

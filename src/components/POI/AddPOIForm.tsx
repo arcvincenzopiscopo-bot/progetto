@@ -24,7 +24,6 @@ const AddPOIForm: React.FC<AddPOIFormProps> = ({ onSubmit, onCancel, initialIndi
   return (
     <form onSubmit={handleSubmit} className="border-2 border-indigo-600 rounded-lg p-3 bg-white">
       <div className="space-y-2">
-        <h3 className="font-bold text-center bg-indigo-600 text-white py-2 rounded">Aggiungi Punto di Interesse</h3>
         <div>
           <label htmlFor="indirizzo" className="block text-sm font-medium text-gray-700 mb-1">
             Indirizzo
@@ -66,7 +65,7 @@ const AddPOIForm: React.FC<AddPOIFormProps> = ({ onSubmit, onCancel, initialIndi
             <option value="altro">Altro</option>
           </select>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex flex-row space-x-2">
           <button
             type="submit"
             className="flex-1 bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 text-sm"

@@ -87,14 +87,14 @@ const yellowIcon = L.icon({
   shadowSize: [41, 41]
 });
 
-const blueIcon = L.icon({
-  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41]
-});
+// const blueIcon = L.icon({
+//   iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+//   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+//   iconSize: [25, 41],
+//   iconAnchor: [12, 41],
+//   popupAnchor: [1, -34],
+//   shadowSize: [41, 41]
+// });
 
 // Custom circular icon for user's location with police officer
 const userLocationIcon = L.divIcon({
@@ -231,10 +231,9 @@ const MapClickHandler: React.FC<{
     <>
       {showPopup && clickPosition && (
         <Marker position={[clickPosition.lat, clickPosition.lng]} icon={defaultIcon}>
-          <Popup maxWidth={400} minWidth={350} className="leaflet-popup-content-wrapper">
+          <Popup maxWidth={600} minWidth={250} className="leaflet-popup-content-wrapper">
             <div className="border-2 border-indigo-600 rounded-lg p-3 bg-white">
               <div className="space-y-3">
-                <h3 className="font-bold text-center bg-indigo-600 text-white py-2 rounded mb-3">Aggiungi Punto di Interesse</h3>
 
                 <div>
                   <label htmlFor="add-poi-indirizzo" className="block text-sm font-medium text-gray-700 mb-1">
@@ -246,10 +245,8 @@ const MapClickHandler: React.FC<{
                     value={isLoadingAddress ? "Caricamento indirizzo..." : address}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                     readOnly
+                    maxLength={20}
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    {clickPosition && `Coordinate: Lat: ${clickPosition.lat.toFixed(6)}, Lng: ${clickPosition.lng.toFixed(6)}`}
-                  </p>
                 </div>
 
                 <div>
@@ -312,21 +309,18 @@ const MapClickHandler: React.FC<{
                     }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Puoi scattare una foto o selezionare dalla galleria
-                  </p>
                 </div>
 
                 <div className="flex space-x-2 pt-2">
                   <button
                     onClick={handleAddPoi}
-                    className="flex-1 bg-green-500 text-white py-2 px-4 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-sm font-medium"
+                    className="bg-green-500 text-white py-1 px-2 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-xs font-medium"
                   >
                     📍 Aggiungi Punto
                   </button>
                   <button
                     onClick={() => setShowPopup(false)}
-                    className="flex-1 bg-red-500 text-white py-2 px-4 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-sm font-medium"
+                    className="bg-red-500 text-white py-1 px-2 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-xs font-medium"
                   >
                     ❌ Annulla
                   </button>
@@ -386,21 +380,18 @@ const FixedPOIFormPopup: React.FC<{
 
   return (
     <div className="space-y-4">
-      <h3 className="font-bold text-center bg-indigo-600 text-white py-3 rounded-t-lg">Aggiungi Punto di Interesse</h3>
       <div className="bg-gray-50 p-4 rounded border border-gray-200">
-        <label htmlFor="add-poi-indirizzo-fixed" className="block text-sm font-medium text-gray-700 mb-2">
-          Indirizzo
-        </label>
-        <input
-          id="add-poi-indirizzo-fixed"
-          type="text"
-          value={isLoadingAddress ? "Caricamento indirizzo..." : address}
-          className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-12"
-          readOnly
-        />
-        <p className="text-xs text-gray-500 mt-2">
-          Coordinate: Lat: {location.lat.toFixed(6)}, Lng: {location.lng.toFixed(6)}
-        </p>
+          <label htmlFor="add-poi-indirizzo-fixed" className="block text-sm font-medium text-gray-700 mb-2">
+            Indirizzo
+          </label>
+          <input
+            id="add-poi-indirizzo-fixed"
+            type="text"
+            value={isLoadingAddress ? "Caricamento indirizzo..." : address}
+            className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-12"
+            readOnly
+            maxLength={20}
+          />
       </div>
       <div className="bg-white p-4 rounded border border-gray-200">
         <label htmlFor="add-poi-ispezionabile" className="block text-sm font-medium text-gray-700 mb-2">
@@ -458,20 +449,17 @@ const FixedPOIFormPopup: React.FC<{
           }}
           className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
         />
-        <p className="text-xs text-gray-500 mt-2">
-          Puoi scattare una foto o selezionare dalla galleria
-        </p>
       </div>
-      <div className="flex flex-col space-y-3">
+      <div className="flex flex-row space-x-3">
         <button
           onClick={handleAddPoi}
-          className="bg-green-500 text-white py-3 px-4 rounded-md hover:bg-green-600 font-medium shadow-sm text-base"
+          className="bg-green-500 text-white py-1 px-2 rounded-md hover:bg-green-600 font-medium shadow-sm text-xs"
         >
           📍 Aggiungi Punto
         </button>
         <button
           onClick={() => onCancelAddPoi && onCancelAddPoi()}
-          className="bg-red-500 text-white py-3 px-4 rounded-md hover:bg-red-600 font-medium shadow-sm text-base"
+          className="bg-red-500 text-white py-1 px-2 rounded-md hover:bg-red-600 font-medium shadow-sm text-xs"
         >
           ❌ Annulla
         </button>
@@ -560,20 +548,20 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
               },
             }}
           >
-            <Popup>
-              <div>
-                <p className="text-sm text-gray-800">
+            <Popup maxWidth={400} minWidth={300} className="existing-poi-popup">
+              <div className="existing-poi-content">
+                <p className="text-sm text-gray-800 mb-1">
                   {poi.ispezionabile === 0 ? 'Ispezionato in data: ' :
                    poi.ispezionabile === 2 ? 'Creato in data: ' : ''}
                   {new Date(poi.created_at).toLocaleString()}
                 </p>
-                <p className="text-sm text-gray-600">Indirizzo: {poi.indirizzo || 'N/D'}</p>
-                <p className="text-sm text-gray-600">Username: {poi.username || 'N/D'}</p>
-                <p className="text-sm text-gray-600">Team: {poi.team || 'N/D'}</p>
-                <p className="text-sm text-gray-600">Tipo: {poi.tipo || 'N/D'}</p>
-                {poi.note && <p className="text-sm text-gray-600">Note: {poi.note}</p>}
+                <p className="text-sm text-gray-600 mb-1">Indirizzo: {poi.indirizzo || 'N/D'}</p>
+                <p className="text-sm text-gray-600 mb-1">Username: {poi.username || 'N/D'}</p>
+                <p className="text-sm text-gray-600 mb-1">Team: {poi.team || 'N/D'}</p>
+                <p className="text-sm text-gray-600 mb-1">Tipo: {poi.tipo || 'N/D'}</p>
+                {poi.note && <p className="text-sm text-gray-600 mb-1">Note: {poi.note}</p>}
                 {poi.photo_url && (
-                  <div className="mt-2 mb-2">
+                  <div className="mt-1 mb-1">
                     <a href={poi.photo_url} target="_blank" rel="noopener noreferrer" className="block">
                       <img
                         src={poi.photo_url}
@@ -589,41 +577,90 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                     <p className="text-xs text-gray-500 text-center mt-1">Clicca per ingrandire</p>
                   </div>
                 )}
-                <div className="mt-2 space-y-6">
-                  {/* Share button */}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const shareText = `${poi.latitudine}, ${poi.longitudine}`;
+                <div className="mt-1 space-y-2">
+                  {/* Buttons row - Condividi and Ispezionato side by side */}
+                  <div className="flex gap-2">
+                    {/* Share button - smaller size */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const shareText = `${poi.latitudine}, ${poi.longitudine}`;
 
-                      if (navigator.share) {
-                        // Use Web Share API for modern browsers
-                        navigator.share({
-                          title: `Punto di Interesse - ${poi.indirizzo}`,
-                          text: `Coordinate: ${shareText}`,
-                          url: `https://www.google.com/maps/search/?api=1&query=${poi.latitudine},${poi.longitudine}`
-                        })
-                        .then(() => console.log('Share successful'))
-                        .catch((error) => {
-                          console.error('Error sharing:', error);
-                          // Fallback to clipboard if share fails
-                          navigator.clipboard.writeText(shareText);
-                          alert('Coordinate copiate negli appunti: ' + shareText);
-                        });
-                      } else {
-                        // Fallback for browsers that don't support Web Share API
-                        navigator.clipboard.writeText(shareText)
-                          .then(() => alert('Coordinate copiate negli appunti: ' + shareText))
+                        if (navigator.share) {
+                          // Use Web Share API for modern browsers
+                          navigator.share({
+                            title: `Punto di Interesse - ${poi.indirizzo}`,
+                            text: `Coordinate: ${shareText}`,
+                            url: `https://www.google.com/maps/search/?api=1&query=${poi.latitudine},${poi.longitudine}`
+                          })
+                          .then(() => console.log('Share successful'))
                           .catch((error) => {
-                            console.error('Error copying to clipboard:', error);
-                            alert('Coordinate: ' + shareText);
+                            console.error('Error sharing:', error);
+                            // Fallback to clipboard if share fails
+                            navigator.clipboard.writeText(shareText);
+                            alert('Coordinate copiate negli appunti: ' + shareText);
                           });
-                      }
-                    }}
-                    className="text-sm px-3 py-2 rounded w-full font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
-                  >
-                    📤 Condividi
-                  </button>
+                        } else {
+                          // Fallback for browsers that don't support Web Share API
+                          navigator.clipboard.writeText(shareText)
+                            .then(() => alert('Coordinate copiate negli appunti: ' + shareText))
+                            .catch((error) => {
+                              console.error('Error copying to clipboard:', error);
+                              alert('Coordinate: ' + shareText);
+                            });
+                        }
+                      }}
+                      className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
+                    >
+                      📤 Condividi
+                    </button>
+
+                    {/* Ispezionato button - smaller size, only show if applicable */}
+                    {poi.ispezionabile === 1 && poi.da_approvare !== 2 && (
+                      <button
+                        onClick={async (e) => {
+                          e.stopPropagation();
+
+                          // Ask for confirmation before changing status
+                          const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
+                          if (!confirmed) return;
+
+                          try {
+                            // Toggle the ispezionabile value
+                            const newValue = poi.ispezionabile === 1 ? 0 : 1;
+                            const { error } = await supabase
+                              .from('points')
+                              .update({
+                                ispezionabile: newValue,
+                                created_at: new Date().toISOString(),
+                                team: currentTeam || poi.team
+                              })
+                              .eq('id', poi.id);
+
+                            if (error) {
+                              console.error('Error updating ispezionabile:', error);
+                            } else {
+                              // Force re-render to update the marker color
+                              setMapKey(Date.now());
+                              // Refresh the POI data in the parent component
+                              if (onPoiUpdated) {
+                                onPoiUpdated();
+                              }
+                            }
+                          } catch (err) {
+                            console.error('Error toggling ispezionabile:', err);
+                          }
+                        }}
+                        className={`text-xs px-2 py-1 rounded font-medium shadow-sm flex-1 ${
+                          poi.ispezionabile
+                            ? 'bg-green-500 text-white hover:bg-green-600'
+                            : 'bg-red-500 text-white hover:bg-red-600'
+                        }`}
+                      >
+                        👮‍♂️ Ispezionato
+                      </button>
+                    )}
+                  </div>
 
                   {/* Approve button - only for admins and POIs with da_approvare = 2 */}
                   {isAdmin && poi.da_approvare === 2 && (
@@ -664,51 +701,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                       className="text-sm px-3 py-2 rounded w-full font-medium bg-green-600 text-white hover:bg-green-700 shadow-sm"
                     >
                       ✅ Approva
-                    </button>
-                  )}
-
-                  {poi.ispezionabile === 1 && poi.da_approvare !== 2 && (
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-
-                        // Ask for confirmation before changing status
-                        const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
-                        if (!confirmed) return;
-
-                        try {
-                          // Toggle the ispezionabile value
-                          const newValue = poi.ispezionabile === 1 ? 0 : 1;
-                          const { error } = await supabase
-                            .from('points')
-                            .update({
-                              ispezionabile: newValue,
-                              created_at: new Date().toISOString(),
-                              team: currentTeam || poi.team
-                            })
-                            .eq('id', poi.id);
-
-                          if (error) {
-                            console.error('Error updating ispezionabile:', error);
-                          } else {
-                            // Force re-render to update the marker color
-                            setMapKey(Date.now());
-                            // Refresh the POI data in the parent component
-                            if (onPoiUpdated) {
-                              onPoiUpdated();
-                            }
-                          }
-                        } catch (err) {
-                          console.error('Error toggling ispezionabile:', err);
-                        }
-                      }}
-                      className={`text-sm px-3 py-2 rounded w-full font-medium shadow-sm ${
-                        poi.ispezionabile
-                          ? 'bg-green-500 text-white hover:bg-green-600'
-                          : 'bg-red-500 text-white hover:bg-red-600'
-                      }`}
-                    >
-                      👮‍♂️ Ispezionato
                     </button>
                   )}
 
@@ -759,7 +751,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                             console.error('Error deleting POI:', err);
                           }
                         }}
-                        className="text-sm px-3 py-2 rounded w-full font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
+                        className="text-xs px-2 py-1 rounded w-full font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
                       >
                         🗑️ Elimina Punto
                       </button>
