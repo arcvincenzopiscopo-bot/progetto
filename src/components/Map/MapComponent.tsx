@@ -36,9 +36,9 @@ interface MapComponentProps {
   onMapClick: (lat: number, lng: number) => void;
   selectedPoi?: PointOfInterest | null;
   initialPosition?: [number, number];
-  onPoiUpdated?: () => void;
+  onPoiUpdated?: (poiPosition?: [number, number]) => void;
   currentTeam?: string;
-  isAdmin?: boolean;
+  adminLevel?: number;
   newPoiLocation?: { lat: number; lng: number } | null;
   onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => void;
   onCancelAddPoi?: () => void;
@@ -491,7 +491,7 @@ const POIFormPopup: React.FC<{
   );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, onPoiUpdated, currentTeam, isAdmin = false, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, onPoiUpdated, currentTeam, adminLevel = 0, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height }) => {
   // Use initial position if provided, otherwise default to Rome coordinates
   const centerPosition: [number, number] = initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
@@ -605,7 +605,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
           // Filter POIs based on filter settings
           if (poi.ispezionabile === 1 && !filterShowInspectable) return false;
           if (poi.ispezionabile === 0 && !filterShowNonInspectable) return false;
-          if (poi.da_approvare === 2 && !filterShowPendingApproval) return false;
+          if (poi.ispezionabile === 2 && !filterShowPendingApproval) return false;
           if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;
           if (poi.tipo === 'altro' && !filterShowAltro) return false;
           // Filter by year - historical POIs
@@ -616,14 +616,14 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
         .map((poi) => {
         // Determine which icon to use based on year first, then status
         // Priority: Historical POIs (2024, 2025) -> special colored markers
-        // Then: da_approvare = 2 -> yellow marker (pending approval)
+        // Then: ispezionabile = 2 -> yellow marker (pending approval)
         // Then: ispezionabile = 1 -> green marker, = 0 -> red marker
         let markerIcon;
         if (poi.anno === 2024) {
           markerIcon = magentaIcon; // 🟣 Magenta for 2024
         } else if (poi.anno === 2025) {
           markerIcon = darkGreyIcon; // ⚫ Dark grey for 2025
-        } else if (poi.da_approvare === 2) {
+        } else if (poi.ispezionabile === 2) {
           markerIcon = yellowIcon;
         } else {
           markerIcon = poi.ispezionabile === 1 ? greenIcon : redIcon;
@@ -631,7 +631,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
 
         return (
           <Marker
-            key={poi.id}
+            key={`${poi.id}-${poi.anno || 'current'}-${poi.created_at}`}
             position={[poi.latitudine, poi.longitudine]}
             icon={markerIcon}
             eventHandlers={{
@@ -699,237 +699,233 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                       <p className="text-xs text-gray-500 text-center mt-1">Clicca per ingrandire</p>
                     </div>
                   )}
-                  <div className="mt-2 space-y-2">
-                    {/* Buttons row - Condividi and Ispezionato side by side */}
-                  <div className="flex gap-2">
-                    {/* Share button - smaller size */}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const shareText = `${poi.latitudine}, ${poi.longitudine}`;
-
-                        if (navigator.share) {
-                          // Use Web Share API for modern browsers
-                          navigator.share({
-                            title: `Punto di Interesse - ${poi.indirizzo}`,
-                            text: `Coordinate: ${shareText}`,
-                            url: `https://www.google.com/maps/search/?api=1&query=${poi.latitudine},${poi.longitudine}`
-                          })
-                          .then(() => console.log('Share successful'))
-                          .catch((error) => {
-                            console.error('Error sharing:', error);
-                            // Fallback to clipboard if share fails
-                            navigator.clipboard.writeText(shareText);
-                            alert('Coordinate copiate negli appunti: ' + shareText);
-                          });
-                        } else {
-                          // Fallback for browsers that don't support Web Share API
-                          navigator.clipboard.writeText(shareText)
-                            .then(() => alert('Coordinate copiate negli appunti: ' + shareText))
-                            .catch((error) => {
-                              console.error('Error copying to clipboard:', error);
-                              alert('Coordinate: ' + shareText);
-                            });
-                        }
-                      }}
-                      className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
-                    >
-                      📤 Condividi
-                    </button>
-
-                    {/* Ispezionato button - smaller size, only show if applicable and not historical POI */}
-                    {poi.ispezionabile === 1 && poi.da_approvare !== 2 && !poi.anno && (
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-
-                          // Ask for confirmation before changing status
-                          const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
-                          if (!confirmed) return;
-
-                          try {
-                            // Toggle the ispezionabile value
-                            const newValue = poi.ispezionabile === 1 ? 0 : 1;
-                            const { error } = await supabase
-                              .from('points')
-                              .update({
-                                ispezionabile: newValue,
-                                created_at: new Date().toISOString(),
-                                team: currentTeam || poi.team
-                              })
-                              .eq('id', poi.id);
-
-                            if (error) {
-                              console.error('Error updating ispezionabile:', error);
-                            } else {
-                              // Force re-render to update the marker color
-                              setMapKey(Date.now());
-                              // Refresh the POI data in the parent component
-                              if (onPoiUpdated) {
-                                onPoiUpdated();
-                              }
-                            }
-                          } catch (err) {
-                            console.error('Error toggling ispezionabile:', err);
-                          }
-                        }}
-                        className={`text-xs px-2 py-1 rounded font-medium shadow-sm flex-1 ${
-                          poi.ispezionabile
-                            ? 'bg-green-500 text-white hover:bg-green-600'
-                            : 'bg-red-500 text-white hover:bg-red-600'
-                        }`}
-                      >
-                        👮‍♂️ Ispezionato
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Approve button - only for admins and POIs with da_approvare = 2 */}
-                  {isAdmin && poi.da_approvare === 2 && (
-                    <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
-
-                        // Ask for confirmation before approving
-                        const confirmed = window.confirm('Sei sicuro di voler approvare questo punto di interesse?');
-                        if (!confirmed) return;
-
-                        try {
-                          const { error } = await supabase
-                            .from('points')
-                            .update({
-                              da_approvare: 1,
-                              created_at: new Date().toISOString()
-                            })
-                            .eq('id', poi.id);
-
-                          if (error) {
-                            console.error('Error approving POI:', error);
-                            alert('Errore durante l\'approvazione del POI');
-                          } else {
-                            // Force re-render to update the marker color
-                            setMapKey(Date.now());
-                            // Refresh the POI data in the parent component
-                            if (onPoiUpdated) {
-                              onPoiUpdated();
-                            }
-                            alert('POI approvato con successo!');
-                          }
-                        } catch (err) {
-                          console.error('Error approving POI:', err);
-                          alert('Errore durante l\'approvazione del POI');
-                        }
-                      }}
-                      className="text-sm px-3 py-2 rounded w-full font-medium bg-green-600 text-white hover:bg-green-700 shadow-sm"
-                    >
-                      ✅ Approva
-                    </button>
-                  )}
-
-                  {/* Delete and Inattività buttons row - side by side */}
-                  <div className="flex gap-2">
-                    {/* Delete button - only visible for records created today */}
-                    {(() => {
-                      const poiDate = new Date(poi.created_at);
-                      const today = new Date();
-                      const isCreatedToday =
-                        poiDate.getDate() === today.getDate() &&
-                        poiDate.getMonth() === today.getMonth() &&
-                        poiDate.getFullYear() === today.getFullYear();
-
-                      return isCreatedToday && (
+                  {/* Dynamic buttons based on POI type */}
+                  <div className="space-y-2">
+                    {/* For historical POIs (2024, 2025) - only share button */}
+                    {poi.anno ? (
+                      <div className="flex gap-2">
                         <button
-                          onClick={async (e) => {
+                          onClick={(e) => {
                             e.stopPropagation();
-
-                            // Ask for confirmation before deleting
-                            const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
-                            if (!confirmed) return;
-
-                            try {
-                              // First, delete the photo from Cloudinary if it exists
-                              if (poi.photo_url) {
-                                try {
-                                  await deletePhotoFromCloudinary(poi.photo_url);
-                                } catch (photoError) {
-                                  console.error('Error deleting photo from Cloudinary:', photoError);
-                                  // Continue with POI deletion even if photo deletion fails
-                                }
-                              }
-
-                              // Determine which table to delete from based on year
-                              const tableName = poi.anno === 2024 ? 'points_old_2024' :
-                                               poi.anno === 2025 ? 'points_old_2025' :
-                                               'points';
-
-                              // Then delete the POI from the correct database table
-                              const { error } = await supabase
-                                .from(tableName)
-                                .delete()
-                                .eq('id', poi.id);
-
-                              if (error) {
-                                console.error('Error deleting POI:', error);
-                              } else {
-                                // Refresh the POI data in the parent component
-                                if (onPoiUpdated) {
-                                  onPoiUpdated();
-                                }
-                              }
-                            } catch (err) {
-                              console.error('Error deleting POI:', err);
+                            const shareText = `${poi.latitudine}, ${poi.longitudine}`;
+                            if (navigator.share) {
+                              navigator.share({
+                                title: `Punto di Interesse - ${poi.indirizzo}`,
+                                text: `Coordinate: ${shareText}`,
+                                url: `https://www.google.com/maps/search/?api=1&query=${poi.latitudine},${poi.longitudine}`
+                              }).catch(() => {
+                                navigator.clipboard.writeText(shareText);
+                                alert('Coordinate copiate negli appunti: ' + shareText);
+                              });
+                            } else {
+                              navigator.clipboard.writeText(shareText);
+                              alert('Coordinate copiate negli appunti: ' + shareText);
                             }
                           }}
-                          className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1"
+                          className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
                         >
-                          🗑️ Elimina Punto
+                          📤 Condividi
                         </button>
-                      );
-                    })()}
-
-                    {/* Segnala Inattività button - for POIs with ispezionabile === 1 and da_approvare === 1 */}
-                    {poi.ispezionabile === 1 && poi.da_approvare === 1 && (
-                      <button
-                        onClick={async (e) => {
-                          e.stopPropagation();
-
-                          // Ask for confirmation before marking as inactive
-                          const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
-                          if (!confirmed) return;
-
-                          try {
-                            // Update the data_inattivita field with today's date
-                            const { error } = await supabase
-                              .from('points')
-                              .update({
-                                data_inattivita: new Date().toISOString()
-                              })
-                              .eq('id', poi.id);
-
-                            if (error) {
-                              console.error('Error updating data_inattivita:', error);
-                              alert('Errore durante la segnalazione di inattività');
-                            } else {
-                              // Refresh the POI data in the parent component
-                              if (onPoiUpdated) {
-                                onPoiUpdated();
+                      </div>
+                    ) : (
+                      /* For current POIs - full button set */
+                      <>
+                        {/* First row - Share button and primary actions */}
+                        <div className="flex gap-2">
+                          {/* Share button - always present */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const shareText = `${poi.latitudine}, ${poi.longitudine}`;
+                              if (navigator.share) {
+                                navigator.share({
+                                  title: `Punto di Interesse - ${poi.indirizzo}`,
+                                  text: `Coordinate: ${shareText}`,
+                                  url: `https://www.google.com/maps/search/?api=1&query=${poi.latitudine},${poi.longitudine}`
+                                }).catch(() => {
+                                  navigator.clipboard.writeText(shareText);
+                                  alert('Coordinate copiate negli appunti: ' + shareText);
+                                });
+                              } else {
+                                navigator.clipboard.writeText(shareText);
+                                alert('Coordinate copiate negli appunti: ' + shareText);
                               }
-                              alert('Punto segnato come inattivo con successo!');
-                            }
-                          } catch (err) {
-                            console.error('Error updating data_inattivita:', err);
-                            alert('Errore durante la segnalazione di inattività');
-                          }
-                        }}
-                        className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm flex-1"
-                      >
-                        ⚠️ Segnala Inattività
-                      </button>
+                            }}
+                            className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
+                          >
+                            📤 Condividi
+                          </button>
+
+                          {/* Current POIs - admin approve button */}
+                          {adminLevel >= 1 && poi.ispezionabile === 2 && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler approvare questo punto di interesse?');
+                                if (!confirmed) return;
+                                try {
+                                  const { error } = await supabase
+                                    .from('points')
+                                    .update({ ispezionabile: 1, created_at: new Date().toISOString() })
+                                    .eq('id', poi.id);
+                                  if (error) {
+                                    alert('Errore durante l\'approvazione del POI');
+                                  } else {
+                                    setMapKey(Date.now());
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                    alert('POI approvato con successo!');
+                                  }
+                                } catch (err) {
+                                  alert('Errore durante l\'approvazione del POI');
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-green-600 text-white hover:bg-green-700 shadow-sm flex-1"
+                            >
+                              ✅ Approva
+                            </button>
+                          )}
+
+                          {/* Current POIs - superadmin delete button for red POIs */}
+                          {adminLevel === 2 && poi.ispezionabile === 0 && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
+                                if (!confirmed) return;
+                                try {
+                                  if (poi.photo_url) {
+                                    await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
+                                  }
+                                  const { error } = await supabase.from('points').delete().eq('id', poi.id);
+                                  if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                } catch (err) {
+                                  console.error('Error deleting POI:', err);
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1"
+                            >
+                              🗑️ Elimina
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Second row - secondary actions */}
+                        <div className="flex gap-2 flex-wrap">
+                          {/* Green POIs - Ispezionato button */}
+                          {poi.ispezionabile === 1 && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
+                                if (!confirmed) return;
+                                try {
+                                  const { error } = await supabase
+                                    .from('points')
+                                    .update({
+                                      ispezionabile: 0,
+                                      created_at: new Date().toISOString(),
+                                      team: currentTeam || poi.team
+                                    })
+                                    .eq('id', poi.id);
+                                  if (!error) {
+                                    setMapKey(Date.now());
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                  }
+                                } catch (err) {
+                                  console.error('Error toggling ispezionabile:', err);
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm"
+                            >
+                              👮‍♂️ Ispezionato
+                            </button>
+                          )}
+
+                          {/* Green POIs - Inattività button */}
+                          {poi.ispezionabile === 1 && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
+                                if (!confirmed) return;
+                                try {
+                                  const { error } = await supabase
+                                    .from('points')
+                                    .update({ data_inattivita: new Date().toISOString() })
+                                    .eq('id', poi.id);
+                                  if (error) {
+                                    alert('Errore durante la segnalazione di inattività');
+                                  } else {
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                    alert('Punto segnato come inattivo con successo!');
+                                  }
+                                } catch (err) {
+                                  alert('Errore durante la segnalazione di inattività');
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm"
+                            >
+                              ⚠️ Inattività
+                            </button>
+                          )}
+
+                          {/* Admin delete button for green POIs */}
+                          {adminLevel >= 1 && poi.ispezionabile === 1 && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
+                                if (!confirmed) return;
+                                try {
+                                  if (poi.photo_url) {
+                                    await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
+                                  }
+                                  const { error } = await supabase.from('points').delete().eq('id', poi.id);
+                                  if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                } catch (err) {
+                                  console.error('Error deleting POI:', err);
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
+                            >
+                              🗑️ Elimina
+                            </button>
+                          )}
+
+                          {/* Non-admin delete button for yellow POIs created today */}
+                          {adminLevel === 0 && poi.ispezionabile === 2 && (() => {
+                            const poiDate = new Date(poi.created_at);
+                            const today = new Date();
+                            return poiDate.getDate() === today.getDate() &&
+                                   poiDate.getMonth() === today.getMonth() &&
+                                   poiDate.getFullYear() === today.getFullYear();
+                          })() && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
+                                if (!confirmed) return;
+                                try {
+                                  if (poi.photo_url) {
+                                    await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
+                                  }
+                                  const { error } = await supabase.from('points').delete().eq('id', poi.id);
+                                  if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                } catch (err) {
+                                  console.error('Error deleting POI:', err);
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
+                            >
+                              🗑️ Elimina
+                            </button>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
               </div>
-            </div>
           </Popup>
         </Marker>
         );

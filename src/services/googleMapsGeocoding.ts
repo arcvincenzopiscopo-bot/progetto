@@ -1,5 +1,12 @@
 import { incrementGoogleMapsUsage } from './googleMapsCounterService';
 
+// Extend Window interface for Google Maps auth failure handler
+declare global {
+  interface Window {
+    gm_authFailure?: () => void;
+  }
+}
+
 export interface GeocodingResult {
   lat: number;
   lng: number;
@@ -29,27 +36,59 @@ export const googleMapsGeocoding = async (query: string): Promise<GeocodingResul
     if (process.env.NODE_ENV === 'development') {
       console.log('📦 [Google Maps] Loading Google Maps API script');
     }
+
+    // Check for existing global error handler
+    const existingHandler = window.gm_authFailure;
+    let authErrorOccurred = false;
+
+    // Set up global error handler for authentication failures
+    window.gm_authFailure = () => {
+      console.error('❌ [Google Maps] Authentication failed - RefererNotAllowed error');
+      authErrorOccurred = true;
+    };
+
     await new Promise<void>((resolve, reject) => {
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geocoding`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        if (process.env.NODE_ENV === 'development') {
-          console.log('✅ [Google Maps] API script loaded successfully');
-        }
-        resolve();
+        // Wait a bit for potential auth errors to be thrown
+        setTimeout(() => {
+          if (authErrorOccurred) {
+            console.error('❌ [Google Maps] API loaded but authentication failed');
+            reject(new Error('Google Maps API authentication failed (RefererNotAllowed)'));
+          } else {
+            if (process.env.NODE_ENV === 'development') {
+              console.log('✅ [Google Maps] API script loaded successfully');
+            }
+            resolve();
+          }
+        }, 100);
       };
-      script.onerror = () => {
-        console.error('❌ [Google Maps] Failed to load API script');
+      script.onerror = (event) => {
+        console.error('❌ [Google Maps] Failed to load API script:', event);
         reject(new Error('Failed to load Google Maps API'));
       };
       document.head.appendChild(script);
     });
+
+    // Restore original handler if it existed
+    if (existingHandler) {
+      window.gm_authFailure = existingHandler;
+    } else {
+      delete window.gm_authFailure;
+    }
   } else {
     if (process.env.NODE_ENV === 'development') {
       console.log('✅ [Google Maps] API already loaded');
     }
+  }
+
+  // Check if Google Maps API is properly loaded and functional
+  if (!window.google?.maps?.Geocoder) {
+    console.error('❌ [Google Maps] API not properly loaded');
+    throw new Error('Google Maps API not available');
   }
 
   const geocoder = new google.maps.Geocoder();

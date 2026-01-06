@@ -234,26 +234,33 @@ export async function getAddressWithCache(lat: number, lng: number): Promise<Geo
   const coordinateQuery = `${lat.toFixed(6)},${lng.toFixed(6)}`;
 
   try {
-    // 1. Try Google Maps reverse geocoding
-    console.log('🔍 [REVERSE] Trying Google Maps...');
+    // Skip Google Maps in development due to RefererNotAllowedMapError
+    if (process.env.NODE_ENV !== 'development') {
+      // 1. Try Google Maps reverse geocoding
+      console.log('🔍 [REVERSE] Trying Google Maps...');
 
-    try {
-      const googleResult = await googleMapsGeocoding(coordinateQuery);
+      try {
+        const googleResult = await googleMapsGeocoding(coordinateQuery);
 
-      const result: GeocodingResult = {
-        success: true,
-        address: googleResult.address,
-        fullAddress: googleResult.address,
-        rawData: googleResult
-      };
+        const result: GeocodingResult = {
+          success: true,
+          address: googleResult.address,
+          fullAddress: googleResult.address,
+          rawData: googleResult
+        };
 
-      console.log('✅ [REVERSE] Google Maps found:', googleResult.address);
-      geocodingCache.set(lat, lng, result);
-      return result;
+        console.log('✅ [REVERSE] Google Maps found:', googleResult.address);
+        geocodingCache.set(lat, lng, result);
+        return result;
 
-    } catch (googleError) {
-      const errorMessage = googleError instanceof Error ? googleError.message : 'Unknown Google Maps error';
-      console.warn('❌ [REVERSE] Google Maps failed:', errorMessage);
+      } catch (googleError) {
+        const errorMessage = googleError instanceof Error ? googleError.message : 'Unknown Google Maps error';
+        console.warn('❌ [REVERSE] Google Maps failed:', errorMessage);
+      }
+    } else {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔄 Skipping Google Maps in development (RefererNotAllowedMapError expected)');
+      }
     }
 
     // 2. Fallback to OpenCage
@@ -381,39 +388,46 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
   }
 
   try {
-    // 1. Try Google Maps first (highest accuracy for Italian addresses)
-    console.log('🔍 [CASCATA] Trying Google Maps geocoding for:', trimmedQuery);
+    // Skip Google Maps in development due to RefererNotAllowedMapError
+    if (process.env.NODE_ENV !== 'development') {
+      // 1. Try Google Maps first (highest accuracy for Italian addresses)
+      console.log('🔍 [CASCATA] Trying Google Maps geocoding for:', trimmedQuery);
 
-    try {
-      const googleResult = await googleMapsGeocoding(trimmedQuery);
+      try {
+        const googleResult = await googleMapsGeocoding(trimmedQuery);
 
-      const result: SearchResult = {
-        place_id: Date.now(), // Generate unique ID
-        lat: googleResult.lat.toString(),
-        lon: googleResult.lng.toString(),
-        display_name: googleResult.address,
-        address: {
-          house_number: googleResult.houseNumber,
-          road: googleResult.street,
-          city: googleResult.city,
-          country: googleResult.country || 'Italia'
-        },
-        importance: 1.0
-      };
+        const result: SearchResult = {
+          place_id: Date.now(), // Generate unique ID
+          lat: googleResult.lat.toString(),
+          lon: googleResult.lng.toString(),
+          display_name: googleResult.address,
+          address: {
+            house_number: googleResult.houseNumber,
+            road: googleResult.street,
+            city: googleResult.city,
+            country: googleResult.country || 'Italia'
+          },
+          importance: 1.0
+        };
 
-      const finalResults = [result];
-      searchCache.set(trimmedQuery, finalResults);
+        const finalResults = [result];
+        searchCache.set(trimmedQuery, finalResults);
 
-      if (process.env.NODE_ENV === 'development') {
-        console.log('✅ Google Maps found result:', googleResult.address);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ Google Maps found result:', googleResult.address);
+        }
+
+        return finalResults;
+
+      } catch (googleError) {
+        const errorMessage = googleError instanceof Error ? googleError.message : 'Unknown Google Maps error';
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('❌ Google Maps failed:', errorMessage);
+        }
       }
-
-      return finalResults;
-
-    } catch (googleError) {
-      const errorMessage = googleError instanceof Error ? googleError.message : 'Unknown Google Maps error';
+    } else {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('❌ Google Maps failed:', errorMessage);
+        console.log('🔄 Skipping Google Maps in development (RefererNotAllowedMapError expected)');
       }
     }
 
@@ -499,8 +513,7 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
       return await searchWithNominatim(trimmedQuery);
     }
 
-    // This should never be reached due to Photon fallback above, but just in case
-    return [];
+
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown search error';

@@ -49,6 +49,7 @@ const DashboardPage: React.FC = () => {
   const [filterShowAltro, setFilterShowAltro] = useState(true);
   const [filterShow2024, setFilterShow2024] = useState(false); // Default: non selezionato
   const [filterShow2025, setFilterShow2025] = useState(false); // Default: non selezionato
+  const [lastPoiPosition, setLastPoiPosition] = useState<[number, number] | null>(null); // Track last interacted POI position
 
   // Update task progress - marking completed steps
   // [x] Estendere geocodingService per ricerca indirizzi
@@ -93,7 +94,6 @@ const DashboardPage: React.FC = () => {
       setCurrentPosition(undefined);
     }
   }, []);
-
 
   const fetchPois = async () => {
     try {
@@ -148,19 +148,44 @@ const DashboardPage: React.FC = () => {
 
       // Funzione per validare e filtrare POI con coordinate valide
       const validatePoi = (poi: any, anno?: number): PointOfInterest | null => {
-        // Verifica che latitudine e longitudine siano numeri validi e non null
-        if (typeof poi.latitudine !== 'number' || typeof poi.longitudine !== 'number') {
-          return null;
-        }
-        if (isNaN(poi.latitudine) || isNaN(poi.longitudine)) {
-          return null;
-        }
-        // Verifica che le coordinate siano in un range ragionevole
-        if (poi.latitudine < -90 || poi.latitudine > 90 || poi.longitudine < -180 || poi.longitudine > 180) {
+        // Verifica che latitudine e longitudine esistano e non siano null/undefined
+        if (poi.latitudine === null || poi.latitudine === undefined ||
+            poi.longitudine === null || poi.longitudine === undefined) {
           return null;
         }
 
-        return anno ? { ...poi, anno } : poi;
+        // Converti coordinate in numeri se sono stringhe
+        let lat = poi.latitudine;
+        let lng = poi.longitudine;
+
+        if (typeof lat === 'string') {
+          lat = parseFloat(lat);
+        }
+        if (typeof lng === 'string') {
+          lng = parseFloat(lng);
+        }
+
+        // Verifica che siano effettivamente numeri (non stringhe, oggetti, ecc.)
+        if (typeof lat !== 'number' || typeof lng !== 'number') {
+          return null;
+        }
+
+        // Verifica che non siano NaN o Infinity
+        if (isNaN(lat) || isNaN(lng) ||
+            !isFinite(lat) || !isFinite(lng)) {
+          return null;
+        }
+
+        // Verifica che le coordinate siano in un range ragionevole
+        if (lat < -90 || lat > 90 ||
+            lng < -180 || lng > 180) {
+          return null;
+        }
+
+        // Crea una copia dell'oggetto con coordinate numeriche
+        const validatedPoi = { ...poi, latitudine: lat, longitudine: lng };
+
+        return anno ? { ...validatedPoi, anno } : validatedPoi;
       };
 
       // POI attuali (anno non definito o null)
@@ -174,22 +199,27 @@ const DashboardPage: React.FC = () => {
       // POI 2024 - Converti coordinate da stringa a numero e usa anno esistente
       if (pois2024) {
         const adaptedPois2024 = pois2024
-          .map(poi => ({
-            ...poi,
-            // Converti coordinate da stringa a numero
-            latitudine: parseFloat(poi.latitudine) || 0,
-            longitudine: parseFloat(poi.longitudine) || 0,
-            // Converti anno da stringa a numero
-            anno: parseInt(poi.anno) || 2024,
-            // Aggiungi campi mancanti con valori di default
-            username: poi.username || 'storico-2024',
-            team: poi.team || 'archivio',
-            ispezionabile: poi.ispezionabile ?? 1, // Default: ispezionabile
-            tipo: 'cantiere', // Tutti i POI 2024 sono di tipo cantiere
-            note: poi.note || 'POI storico 2024',
-            da_approvare: null // POI storici già "approvati"
-          }))
-          .filter(poi => !isNaN(poi.latitudine) && !isNaN(poi.longitudine) && poi.latitudine !== 0 && poi.longitudine !== 0);
+          .map(poi => {
+            const lat = parseFloat(poi.latitudine);
+            const lng = parseFloat(poi.longitudine);
+
+            return {
+              ...poi,
+              // Converti coordinate da stringa a numero
+              latitudine: lat,
+              longitudine: lng,
+              // Converti anno da stringa a numero
+              anno: parseInt(poi.anno) || 2024,
+              // Aggiungi campi mancanti con valori di default
+              username: poi.username || 'storico-2024',
+              team: poi.team || 'archivio',
+              ispezionabile: poi.ispezionabile ?? 1, // Default: ispezionabile
+              tipo: 'cantiere', // Tutti i POI 2024 sono di tipo cantiere
+              note: poi.note || 'POI storico 2024',
+              da_approvare: null // POI storici già "approvati"
+            };
+          })
+          .filter(poi => !isNaN(poi.latitudine) && !isNaN(poi.longitudine));
 
         const validPois2024 = adaptedPois2024
           .map(poi => validatePoi(poi))
@@ -200,21 +230,41 @@ const DashboardPage: React.FC = () => {
       // POI 2025 - Converti coordinate da stringa a numero e usa anno esistente
       if (pois2025) {
         const adaptedPois2025 = pois2025
-          .map(poi => ({
-            ...poi,
-            // Converti coordinate da stringa a numero
-            latitudine: parseFloat(poi.latitudine) || 0,
-            longitudine: parseFloat(poi.longitudine) || 0,
-            // Converti anno da stringa a numero
-            anno: parseInt(poi.anno) || 2025,
-            // Aggiungi campi mancanti con valori di default
-            username: poi.username || 'storico-2025',
-            team: poi.team || 'archivio',
-            ispezionabile: poi.ispezionabile ?? 1, // Default: ispezionabile
-            tipo: 'cantiere', // Tutti i POI 2025 sono di tipo cantiere
-            note: poi.note || 'POI storico 2025',
-            da_approvare: null // POI storici già "approvati"
-          }))
+          .map(poi => {
+            // Converti coordinate da stringa a numero con validazione aggiuntiva
+            let lat, lng;
+            if (typeof poi.latitudine === 'string') {
+              lat = parseFloat(poi.latitudine);
+            } else if (typeof poi.latitudine === 'number') {
+              lat = poi.latitudine;
+            } else {
+              lat = 0;
+            }
+
+            if (typeof poi.longitudine === 'string') {
+              lng = parseFloat(poi.longitudine);
+            } else if (typeof poi.longitudine === 'number') {
+              lng = poi.longitudine;
+            } else {
+              lng = 0;
+            }
+
+            return {
+              ...poi,
+              // Converti coordinate da stringa a numero
+              latitudine: lat,
+              longitudine: lng,
+              // Converti anno da stringa a numero
+              anno: parseInt(poi.anno) || 2025,
+              // Aggiungi campi mancanti con valori di default
+              username: poi.username || 'storico-2025',
+              team: poi.team || 'archivio',
+              ispezionabile: poi.ispezionabile ?? 1, // Default: ispezionabile
+              tipo: 'cantiere', // Tutti i POI 2025 sono di tipo cantiere
+              note: poi.note || 'POI storico 2025',
+              da_approvare: null // POI storici già "approvati"
+            };
+          })
           .filter(poi => !isNaN(poi.latitudine) && !isNaN(poi.longitudine) && poi.latitudine !== 0 && poi.longitudine !== 0);
 
         const validPois2025 = adaptedPois2025
@@ -234,29 +284,20 @@ const DashboardPage: React.FC = () => {
         // Debug dettagliato filtri
         console.log('🔍 Debug filtri coordinate:');
         const validCurrent = currentPois ? currentPois.filter(poi => {
-          const isValid = typeof poi.latitudine === 'number' && typeof poi.longitudine === 'number' &&
-                         !isNaN(poi.latitudine) && !isNaN(poi.longitudine) &&
-                         poi.latitudine >= -90 && poi.latitudine <= 90 &&
-                         poi.longitudine >= -180 && poi.longitudine <= 180;
-          if (!isValid) console.log('❌ POI corrente invalido:', poi.id, poi.latitudine, poi.longitudine);
+          const isValid = validatePoi(poi) !== null;
+          if (!isValid) console.log('❌ POI corrente invalido:', poi.id, poi.latitudine, poi.longitudine, 'Type lat:', typeof poi.latitudine, 'Type lng:', typeof poi.longitudine);
           return isValid;
         }).length : 0;
 
         const valid2024 = pois2024 ? pois2024.filter(poi => {
-          const isValid = typeof poi.latitudine === 'number' && typeof poi.longitudine === 'number' &&
-                         !isNaN(poi.latitudine) && !isNaN(poi.longitudine) &&
-                         poi.latitudine >= -90 && poi.latitudine <= 90 &&
-                         poi.longitudine >= -180 && poi.longitudine <= 180;
-          if (!isValid) console.log('❌ POI 2024 invalido:', poi.id, poi.latitudine, poi.longitudine);
+          const isValid = validatePoi(poi) !== null;
+          if (!isValid) console.log('❌ POI 2024 invalido:', poi.id, poi.latitudine, poi.longitudine, 'Type lat:', typeof poi.latitudine, 'Type lng:', typeof poi.longitudine);
           return isValid;
         }).length : 0;
 
         const valid2025 = pois2025 ? pois2025.filter(poi => {
-          const isValid = typeof poi.latitudine === 'number' && typeof poi.longitudine === 'number' &&
-                         !isNaN(poi.latitudine) && !isNaN(poi.longitudine) &&
-                         poi.latitudine >= -90 && poi.latitudine <= 90 &&
-                         poi.longitudine >= -180 && poi.longitudine <= 180;
-          if (!isValid) console.log('❌ POI 2025 invalido:', poi.id, poi.latitudine, poi.longitudine);
+          const isValid = validatePoi(poi) !== null;
+          if (!isValid) console.log('❌ POI 2025 invalido:', poi.id, poi.latitudine, poi.longitudine, 'Type lat:', typeof poi.latitudine, 'Type lng:', typeof poi.longitudine);
           return isValid;
         }).length : 0;
 
@@ -274,14 +315,14 @@ const DashboardPage: React.FC = () => {
   const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
     if (!newPoiLocation || !user) return;
 
-    // Determina il valore di da_approvare basato sui privilegi dell'utente e sul campo ispezionabile
-    // Utenti admin (admin = 1) possono inserire POI senza approvazione (da_approvare = null)
+    // Determina il valore di ispezionabile basato sui privilegi dell'utente
+    // Utenti admin (admin >= 1) possono inserire POI direttamente ispezionabili (ispezionabile = 1)
     // Utenti non admin (admin = 0):
-    //   - Se ispezionabile = 0 (non ispezionabile): da_approvare = 1 (approvato automaticamente)
-    //   - Se ispezionabile = 1 (ispezionabile): da_approvare = 2 (in attesa di approvazione)
-    let daApprovare: number | null = null;
-    if (user.admin === 0) {
-      daApprovare = ispezionabile === 0 ? 1 : 2;
+    //   - Se volevano ispezionabile = 0: rimane 0 (non ispezionabile)
+    //   - Se volevano ispezionabile = 1: diventa 2 (in attesa di approvazione)
+    let finalIspezionabile = ispezionabile;
+    if (user.admin === 0 && ispezionabile === 1) {
+      finalIspezionabile = 2; // In attesa di approvazione
     }
 
     // Se l'indirizzo è solo coordinate, prova a ottenere l'indirizzo topografico
@@ -303,10 +344,9 @@ const DashboardPage: React.FC = () => {
     if (process.env.NODE_ENV === 'development') {
       console.log('Adding POI with data:', {
         indirizzo: finalAddress,
-        ispezionabile,
+        ispezionabile: finalIspezionabile,
         tipo,
         note,
-        da_approvare: daApprovare,
         photo: photo ? `${photo.name} (${(photo.size / 1024 / 1024).toFixed(2)}MB)` : 'Nessuna foto',
         lat: newPoiLocation.lat,
         lng: newPoiLocation.lng,
@@ -319,17 +359,12 @@ const DashboardPage: React.FC = () => {
         indirizzo: finalAddress,
         username: user.username,
         team: user.team || "", // Usa il team dall'utente loggato
-        ispezionabile: ispezionabile,
+        ispezionabile: finalIspezionabile,
         tipo: tipo,
         note: note || "",
         latitudine: newPoiLocation.lat,
         longitudine: newPoiLocation.lng,
       };
-
-      // Aggiungi il campo da_approvare solo se necessario
-      if (daApprovare !== null) {
-        poiData.da_approvare = daApprovare;
-      }
 
       // Crea il POI nel database
       const { data, error } = await supabase
@@ -403,9 +438,14 @@ const DashboardPage: React.FC = () => {
     setShowAddForm(true);
   }, []);
 
-  // Function to refresh POI data
-  const refreshPois = useCallback(() => {
+  // Function to refresh POI data and optionally center on a POI
+  const refreshPois = useCallback((poiPosition?: [number, number]) => {
     fetchPois();
+    if (poiPosition) {
+      setLastPoiPosition(poiPosition);
+      // Force map re-render by updating currentPosition to trigger centering
+      setCurrentPosition(poiPosition);
+    }
   }, []);
 
   const handleLogout = useCallback(async () => {
@@ -435,7 +475,7 @@ const DashboardPage: React.FC = () => {
                 initialPosition={currentPosition}
                 onPoiUpdated={refreshPois}
                 currentTeam={user?.team}
-                isAdmin={user?.admin === 1}
+                adminLevel={user?.admin || 0}
                 newPoiLocation={showAddForm ? newPoiLocation : null}
                 onAddPoi={handleAddPoi}
                 onCancelAddPoi={() => setShowAddForm(false)}
