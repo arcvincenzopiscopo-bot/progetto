@@ -185,7 +185,7 @@ const DashboardPage: React.FC = () => {
             username: poi.username || 'storico-2024',
             team: poi.team || 'archivio',
             ispezionabile: poi.ispezionabile ?? 1, // Default: ispezionabile
-            tipo: poi.tipo || 'altro',
+            tipo: 'cantiere', // Tutti i POI 2024 sono di tipo cantiere
             note: poi.note || 'POI storico 2024',
             da_approvare: null // POI storici già "approvati"
           }))
@@ -211,7 +211,7 @@ const DashboardPage: React.FC = () => {
             username: poi.username || 'storico-2025',
             team: poi.team || 'archivio',
             ispezionabile: poi.ispezionabile ?? 1, // Default: ispezionabile
-            tipo: poi.tipo || 'altro',
+            tipo: 'cantiere', // Tutti i POI 2025 sono di tipo cantiere
             note: poi.note || 'POI storico 2025',
             da_approvare: null // POI storici già "approvati"
           }))
