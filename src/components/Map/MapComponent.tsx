@@ -857,9 +857,14 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                 }
                               }
 
-                              // Then delete the POI from the database
+                              // Determine which table to delete from based on year
+                              const tableName = poi.anno === 2024 ? 'points_old_2024' :
+                                               poi.anno === 2025 ? 'points_old_2025' :
+                                               'points';
+
+                              // Then delete the POI from the correct database table
                               const { error } = await supabase
-                                .from('points')
+                                .from(tableName)
                                 .delete()
                                 .eq('id', poi.id);
 
