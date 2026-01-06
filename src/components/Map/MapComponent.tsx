@@ -496,6 +496,68 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
   const centerPosition: [number, number] = initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
 
+  // State for editing historical POI addresses
+  const [editingAddress, setEditingAddress] = useState<{ [key: string]: string | undefined }>({});
+  const [updatingAddress, setUpdatingAddress] = useState<Set<string>>(new Set());
+
+  // Handle address editing for historical POIs
+  const handleAddressEdit = async (poiId: string, newAddress: string, anno: number) => {
+    if (!newAddress.trim() || updatingAddress.has(poiId)) return;
+
+    setUpdatingAddress(prev => new Set(prev).add(poiId));
+
+    try {
+      // Import searchAddress function for geocoding
+      const { searchAddress } = await import('../../services/geocodingService');
+
+      // First, geocode the new address to get coordinates
+      const searchResults = await searchAddress(newAddress.trim());
+
+      let updateData: any = { indirizzo: newAddress.trim() };
+
+      // If geocoding was successful, update coordinates too
+      if (searchResults && searchResults.length > 0) {
+        const bestResult = searchResults[0];
+        updateData.latitudine = parseFloat(bestResult.lat);
+        updateData.longitudine = parseFloat(bestResult.lon);
+      }
+
+      // Determine which table to update based on year
+      const tableName = anno === 2024 ? 'points_old_2024' : 'points_old_2025';
+
+      const { error } = await supabase
+        .from(tableName)
+        .update(updateData)
+        .eq('id', poiId);
+
+      if (error) {
+        console.error('Error updating POI address:', error);
+        alert('Errore durante l\'aggiornamento dell\'indirizzo');
+        // Revert the local state on error
+        setEditingAddress(prev => ({ ...prev, [poiId]: undefined }));
+      } else {
+        console.log('POI address updated successfully');
+        // Refresh POI data
+        if (onPoiUpdated) {
+          onPoiUpdated();
+        }
+        // Clear editing state
+        setEditingAddress(prev => ({ ...prev, [poiId]: undefined }));
+      }
+    } catch (error) {
+      console.error('Error updating POI:', error);
+      alert('Errore durante l\'aggiornamento del POI');
+      // Revert the local state on error
+      setEditingAddress(prev => ({ ...prev, [poiId]: undefined }));
+    } finally {
+      setUpdatingAddress(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(poiId);
+        return newSet;
+      });
+    }
+  };
+
   useEffect(() => {
     // Force re-render when initialPosition changes
     if (initialPosition) {
@@ -586,7 +648,31 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                      poi.ispezionabile === 2 ? 'Creato in data: ' : ''}
                     {new Date(poi.created_at).toLocaleString()}
                   </p>
-                  <p className="text-sm text-gray-600 mb-1">Indirizzo: {poi.indirizzo || 'N/D'}</p>
+                  {poi.anno ? (
+                    // Editable address for historical POIs
+                    <div className="mb-1">
+                      <label className="block text-xs text-gray-500 mb-1">Indirizzo (modificabile):</label>
+                      <input
+                        type="text"
+                        value={editingAddress[poi.id] !== undefined ? editingAddress[poi.id] : poi.indirizzo || ''}
+                        onChange={(e) => setEditingAddress(prev => ({ ...prev, [poi.id]: e.target.value }))}
+                        onBlur={(e) => handleAddressEdit(poi.id, e.target.value, poi.anno!)}
+                        disabled={updatingAddress.has(poi.id)}
+                        className={`w-full px-2 py-1 text-sm border rounded ${
+                          updatingAddress.has(poi.id)
+                            ? 'bg-gray-100 border-gray-300 cursor-not-allowed'
+                            : 'bg-white border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
+                        }`}
+                        placeholder="Inserisci indirizzo..."
+                      />
+                      {updatingAddress.has(poi.id) && (
+                        <span className="text-xs text-blue-600 ml-2">🔄 Aggiornando...</span>
+                      )}
+                    </div>
+                  ) : (
+                    // Read-only address for current POIs
+                    <p className="text-sm text-gray-600 mb-1">Indirizzo: {poi.indirizzo || 'N/D'}</p>
+                  )}
                   <p className="text-sm text-gray-600 mb-1">Username: {poi.username || 'N/D'}</p>
                   <p className="text-sm text-gray-600 mb-1">Team: {poi.team || 'N/D'}</p>
                   <p className="text-sm text-gray-600 mb-1">Tipo: {poi.tipo || 'N/D'}</p>
@@ -651,8 +737,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                       📤 Condividi
                     </button>
 
-                    {/* Ispezionato button - smaller size, only show if applicable */}
-                    {poi.ispezionabile === 1 && poi.da_approvare !== 2 && (
+                    {/* Ispezionato button - smaller size, only show if applicable and not historical POI */}
+                    {poi.ispezionabile === 1 && poi.da_approvare !== 2 && !poi.anno && (
                       <button
                         onClick={async (e) => {
                           e.stopPropagation();
