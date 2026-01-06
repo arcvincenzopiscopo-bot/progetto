@@ -644,7 +644,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
               <div className="border-2 border-indigo-600 rounded-lg p-3 bg-white">
                 <div className="space-y-3">
                   <p className="text-sm font-medium text-gray-700 mb-1">
-                    {poi.ispezionabile === 0 ? 'Ispezionato in data: ' :
+                    {poi.anno === 2024 || poi.anno === 2025 ? 'inserito nel db in data ' :
+                     poi.ispezionabile === 1 ? 'Proposto da ispezionare in data ' :
+                     poi.ispezionabile === 0 ? 'Ispezionato in data: ' :
                      poi.ispezionabile === 2 ? 'Creato in data: ' : ''}
                     {new Date(poi.created_at).toLocaleString()}
                   </p>
