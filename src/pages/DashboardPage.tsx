@@ -171,17 +171,37 @@ const DashboardPage: React.FC = () => {
         allPois.push(...validCurrentPois);
       }
 
-      // POI 2024
+      // POI 2024 - Adatta struttura per campi mancanti
       if (pois2024) {
-        const validPois2024 = pois2024
+        const adaptedPois2024 = pois2024.map(poi => ({
+          ...poi,
+          username: poi.username || 'storico-2024',
+          team: poi.team || 'archivio',
+          ispezionabile: poi.ispezionabile ?? 1, // Default: ispezionabile
+          tipo: poi.tipo || 'altro',
+          note: poi.note || 'POI storico 2024',
+          da_approvare: null // POI storici già "approvati"
+        }));
+
+        const validPois2024 = adaptedPois2024
           .map(poi => validatePoi(poi, 2024))
           .filter((poi): poi is PointOfInterest => poi !== null);
         allPois.push(...validPois2024);
       }
 
-      // POI 2025
+      // POI 2025 - Adatta struttura per campi mancanti
       if (pois2025) {
-        const validPois2025 = pois2025
+        const adaptedPois2025 = pois2025.map(poi => ({
+          ...poi,
+          username: poi.username || 'storico-2025',
+          team: poi.team || 'archivio',
+          ispezionabile: poi.ispezionabile ?? 1, // Default: ispezionabile
+          tipo: poi.tipo || 'altro',
+          note: poi.note || 'POI storico 2025',
+          da_approvare: null // POI storici già "approvati"
+        }));
+
+        const validPois2025 = adaptedPois2025
           .map(poi => validatePoi(poi, 2025))
           .filter((poi): poi is PointOfInterest => poi !== null);
         allPois.push(...validPois2025);
