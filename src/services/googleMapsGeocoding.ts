@@ -12,7 +12,7 @@ export interface GeocodingResult {
 }
 
 export const googleMapsGeocoding = async (query: string): Promise<GeocodingResult> => {
-  console.log('🔍 [Google Maps] Starting geocoding...');
+  console.log('🔍 [Google Maps] Starting geocoding request');
 
   const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
@@ -21,22 +21,20 @@ export const googleMapsGeocoding = async (query: string): Promise<GeocodingResul
     throw new Error('Google Maps API key not configured');
   }
 
-  console.log('✅ [Google Maps] API key found, loading Google Maps API...');
-
   // Load Google Maps API dynamically
   if (!window.google?.maps) {
-    console.log('📦 [Google Maps] Loading Google Maps script...');
+    console.log('📦 [Google Maps] Loading Google Maps API script');
     await new Promise<void>((resolve, reject) => {
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geocoding`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        console.log('✅ [Google Maps] Script loaded successfully');
+        console.log('✅ [Google Maps] API script loaded successfully');
         resolve();
       };
       script.onerror = () => {
-        console.error('❌ [Google Maps] Failed to load script');
+        console.error('❌ [Google Maps] Failed to load API script');
         reject(new Error('Failed to load Google Maps API'));
       };
       document.head.appendChild(script);
@@ -46,7 +44,7 @@ export const googleMapsGeocoding = async (query: string): Promise<GeocodingResul
   }
 
   const geocoder = new google.maps.Geocoder();
-  console.log('🔎 [Google Maps] Sending geocoding request for:', query);
+  console.log('🔎 [Google Maps] Sending geocoding request');
 
   return new Promise((resolve, reject) => {
     geocoder.geocode({ address: query }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
