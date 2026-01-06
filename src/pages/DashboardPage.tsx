@@ -194,6 +194,37 @@ const DashboardPage: React.FC = () => {
           year2025: pois2025?.length || 0,
           total: allPois.length
         });
+
+        // Debug dettagliato filtri
+        console.log('🔍 Debug filtri coordinate:');
+        const validCurrent = currentPois ? currentPois.filter(poi => {
+          const isValid = typeof poi.latitudine === 'number' && typeof poi.longitudine === 'number' &&
+                         !isNaN(poi.latitudine) && !isNaN(poi.longitudine) &&
+                         poi.latitudine >= -90 && poi.latitudine <= 90 &&
+                         poi.longitudine >= -180 && poi.longitudine <= 180;
+          if (!isValid) console.log('❌ POI corrente invalido:', poi.id, poi.latitudine, poi.longitudine);
+          return isValid;
+        }).length : 0;
+
+        const valid2024 = pois2024 ? pois2024.filter(poi => {
+          const isValid = typeof poi.latitudine === 'number' && typeof poi.longitudine === 'number' &&
+                         !isNaN(poi.latitudine) && !isNaN(poi.longitudine) &&
+                         poi.latitudine >= -90 && poi.latitudine <= 90 &&
+                         poi.longitudine >= -180 && poi.longitudine <= 180;
+          if (!isValid) console.log('❌ POI 2024 invalido:', poi.id, poi.latitudine, poi.longitudine);
+          return isValid;
+        }).length : 0;
+
+        const valid2025 = pois2025 ? pois2025.filter(poi => {
+          const isValid = typeof poi.latitudine === 'number' && typeof poi.longitudine === 'number' &&
+                         !isNaN(poi.latitudine) && !isNaN(poi.longitudine) &&
+                         poi.latitudine >= -90 && poi.latitudine <= 90 &&
+                         poi.longitudine >= -180 && poi.longitudine <= 180;
+          if (!isValid) console.log('❌ POI 2025 invalido:', poi.id, poi.latitudine, poi.longitudine);
+          return isValid;
+        }).length : 0;
+
+        console.log('✅ POI validi - Correnti:', validCurrent, '2024:', valid2024, '2025:', valid2025);
       }
 
       setPois(allPois);
