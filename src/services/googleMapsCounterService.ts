@@ -30,7 +30,9 @@ export async function incrementGoogleMapsUsage(): Promise<void> {
     const currentMonthKey = getCurrentMonthKey();
     const now = new Date().toISOString();
 
-    console.log('📊 [Google Maps Counter] Incrementing usage for month:', currentMonthKey);
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📊 [Google Maps Counter] Incrementing usage for month:', currentMonthKey);
+    }
 
     // Prima proviamo a vedere se esiste già una riga per questo mese
     const { data: existingRecord, error: selectError } = await supabase

@@ -12,7 +12,10 @@ export interface GeocodingResult {
 }
 
 export const googleMapsGeocoding = async (query: string): Promise<GeocodingResult> => {
-  console.log('🔍 [Google Maps] Starting geocoding request');
+  // Log ridotto per sicurezza - solo in sviluppo
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 [Google Maps] Starting geocoding request');
+  }
 
   const apiKey = process.env.REACT_APP_GOOGLE_MAPS_API_KEY;
 
@@ -23,14 +26,18 @@ export const googleMapsGeocoding = async (query: string): Promise<GeocodingResul
 
   // Load Google Maps API dynamically
   if (!window.google?.maps) {
-    console.log('📦 [Google Maps] Loading Google Maps API script');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('📦 [Google Maps] Loading Google Maps API script');
+    }
     await new Promise<void>((resolve, reject) => {
       const script = document.createElement('script');
       script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=geocoding`;
       script.async = true;
       script.defer = true;
       script.onload = () => {
-        console.log('✅ [Google Maps] API script loaded successfully');
+        if (process.env.NODE_ENV === 'development') {
+          console.log('✅ [Google Maps] API script loaded successfully');
+        }
         resolve();
       };
       script.onerror = () => {
@@ -40,11 +47,15 @@ export const googleMapsGeocoding = async (query: string): Promise<GeocodingResul
       document.head.appendChild(script);
     });
   } else {
-    console.log('✅ [Google Maps] API already loaded');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ [Google Maps] API already loaded');
+    }
   }
 
   const geocoder = new google.maps.Geocoder();
-  console.log('🔎 [Google Maps] Sending geocoding request');
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔎 [Google Maps] Sending geocoding request');
+  }
 
   return new Promise((resolve, reject) => {
     geocoder.geocode({ address: query }, (results: google.maps.GeocoderResult[] | null, status: google.maps.GeocoderStatus) => {
