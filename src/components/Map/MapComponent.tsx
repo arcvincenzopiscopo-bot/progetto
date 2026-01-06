@@ -28,6 +28,7 @@ interface PointOfInterest {
   photo_url?: string;
   created_at: string;
   data_inattivita?: string;
+  anno?: number; // Campo aggiunto per identificare POI storici (2024, 2025)
 }
 
 interface MapComponentProps {
@@ -46,6 +47,8 @@ interface MapComponentProps {
   filterShowPendingApproval?: boolean;
   filterShowCantiere?: boolean;
   filterShowAltro?: boolean;
+  filterShow2024?: boolean;
+  filterShow2025?: boolean;
   height?: string;
 }
 
@@ -88,14 +91,24 @@ const yellowIcon = L.icon({
   shadowSize: [41, 41]
 });
 
-// const blueIcon = L.icon({
-//   iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
-//   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
-//   iconSize: [25, 41],
-//   iconAnchor: [12, 41],
-//   popupAnchor: [1, -34],
-//   shadowSize: [41, 41]
-// });
+// Custom icons for historical POIs (magenta for 2024, cyan for 2025)
+const magentaIcon = L.icon({
+  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const cyanIcon = L.icon({
+  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-cyan.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
 
 // Custom circular icon for user's location with police officer
 const userLocationIcon = L.divIcon({
@@ -478,7 +491,7 @@ const POIFormPopup: React.FC<{
   );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, onPoiUpdated, currentTeam, isAdmin = false, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, height }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, onPoiUpdated, currentTeam, isAdmin = false, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height }) => {
   // Use initial position if provided, otherwise default to Rome coordinates
   const centerPosition: [number, number] = initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
@@ -533,15 +546,22 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
           if (poi.da_approvare === 2 && !filterShowPendingApproval) return false;
           if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;
           if (poi.tipo === 'altro' && !filterShowAltro) return false;
+          // Filter by year - historical POIs
+          if (poi.anno === 2024 && !filterShow2024) return false;
+          if (poi.anno === 2025 && !filterShow2025) return false;
           return true;
         })
         .map((poi) => {
-        // Determine which icon to use based on da_approvare and ispezionabile fields
-        // Priority: da_approvare = 2 -> yellow marker (pending approval)
-        // Then: ispezionabile = 1 -> green marker
-        //       ispezionabile = 0 -> red marker
+        // Determine which icon to use based on year first, then status
+        // Priority: Historical POIs (2024, 2025) -> special colored markers
+        // Then: da_approvare = 2 -> yellow marker (pending approval)
+        // Then: ispezionabile = 1 -> green marker, = 0 -> red marker
         let markerIcon;
-        if (poi.da_approvare === 2) {
+        if (poi.anno === 2024) {
+          markerIcon = magentaIcon; // 🟣 Magenta for 2024
+        } else if (poi.anno === 2025) {
+          markerIcon = cyanIcon; // 🟦 Cyan for 2025
+        } else if (poi.da_approvare === 2) {
           markerIcon = yellowIcon;
         } else {
           markerIcon = poi.ispezionabile === 1 ? greenIcon : redIcon;

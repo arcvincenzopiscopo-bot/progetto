@@ -32,6 +32,7 @@ interface PointOfInterest {
   da_approvare?: number;
   photo_url?: string;
   created_at: string;
+  anno?: number; // Campo aggiunto per identificare POI storici (2024, 2025)
 }
 
 const DashboardPage: React.FC = () => {
@@ -46,6 +47,8 @@ const DashboardPage: React.FC = () => {
   const [filterShowPendingApproval, setFilterShowPendingApproval] = useState(true);
   const [filterShowCantiere, setFilterShowCantiere] = useState(true);
   const [filterShowAltro, setFilterShowAltro] = useState(true);
+  const [filterShow2024, setFilterShow2024] = useState(false); // Default: non selezionato
+  const [filterShow2025, setFilterShow2025] = useState(false); // Default: non selezionato
 
   // Update task progress - marking completed steps
   // [x] Estendere geocodingService per ricerca indirizzi
@@ -94,6 +97,7 @@ const DashboardPage: React.FC = () => {
 
   const fetchPois = async () => {
     try {
+      // Recupera POI dalla tabella principale 'points'
       let query = supabase
         .from('points')
         .select('*')
@@ -106,16 +110,69 @@ const DashboardPage: React.FC = () => {
       }
       // Utenti admin possono vedere tutti i POI (nessun filtro aggiuntivo)
 
-      const { data, error } = await query;
+      const { data: currentPois, error: currentError } = await query;
 
-      if (error) {
+      if (currentError) {
         if (process.env.NODE_ENV === 'development') {
-          console.error('Error fetching POIs:', error);
+          console.error('Error fetching current POIs:', currentError);
         }
-        throw error;
+        throw currentError;
       }
 
-      setPois(data || []);
+      // Recupera POI storici 2024
+      const { data: pois2024, error: error2024 } = await supabase
+        .from('points_old_2024')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error2024) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Error fetching 2024 POIs:', error2024);
+        }
+      }
+
+      // Recupera POI storici 2025
+      const { data: pois2025, error: error2025 } = await supabase
+        .from('points_old_2025')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error2025) {
+        if (process.env.NODE_ENV === 'development') {
+          console.warn('Error fetching 2025 POIs:', error2025);
+        }
+      }
+
+      // Unisci tutti i POI aggiungendo il campo anno
+      const allPois: PointOfInterest[] = [];
+
+      // POI attuali (anno non definito o null)
+      if (currentPois) {
+        allPois.push(...currentPois);
+      }
+
+      // POI 2024
+      if (pois2024) {
+        const pois2024WithYear = pois2024.map(poi => ({ ...poi, anno: 2024 }));
+        allPois.push(...pois2024WithYear);
+      }
+
+      // POI 2025
+      if (pois2025) {
+        const pois2025WithYear = pois2025.map(poi => ({ ...poi, anno: 2025 }));
+        allPois.push(...pois2025WithYear);
+      }
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('POI summary:', {
+          current: currentPois?.length || 0,
+          year2024: pois2024?.length || 0,
+          year2025: pois2025?.length || 0,
+          total: allPois.length
+        });
+      }
+
+      setPois(allPois);
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Error fetching POIs:', err);
@@ -296,6 +353,8 @@ const DashboardPage: React.FC = () => {
                 filterShowPendingApproval={filterShowPendingApproval}
                 filterShowCantiere={filterShowCantiere}
                 filterShowAltro={filterShowAltro}
+                filterShow2024={filterShow2024}
+                filterShow2025={filterShow2025}
                 height="66vh"
               />
             </Suspense>
@@ -409,7 +468,7 @@ const DashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Right Column - Type Filters */}
+              {/* Right Column - Type and Year Filters */}
               <div className="flex-1 space-y-2">
                 <div className="flex items-center space-x-3">
                   <input
@@ -433,6 +492,30 @@ const DashboardPage: React.FC = () => {
                   />
                   <label htmlFor="filter-altro" className="text-sm font-medium text-gray-700">
                     🔵 Altro
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="filter-2024"
+                    checked={filterShow2024}
+                    onChange={(e) => setFilterShow2024(e.target.checked)}
+                    className="h-5 w-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                  />
+                  <label htmlFor="filter-2024" className="text-sm font-medium text-gray-700">
+                    🟣 Anno 2024
+                  </label>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="checkbox"
+                    id="filter-2025"
+                    checked={filterShow2025}
+                    onChange={(e) => setFilterShow2025(e.target.checked)}
+                    className="h-5 w-5 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500"
+                  />
+                  <label htmlFor="filter-2025" className="text-sm font-medium text-gray-700">
+                    🟦 Anno 2025
                   </label>
                 </div>
               </div>
