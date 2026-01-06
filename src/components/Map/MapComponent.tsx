@@ -841,7 +841,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                             </button>
                           )}
 
-                          {/* Green POIs - Inattività button */}
+                          {/* Green POIs - Segnala inattività button */}
                           {poi.ispezionabile === 1 && (
                             <button
                               onClick={async (e) => {
@@ -865,31 +865,33 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                               }}
                               className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm"
                             >
-                              ⚠️ Inattività
+                              ⚠️ Segnala inattività
                             </button>
                           )}
 
-                          {/* Admin delete button for green POIs */}
+                          {/* Admin delete button for green POIs - centered */}
                           {adminLevel >= 1 && poi.ispezionabile === 1 && (
-                            <button
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
-                                if (!confirmed) return;
-                                try {
-                                  if (poi.photo_url) {
-                                    await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
+                            <div className="flex justify-center">
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
+                                  if (!confirmed) return;
+                                  try {
+                                    if (poi.photo_url) {
+                                      await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
+                                    }
+                                    const { error } = await supabase.from('points').delete().eq('id', poi.id);
+                                    if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                  } catch (err) {
+                                    console.error('Error deleting POI:', err);
                                   }
-                                  const { error } = await supabase.from('points').delete().eq('id', poi.id);
-                                  if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
-                                } catch (err) {
-                                  console.error('Error deleting POI:', err);
-                                }
-                              }}
-                              className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
-                            >
-                              🗑️ Elimina
-                            </button>
+                                }}
+                                className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
+                              >
+                                🗑️ Elimina
+                              </button>
+                            </div>
                           )}
 
                           {/* Non-admin delete button for yellow POIs created today */}
@@ -915,7 +917,30 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                   console.error('Error deleting POI:', err);
                                 }
                               }}
-                              className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
+                              className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1"
+                            >
+                              🗑️ Elimina
+                            </button>
+                          )}
+
+                          {/* Admin and superadmin delete button for yellow POIs */}
+                          {adminLevel >= 1 && poi.ispezionabile === 2 && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
+                                if (!confirmed) return;
+                                try {
+                                  if (poi.photo_url) {
+                                    await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
+                                  }
+                                  const { error } = await supabase.from('points').delete().eq('id', poi.id);
+                                  if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                } catch (err) {
+                                  console.error('Error deleting POI:', err);
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1"
                             >
                               🗑️ Elimina
                             </button>
