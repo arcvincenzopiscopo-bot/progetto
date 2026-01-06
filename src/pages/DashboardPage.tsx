@@ -143,24 +143,48 @@ const DashboardPage: React.FC = () => {
         }
       }
 
-      // Unisci tutti i POI aggiungendo il campo anno
+      // Unisci tutti i POI aggiungendo il campo anno e valida coordinate
       const allPois: PointOfInterest[] = [];
+
+      // Funzione per validare e filtrare POI con coordinate valide
+      const validatePoi = (poi: any, anno?: number): PointOfInterest | null => {
+        // Verifica che latitudine e longitudine siano numeri validi e non null
+        if (typeof poi.latitudine !== 'number' || typeof poi.longitudine !== 'number') {
+          return null;
+        }
+        if (isNaN(poi.latitudine) || isNaN(poi.longitudine)) {
+          return null;
+        }
+        // Verifica che le coordinate siano in un range ragionevole
+        if (poi.latitudine < -90 || poi.latitudine > 90 || poi.longitudine < -180 || poi.longitudine > 180) {
+          return null;
+        }
+
+        return anno ? { ...poi, anno } : poi;
+      };
 
       // POI attuali (anno non definito o null)
       if (currentPois) {
-        allPois.push(...currentPois);
+        const validCurrentPois = currentPois
+          .map(poi => validatePoi(poi))
+          .filter((poi): poi is PointOfInterest => poi !== null);
+        allPois.push(...validCurrentPois);
       }
 
       // POI 2024
       if (pois2024) {
-        const pois2024WithYear = pois2024.map(poi => ({ ...poi, anno: 2024 }));
-        allPois.push(...pois2024WithYear);
+        const validPois2024 = pois2024
+          .map(poi => validatePoi(poi, 2024))
+          .filter((poi): poi is PointOfInterest => poi !== null);
+        allPois.push(...validPois2024);
       }
 
       // POI 2025
       if (pois2025) {
-        const pois2025WithYear = pois2025.map(poi => ({ ...poi, anno: 2025 }));
-        allPois.push(...pois2025WithYear);
+        const validPois2025 = pois2025
+          .map(poi => validatePoi(poi, 2025))
+          .filter((poi): poi is PointOfInterest => poi !== null);
+        allPois.push(...validPois2025);
       }
 
       if (process.env.NODE_ENV === 'development') {
