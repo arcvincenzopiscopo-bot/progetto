@@ -1,3 +1,5 @@
+import { incrementGoogleMapsUsage } from './googleMapsCounterService';
+
 export interface GeocodingResult {
   lat: number;
   lng: number;
@@ -69,6 +71,11 @@ export const googleMapsGeocoding = async (query: string): Promise<GeocodingResul
           lng: finalResult.lng,
           houseNumber: finalResult.houseNumber,
           source: finalResult.source
+        });
+
+        // Incrementa il contatore delle chiamate Google Maps
+        incrementGoogleMapsUsage().catch(error => {
+          console.warn('⚠️ [Google Maps] Failed to increment usage counter:', error);
         });
 
         resolve(finalResult);
