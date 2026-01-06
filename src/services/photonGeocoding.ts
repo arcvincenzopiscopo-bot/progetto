@@ -10,17 +10,15 @@ export interface GeocodingResult {
 }
 
 export const photonGeocoding = async (query: string): Promise<GeocodingResult> => {
-  // TEMP: Photon ha problemi di stabilità, forziamo fallback immediato
-  // Photon ha una sintassi API diversa e bbox può causare errori
-  console.log('Photon temporarily disabled - going to Nominatim fallback');
-  throw new Error('Photon temporarily disabled for stability');
-
-  // Codice commentato - sarà riabilitato quando Photon sarà stabile
-  /*
-  const url = `https://photon.komoot.io/api?q=${encodeURIComponent(query)}&limit=1&lang=it`;
+  // URL corretto per Photon (risolto: rimuovere lang=it che causa errore 400)
+  const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1`;
 
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; GeocodingApp/1.0)'
+      }
+    });
 
     if (!response.ok) {
       throw new Error(`Photon API error: ${response.status}`);
@@ -49,5 +47,4 @@ export const photonGeocoding = async (query: string): Promise<GeocodingResult> =
   } catch (error) {
     throw error;
   }
-  */
 };
