@@ -101,8 +101,8 @@ const magentaIcon = L.icon({
   shadowSize: [41, 41]
 });
 
-const blueIcon = L.icon({
-  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+const darkGreyIcon = L.icon({
+  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
   iconSize: [25, 41],
   iconAnchor: [12, 41],
@@ -560,7 +560,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
         if (poi.anno === 2024) {
           markerIcon = magentaIcon; // 🟣 Magenta for 2024
         } else if (poi.anno === 2025) {
-          markerIcon = blueIcon; // 🟦 Blue for 2025
+          markerIcon = darkGreyIcon; // ⚫ Dark grey for 2025
         } else if (poi.da_approvare === 2) {
           markerIcon = yellowIcon;
         } else {
