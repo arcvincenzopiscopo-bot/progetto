@@ -39,7 +39,7 @@ interface MapComponentProps {
   mapCenter?: [number, number] | null;
   mapZoom?: number;
   onPoiUpdated?: (poiPosition?: [number, number], zoomLevel?: number, workingPoiId?: string) => void;
-  onPoiSelect?: (poi: PointOfInterest) => void; // Callback when POI is selected
+  onPoiSelect?: (poi: PointOfInterest | null) => void; // Callback when POI is selected/deselected
   currentTeam?: string;
   adminLevel?: number;
   newPoiLocation?: { lat: number; lng: number } | null;
@@ -199,11 +199,11 @@ const largeDarkGreyIcon = L.icon({
 
 const MapClickHandler: React.FC<{
   onMapClick: (lat: number, lng: number) => void;
-  onPoiDeselect?: () => void; // Callback when clicking on map to deselect POIs
+  onPoiSelect?: (poi: PointOfInterest | null) => void; // Callback for POI selection/deselection
   newPoiLocation?: { lat: number; lng: number } | null;
   onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => void;
   onCancelAddPoi?: () => void;
-}> = ({ onMapClick, onPoiDeselect, newPoiLocation, onAddPoi, onCancelAddPoi }) => {
+}> = ({ onMapClick, onPoiSelect, newPoiLocation, onAddPoi, onCancelAddPoi }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [clickPosition, setClickPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [ispezionabile, setIspezionabile] = useState('1');
@@ -305,6 +305,26 @@ const MapClickHandler: React.FC<{
   };
 
   return null; // Remove the marker from MapClickHandler - it's now handled in MapComponent
+};
+
+// Component to handle map clicks for POI deselection
+const MapDeselectHandler: React.FC<{
+  onPoiSelect?: (poi: PointOfInterest | null) => void;
+}> = ({ onPoiSelect }) => {
+  useMapEvents({
+    click: (e) => {
+      // Check if the click was on a marker by looking at the original event target
+      // If it's not on a marker, deselect all POIs
+      const target = e.originalEvent.target as HTMLElement;
+      const isOnMarker = target.closest('.leaflet-marker-icon') !== null;
+
+      if (!isOnMarker && onPoiSelect) {
+        onPoiSelect(null); // Deselect all POIs
+      }
+    },
+  });
+
+  return null;
 };
 
 // Unified POI Form Popup component with consistent styling
@@ -1015,6 +1035,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
       )}
 
       <MapClickHandler onMapClick={onMapClick} onAddPoi={onAddPoi} onCancelAddPoi={onCancelAddPoi} />
+      <MapDeselectHandler onPoiSelect={onPoiSelect} />
     </MapContainer>
   );
 };
