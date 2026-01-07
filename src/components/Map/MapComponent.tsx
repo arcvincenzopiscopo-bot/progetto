@@ -758,6 +758,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                               }
                             }}
                             className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
+                            type="button"
                           >
                             📤 Condividi
                           </button>
@@ -846,6 +847,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                 }
                               }}
                               className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
+                              type="button"
                             >
                               🏗️ Cantiere finito
                             </button>
@@ -878,6 +880,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                 }
                               }}
                               className="text-xs px-2 py-1 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm"
+                              type="button"
                             >
                               👮‍♂️ Ispezionato
                             </button>
@@ -907,6 +910,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                 }
                               }}
                               className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm"
+                              type="button"
                             >
                               ⚠️ Segnala inattività
                             </button>
@@ -944,6 +948,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                   }
                                 }}
                                 className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm"
+                                type="button"
                               >
                                 🗑️ Elimina
                               </button>
@@ -974,6 +979,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                 }
                               }}
                               className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1"
+                              type="button"
                             >
                               🗑️ Elimina
                             </button>
@@ -997,6 +1003,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                 }
                               }}
                               className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1"
+                              type="button"
                             >
                               🗑️ Elimina
                             </button>
