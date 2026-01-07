@@ -424,7 +424,10 @@ const DashboardPage: React.FC = () => {
         if (process.env.NODE_ENV === 'development') {
           console.log('POI added successfully:', data[0]);
         }
-        setPois(prevPois => [...prevPois, data[0]]);
+        const newPoi = data[0];
+        setPois(prevPois => [...prevPois, newPoi]);
+        // Automatically select the newly created POI
+        setSelectedPoiId(newPoi.id);
         setShowAddForm(false);
         setNewPoiLocation(null);
         setCreatingNewPoi(false); // Reset creating state on success
