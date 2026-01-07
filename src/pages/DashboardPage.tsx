@@ -432,6 +432,8 @@ const DashboardPage: React.FC = () => {
   }, [newPoiLocation, user, pois]);
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
+    // Reset any working POI when clicking on map to add new POI
+    setWorkingPoiId(null);
     setNewPoiLocation({ lat, lng });
     setShowAddForm(true);
   }, []);
@@ -458,6 +460,8 @@ const DashboardPage: React.FC = () => {
   // Handle location selection from search - creates new POI at searched location
   const handleLocationSelect = useCallback((lat: number, lng: number) => {
     console.log('Location selected from search:', lat, lng);
+    // Reset any working POI when searching for new location
+    setWorkingPoiId(null);
     // Center map on searched location with zoom
     refreshPois([lat, lng]);
     setNewPoiLocation({ lat, lng });
