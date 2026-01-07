@@ -138,10 +138,55 @@ const userLocationIcon = L.divIcon({
   popupAnchor: [0, -19]
 });
 
-// Large icon for POI currently being worked on (double size)
+// Large icons for POI currently being worked on (double size) - maintaining original colors
 const largeDefaultIcon = L.icon({
   iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [50, 82], // Double the size
+  iconAnchor: [25, 82], // Adjusted anchor point
+  popupAnchor: [1, -82], // Adjusted popup anchor
+  shadowSize: [82, 82] // Double shadow size
+});
+
+const largeGreenIcon = L.icon({
+  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [50, 82], // Double the size
+  iconAnchor: [25, 82], // Adjusted anchor point
+  popupAnchor: [1, -82], // Adjusted popup anchor
+  shadowSize: [82, 82] // Double shadow size
+});
+
+const largeRedIcon = L.icon({
+  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [50, 82], // Double the size
+  iconAnchor: [25, 82], // Adjusted anchor point
+  popupAnchor: [1, -82], // Adjusted popup anchor
+  shadowSize: [82, 82] // Double shadow size
+});
+
+const largeYellowIcon = L.icon({
+  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [50, 82], // Double the size
+  iconAnchor: [25, 82], // Adjusted anchor point
+  popupAnchor: [1, -82], // Adjusted popup anchor
+  shadowSize: [82, 82] // Double shadow size
+});
+
+const largeMagentaIcon = L.icon({
+  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
+  iconSize: [50, 82], // Double the size
+  iconAnchor: [25, 82], // Adjusted anchor point
+  popupAnchor: [1, -82], // Adjusted popup anchor
+  shadowSize: [82, 82] // Double shadow size
+});
+
+const largeDarkGreyIcon = L.icon({
+  iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png',
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
   iconSize: [50, 82], // Double the size
   iconAnchor: [25, 82], // Adjusted anchor point
@@ -635,15 +680,23 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
           return true;
         })
         .map((poi) => {
-        // Determine which icon to use based on year first, then status, then working state
-        // Priority: Working POI -> large icon (double size)
+        // Determine which icon to use based on working state first, then year, then status
+        // Priority: Working POI -> large colored icon (double size, maintains original color)
         // Then: Historical POIs (2024, 2025) -> special colored markers
         // Then: ispezionabile = 2 -> yellow marker (pending approval)
         // Then: ispezionabile = 1 -> green marker, = 0 -> red marker
         let markerIcon;
         if (workingPoiId === poi.id) {
-          // This POI is currently being worked on - use large icon
-          markerIcon = largeDefaultIcon;
+          // This POI is currently being worked on - use large icon with original color
+          if (poi.anno === 2024) {
+            markerIcon = largeMagentaIcon; // 🟣 Large magenta for 2024 working POI
+          } else if (poi.anno === 2025) {
+            markerIcon = largeDarkGreyIcon; // ⚫ Large dark grey for 2025 working POI
+          } else if (poi.ispezionabile === 2) {
+            markerIcon = largeYellowIcon; // 🟡 Large yellow for pending approval working POI
+          } else {
+            markerIcon = poi.ispezionabile === 1 ? largeGreenIcon : largeRedIcon; // 🟢 Large green or 🔴 Large red
+          }
         } else if (poi.anno === 2024) {
           markerIcon = magentaIcon; // 🟣 Magenta for 2024
         } else if (poi.anno === 2025) {
