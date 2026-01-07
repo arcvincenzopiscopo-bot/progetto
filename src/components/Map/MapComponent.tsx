@@ -38,7 +38,7 @@ interface MapComponentProps {
   initialPosition?: [number, number];
   mapCenter?: [number, number] | null;
   mapZoom?: number;
-  onPoiUpdated?: (poiPosition?: [number, number], zoomLevel?: number) => void;
+  onPoiUpdated?: (poiPosition?: [number, number], zoomLevel?: number, workingPoiId?: string) => void;
   currentTeam?: string;
   adminLevel?: number;
   newPoiLocation?: { lat: number; lng: number } | null;
@@ -844,6 +844,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                 e.stopPropagation();
                                 const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
                                 if (!confirmed) return;
+                                // Set working POI for visual feedback
+                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
                                 try {
                                   const { error } = await supabase
                                     .from('points')
@@ -877,6 +879,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                 e.stopPropagation();
                                 const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
                                 if (!confirmed) return;
+                                // Set working POI for visual feedback
+                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
                                 try {
                                   const { error } = await supabase
                                     .from('points')
@@ -907,6 +911,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                 e.stopPropagation();
                                 const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
                                 if (!confirmed) return;
+                                // Set working POI for visual feedback
+                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
                                 try {
                                   const { error } = await supabase
                                     .from('points')

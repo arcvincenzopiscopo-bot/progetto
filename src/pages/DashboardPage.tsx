@@ -437,10 +437,10 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   // Function to refresh POI data and optionally center on a POI with specified zoom
-  const refreshPois = useCallback((poiPosition?: [number, number], zoomLevel: number = 16) => {
+  const refreshPois = useCallback((poiPosition?: [number, number], zoomLevel: number = 16, workingPoiIdParam?: string) => {
     fetchPois();
-    // Reset working POI when operation completes
-    setWorkingPoiId(null);
+    // Set working POI if provided, otherwise reset to null
+    setWorkingPoiId(workingPoiIdParam || null);
     if (poiPosition) {
       setLastPoiPosition(poiPosition);
       // Center map on POI with specified zoom without moving user's location marker
