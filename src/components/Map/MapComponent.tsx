@@ -39,6 +39,7 @@ interface MapComponentProps {
   mapCenter?: [number, number] | null;
   mapZoom?: number;
   onPoiUpdated?: (poiPosition?: [number, number], zoomLevel?: number, workingPoiId?: string) => void;
+  onPoiSelect?: (poi: PointOfInterest) => void; // Callback when POI is selected
   currentTeam?: string;
   adminLevel?: number;
   newPoiLocation?: { lat: number; lng: number } | null;
@@ -53,6 +54,7 @@ interface MapComponentProps {
   filterShow2025?: boolean;
   height?: string;
   workingPoiId?: string | null; // ID of POI currently being worked on
+  selectedPoiId?: string | null; // ID of POI currently selected
 }
 
 // Fix for default marker icons in React
@@ -196,10 +198,11 @@ const largeDarkGreyIcon = L.icon({
 
 const MapClickHandler: React.FC<{
   onMapClick: (lat: number, lng: number) => void;
+  onPoiDeselect?: () => void; // Callback when clicking on map to deselect POIs
   newPoiLocation?: { lat: number; lng: number } | null;
   onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => void;
   onCancelAddPoi?: () => void;
-}> = ({ onMapClick, newPoiLocation, onAddPoi, onCancelAddPoi }) => {
+}> = ({ onMapClick, onPoiDeselect, newPoiLocation, onAddPoi, onCancelAddPoi }) => {
   const [showPopup, setShowPopup] = useState(false);
   const [clickPosition, setClickPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [ispezionabile, setIspezionabile] = useState('1');
@@ -550,7 +553,7 @@ const POIFormPopup: React.FC<{
   );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, currentTeam, adminLevel = 0, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height, workingPoiId = null }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height, workingPoiId = null, selectedPoiId = null }) => {
   // Use mapCenter if provided, otherwise use initialPosition, otherwise default to Rome coordinates
   const centerPosition: [number, number] = mapCenter || initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
@@ -680,20 +683,23 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
           return true;
         })
         .map((poi) => {
-        // Determine which icon to use based on working state first, then year, then status
+        // Determine which icon to use based on working/selected state first, then year, then status
         // Priority: Working POI -> large colored icon (double size, maintains original color)
+        // Then: Selected POI -> large colored icon (double size, maintains original color)
         // Then: Historical POIs (2024, 2025) -> special colored markers
         // Then: ispezionabile = 2 -> yellow marker (pending approval)
         // Then: ispezionabile = 1 -> green marker, = 0 -> red marker
         let markerIcon;
-        if (workingPoiId === poi.id) {
-          // This POI is currently being worked on - use large icon with original color
+        const isWorkingOrSelected = workingPoiId === poi.id || selectedPoiId === poi.id;
+
+        if (isWorkingOrSelected) {
+          // This POI is currently being worked on or selected - use large icon with original color
           if (poi.anno === 2024) {
-            markerIcon = largeMagentaIcon; // 🟣 Large magenta for 2024 working POI
+            markerIcon = largeMagentaIcon; // 🟣 Large magenta for 2024 working/selected POI
           } else if (poi.anno === 2025) {
-            markerIcon = largeDarkGreyIcon; // ⚫ Large dark grey for 2025 working POI
+            markerIcon = largeDarkGreyIcon; // ⚫ Large dark grey for 2025 working/selected POI
           } else if (poi.ispezionabile === 2) {
-            markerIcon = largeYellowIcon; // 🟡 Large yellow for pending approval working POI
+            markerIcon = largeYellowIcon; // 🟡 Large yellow for pending approval working/selected POI
           } else {
             markerIcon = poi.ispezionabile === 1 ? largeGreenIcon : largeRedIcon; // 🟢 Large green or 🔴 Large red
           }
@@ -713,8 +719,11 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
             position={[poi.latitudine, poi.longitudine]}
             icon={markerIcon}
             eventHandlers={{
-              click: () => {
-                // You could add additional click handling here if needed
+              click: (e) => {
+                e.originalEvent.stopPropagation(); // Prevent map click event
+                if (onPoiSelect) {
+                  onPoiSelect(poi); // Select this POI
+                }
               },
             }}
           >

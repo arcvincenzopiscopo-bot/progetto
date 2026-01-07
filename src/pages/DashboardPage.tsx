@@ -53,6 +53,7 @@ const DashboardPage: React.FC = () => {
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null); // Separate state for map centering
   const [mapZoom, setMapZoom] = useState<number>(13); // Separate state for map zoom level
   const [workingPoiId, setWorkingPoiId] = useState<string | null>(null); // Track POI currently being worked on
+  const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null); // Track POI currently selected
 
   // Update task progress - marking completed steps
   // [x] Estendere geocodingService per ricerca indirizzi
@@ -462,11 +463,25 @@ const DashboardPage: React.FC = () => {
     console.log('Location selected from search:', lat, lng);
     // Reset any working POI when searching for new location
     setWorkingPoiId(null);
+    setSelectedPoiId(null); // Also reset selected POI
     // Center map on searched location with zoom
     refreshPois([lat, lng]);
     setNewPoiLocation({ lat, lng });
     setShowAddForm(true);
   }, [refreshPois]);
+
+  // Handle POI selection/deselection
+  const handlePoiSelect = useCallback((poi: PointOfInterest | null) => {
+    if (poi) {
+      // Select POI - make it large
+      setSelectedPoiId(poi.id);
+      // Reset working POI when selecting a different POI
+      setWorkingPoiId(null);
+    } else {
+      // Deselect POI - make all normal
+      setSelectedPoiId(null);
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -483,6 +498,7 @@ const DashboardPage: React.FC = () => {
                 mapCenter={mapCenter}
                 mapZoom={mapZoom}
                 onPoiUpdated={refreshPois}
+                onPoiSelect={handlePoiSelect}
                 currentTeam={user?.team}
                 adminLevel={user?.admin || 0}
                 newPoiLocation={showAddForm ? newPoiLocation : null}
@@ -497,6 +513,7 @@ const DashboardPage: React.FC = () => {
                 filterShow2025={filterShow2025}
                 height="66vh"
                 workingPoiId={workingPoiId}
+                selectedPoiId={selectedPoiId}
               />
             </Suspense>
           </div>
