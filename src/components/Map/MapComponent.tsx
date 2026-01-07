@@ -36,6 +36,7 @@ interface MapComponentProps {
   onMapClick: (lat: number, lng: number) => void;
   selectedPoi?: PointOfInterest | null;
   initialPosition?: [number, number];
+  mapCenter?: [number, number] | null;
   onPoiUpdated?: (poiPosition?: [number, number]) => void;
   currentTeam?: string;
   adminLevel?: number;
@@ -491,9 +492,9 @@ const POIFormPopup: React.FC<{
   );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, onPoiUpdated, currentTeam, adminLevel = 0, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height }) => {
-  // Use initial position if provided, otherwise default to Rome coordinates
-  const centerPosition: [number, number] = initialPosition || [41.9028, 12.4964];
+const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, onPoiUpdated, currentTeam, adminLevel = 0, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height }) => {
+  // Use mapCenter if provided, otherwise use initialPosition, otherwise default to Rome coordinates
+  const centerPosition: [number, number] = mapCenter || initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
 
   // State for editing historical POI addresses
@@ -564,6 +565,13 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
       setMapKey(Date.now());
     }
   }, [initialPosition]);
+
+  useEffect(() => {
+    // Force re-render when mapCenter changes (for centering on POI actions)
+    if (mapCenter) {
+      setMapKey(Date.now());
+    }
+  }, [mapCenter]);
 
   return (
     <MapContainer
