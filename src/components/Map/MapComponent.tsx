@@ -1099,7 +1099,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
       {newPoiLocation && (
         <Marker
           position={[newPoiLocation.lat, newPoiLocation.lng]}
-          icon={defaultIcon}
+          icon={largeDefaultIcon} // Use large icon when adding new POI
           eventHandlers={{
             click: () => {
               // This ensures the popup opens automatically when the marker is clicked
