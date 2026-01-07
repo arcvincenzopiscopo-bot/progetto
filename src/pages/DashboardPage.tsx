@@ -434,14 +434,14 @@ const DashboardPage: React.FC = () => {
     setShowAddForm(true);
   }, []);
 
-  // Function to refresh POI data and optionally center on a POI
-  const refreshPois = useCallback((poiPosition?: [number, number]) => {
+  // Function to refresh POI data and optionally center on a POI with specified zoom
+  const refreshPois = useCallback((poiPosition?: [number, number], zoomLevel: number = 16) => {
     fetchPois();
     if (poiPosition) {
       setLastPoiPosition(poiPosition);
-      // Center map on POI with zoom without moving user's location marker
+      // Center map on POI with specified zoom without moving user's location marker
       setMapCenter(poiPosition);
-      setMapZoom(16); // Zoom closer when centering on POI
+      setMapZoom(zoomLevel);
     }
   }, []);
 

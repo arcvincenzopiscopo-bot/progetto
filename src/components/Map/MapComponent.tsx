@@ -38,7 +38,7 @@ interface MapComponentProps {
   initialPosition?: [number, number];
   mapCenter?: [number, number] | null;
   mapZoom?: number;
-  onPoiUpdated?: (poiPosition?: [number, number]) => void;
+  onPoiUpdated?: (poiPosition?: [number, number], zoomLevel?: number) => void;
   currentTeam?: string;
   adminLevel?: number;
   newPoiLocation?: { lat: number; lng: number } | null;
@@ -783,7 +783,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                     alert('Errore durante l\'approvazione del POI');
                                   } else {
                                     setMapKey(Date.now());
-                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 15);
                                     alert('POI approvato con successo!');
                                   }
                                 } catch (err) {
@@ -807,8 +807,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                   if (poi.photo_url) {
                                     await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
                                   }
-                                  const { error } = await supabase.from('points').delete().eq('id', poi.id);
-                                  if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                    const { error } = await supabase.from('points').delete().eq('id', poi.id);
+                                    if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
                                 } catch (err) {
                                   console.error('Error deleting POI:', err);
                                 }
@@ -840,7 +840,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                     .eq('id', poi.id);
                                   if (!error) {
                                     setMapKey(Date.now());
-                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
                                   }
                                 } catch (err) {
                                   console.error('Error toggling ispezionabile:', err);
@@ -867,7 +867,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                   if (error) {
                                     alert('Errore durante la segnalazione di inattività');
                                   } else {
-                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
                                     alert('Punto segnato come inattivo con successo!');
                                   }
                                 } catch (err) {
@@ -893,7 +893,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                       await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
                                     }
                                     const { error } = await supabase.from('points').delete().eq('id', poi.id);
-                                    if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine]);
+                                    if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
                                   } catch (err) {
                                     console.error('Error deleting POI:', err);
                                   }
