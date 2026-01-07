@@ -596,7 +596,7 @@ const DashboardPage: React.FC = () => {
                       className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
                     />
                     <label htmlFor="filter-pending-approval" className="text-sm font-medium text-gray-700">
-                      🟡 In attesa di approvazione
+                      🟡 In attesa di eliminazione per cantiere finito
                     </label>
                   </div>
                 )}

@@ -767,8 +767,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                             📤 Condividi
                           </button>
 
-                          {/* Current POIs - admin approve button */}
-                          {adminLevel >= 1 && poi.ispezionabile === 2 && (
+                          {/* Current POIs - admin approve button - REMOVED for all users */}
+                          {false && adminLevel >= 1 && poi.ispezionabile === 2 && (
                             <button
                               onClick={async (e) => {
                                 e.stopPropagation();
