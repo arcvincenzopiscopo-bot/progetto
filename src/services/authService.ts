@@ -63,6 +63,42 @@ export const registerUser = async (username: string, password: string): Promise<
   }
 };
 
+// Funzione per ottenere l'IP dell'utente
+export const getUserIP = async (): Promise<string> => {
+  try {
+    const response = await fetch('https://api.ipify.org?format=json');
+    const data = await response.json();
+    return data.ip || 'unknown';
+  } catch (error) {
+    console.error('Error getting user IP:', error);
+    return 'unknown';
+  }
+};
+
+// Funzione per loggare il login nella tabella log_login
+export const logUserLogin = async (username: string): Promise<void> => {
+  try {
+    const ip = await getUserIP();
+    const { error } = await supabase
+      .from('log_login')
+      .insert([
+        {
+          username,
+          ip,
+          created_at: new Date().toISOString()
+        }
+      ]);
+
+    if (error) {
+      console.error('Error logging user login:', error);
+    } else {
+      console.log(`Login logged for user ${username} from IP ${ip}`);
+    }
+  } catch (err) {
+    console.error('Unexpected error in logUserLogin:', err);
+  }
+};
+
 export const loginUser = async (username: string, password: string): Promise<User | null> => {
   try {
     const { data, error } = await supabase
@@ -87,6 +123,9 @@ export const loginUser = async (username: string, password: string): Promise<Use
       console.error('Invalid password');
       return null;
     }
+
+    // Log the successful login
+    await logUserLogin(username);
 
     return data;
   } catch (err) {
