@@ -37,6 +37,7 @@ interface MapComponentProps {
   selectedPoi?: PointOfInterest | null;
   initialPosition?: [number, number];
   mapCenter?: [number, number] | null;
+  mapZoom?: number;
   onPoiUpdated?: (poiPosition?: [number, number]) => void;
   currentTeam?: string;
   adminLevel?: number;
@@ -492,7 +493,7 @@ const POIFormPopup: React.FC<{
   );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, onPoiUpdated, currentTeam, adminLevel = 0, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, currentTeam, adminLevel = 0, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height }) => {
   // Use mapCenter if provided, otherwise use initialPosition, otherwise default to Rome coordinates
   const centerPosition: [number, number] = mapCenter || initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
@@ -567,17 +568,17 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
   }, [initialPosition]);
 
   useEffect(() => {
-    // Force re-render when mapCenter changes (for centering on POI actions)
-    if (mapCenter) {
+    // Force re-render when mapCenter or mapZoom changes (for centering on POI actions)
+    if (mapCenter || mapZoom) {
       setMapKey(Date.now());
     }
-  }, [mapCenter]);
+  }, [mapCenter, mapZoom]);
 
   return (
     <MapContainer
       key={mapKey}
       center={centerPosition}
-      zoom={13}
+      zoom={mapZoom || 13}
       style={{ height: height || '100%', width: '100%' }}
     >
       <TileLayer

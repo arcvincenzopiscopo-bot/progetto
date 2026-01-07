@@ -51,6 +51,7 @@ const DashboardPage: React.FC = () => {
   const [filterShow2025, setFilterShow2025] = useState(false); // Default: non selezionato
   const [lastPoiPosition, setLastPoiPosition] = useState<[number, number] | null>(null); // Track last interacted POI position
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null); // Separate state for map centering
+  const [mapZoom, setMapZoom] = useState<number>(13); // Separate state for map zoom level
 
   // Update task progress - marking completed steps
   // [x] Estendere geocodingService per ricerca indirizzi
@@ -438,8 +439,9 @@ const DashboardPage: React.FC = () => {
     fetchPois();
     if (poiPosition) {
       setLastPoiPosition(poiPosition);
-      // Center map on POI without moving user's location marker
+      // Center map on POI with zoom without moving user's location marker
       setMapCenter(poiPosition);
+      setMapZoom(16); // Zoom closer when centering on POI
     }
   }, []);
 
@@ -469,6 +471,7 @@ const DashboardPage: React.FC = () => {
                 onMapClick={handleMapClick}
                 initialPosition={currentPosition}
                 mapCenter={mapCenter}
+                mapZoom={mapZoom}
                 onPoiUpdated={refreshPois}
                 currentTeam={user?.team}
                 adminLevel={user?.admin || 0}
