@@ -914,8 +914,21 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                             </button>
                           )}
 
-                          {/* Delete button for green POIs - available to all users */}
-                          {poi.ispezionabile === 1 && (
+                          {/* Delete button for green POIs - restricted for admin=0 users */}
+                          {poi.ispezionabile === 1 && (() => {
+                            // For admin=0: only show delete button if POI was created by current user today
+                            if (adminLevel === 0) {
+                              const poiDate = new Date(poi.created_at);
+                              const today = new Date();
+                              const isCreatedToday = poiDate.getDate() === today.getDate() &&
+                                                     poiDate.getMonth() === today.getMonth() &&
+                                                     poiDate.getFullYear() === today.getFullYear();
+                              // Note: username check is not needed here since admin=0 users only see their own green POIs
+                              return isCreatedToday;
+                            }
+                            // For admin>=1: show delete button for all green POIs
+                            return true;
+                          })() && (
                             <div className="flex justify-center">
                               <button
                                 onClick={async (e) => {
