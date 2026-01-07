@@ -108,7 +108,8 @@ const DashboardPage: React.FC = () => {
       // Filtra i POI in base ai privilegi dell'utente
       if (user?.admin === 0) {
         // Utenti non admin possono vedere tutti i POI ispezionabili (verdi) più i propri POI personali
-        query = query.or(`ispezionabile.eq.1,username.eq.${user.username}`);
+        // Escludi completamente i POI in attesa di approvazione (ispezionabile=2)
+        query = query.or(`and(ispezionabile.eq.1,username.eq.${user.username})`);
       }
       // Utenti admin possono vedere tutti i POI (nessun filtro aggiuntivo)
 
@@ -584,18 +585,21 @@ const DashboardPage: React.FC = () => {
                     🔴 Già ispezionati
                   </label>
                 </div>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="filter-pending-approval"
-                    checked={filterShowPendingApproval}
-                    onChange={(e) => setFilterShowPendingApproval(e.target.checked)}
-                    className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
-                  />
-                  <label htmlFor="filter-pending-approval" className="text-sm font-medium text-gray-700">
-                    🟡 In attesa di approvazione
-                  </label>
-                </div>
+                {/* Hide pending approval filter for non-admin users */}
+                {user?.admin !== 0 && (
+                  <div className="flex items-center space-x-3">
+                    <input
+                      type="checkbox"
+                      id="filter-pending-approval"
+                      checked={filterShowPendingApproval}
+                      onChange={(e) => setFilterShowPendingApproval(e.target.checked)}
+                      className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
+                    />
+                    <label htmlFor="filter-pending-approval" className="text-sm font-medium text-gray-700">
+                      🟡 In attesa di approvazione
+                    </label>
+                  </div>
+                )}
               </div>
 
               {/* Right Column - Type and Year Filters */}

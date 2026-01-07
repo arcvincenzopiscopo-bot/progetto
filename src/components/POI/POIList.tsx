@@ -20,9 +20,10 @@ interface POIListProps {
   pois: PointOfInterest[];
   onPoiSelect: (poi: PointOfInterest) => void;
   onPoiDeleted?: () => void;
+  currentUser?: { username: string; admin: number };
 }
 
-const POIList: React.FC<POIListProps> = ({ pois, onPoiSelect, onPoiDeleted }) => {
+const POIList: React.FC<POIListProps> = ({ pois, onPoiSelect, onPoiDeleted, currentUser }) => {
   if (pois.length === 0) {
     return <div className="text-center py-4 text-gray-500">No points of interest yet. Click on the map to add one!</div>;
   }
@@ -55,8 +56,8 @@ const POIList: React.FC<POIListProps> = ({ pois, onPoiSelect, onPoiDeleted }) =>
               Ispezionabile: {poi.ispezionabile ? 'Sì' : 'No'}
             </p>
 
-            {/* Delete button - only visible for records created today */}
-            {isCreatedToday && (
+            {/* Delete button - only visible for records created today by the current user (for admin=0) or all records for admins */}
+            {isCreatedToday && (currentUser?.admin !== 0 || poi.username === currentUser?.username) && (
               <button
                 onClick={async (e) => {
                   e.stopPropagation(); // Prevent triggering the onPoiSelect

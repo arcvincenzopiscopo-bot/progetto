@@ -822,6 +822,40 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
 
                         {/* Second row - secondary actions */}
                         <div className="flex gap-2 flex-wrap">
+                          {/* Green POIs - Cantiere finito button */}
+                          {poi.ispezionabile === 1 && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
+                                if (!confirmed) return;
+                                try {
+                                  const { error } = await supabase
+                                    .from('points')
+                                    .update({
+                                      ispezionabile: 2,
+                                      created_at: new Date().toISOString(),
+                                      team: currentTeam || poi.team
+                                    })
+                                    .eq('id', poi.id);
+                                  if (!error) {
+                                    setMapKey(Date.now());
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                    alert('Cantiere marcato come finito! Ora è in attesa di approvazione.');
+                                  } else {
+                                    alert('Errore nell\'aggiornamento del POI');
+                                  }
+                                } catch (err) {
+                                  console.error('Error updating POI:', err);
+                                  alert('Errore nell\'aggiornamento del POI');
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
+                            >
+                              🏗️ Cantiere finito
+                            </button>
+                          )}
+
                           {/* Green POIs - Ispezionato button */}
                           {poi.ispezionabile === 1 && (
                             <button
