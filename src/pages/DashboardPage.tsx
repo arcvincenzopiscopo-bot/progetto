@@ -52,6 +52,7 @@ const DashboardPage: React.FC = () => {
   const [lastPoiPosition, setLastPoiPosition] = useState<[number, number] | null>(null); // Track last interacted POI position
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null); // Separate state for map centering
   const [mapZoom, setMapZoom] = useState<number>(13); // Separate state for map zoom level
+  const [workingPoiId, setWorkingPoiId] = useState<string | null>(null); // Track POI currently being worked on
 
   // Update task progress - marking completed steps
   // [x] Estendere geocodingService per ricerca indirizzi
@@ -438,6 +439,8 @@ const DashboardPage: React.FC = () => {
   // Function to refresh POI data and optionally center on a POI with specified zoom
   const refreshPois = useCallback((poiPosition?: [number, number], zoomLevel: number = 16) => {
     fetchPois();
+    // Reset working POI when operation completes
+    setWorkingPoiId(null);
     if (poiPosition) {
       setLastPoiPosition(poiPosition);
       // Center map on POI with specified zoom without moving user's location marker
@@ -487,6 +490,7 @@ const DashboardPage: React.FC = () => {
                 filterShow2024={filterShow2024}
                 filterShow2025={filterShow2025}
                 height="66vh"
+                workingPoiId={workingPoiId}
               />
             </Suspense>
           </div>
