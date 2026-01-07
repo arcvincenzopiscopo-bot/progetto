@@ -54,6 +54,7 @@ const DashboardPage: React.FC = () => {
   const [mapZoom, setMapZoom] = useState<number>(13); // Separate state for map zoom level
   const [workingPoiId, setWorkingPoiId] = useState<string | null>(null); // Track POI currently being worked on
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null); // Track POI currently selected
+  const [creatingNewPoi, setCreatingNewPoi] = useState<boolean>(false); // Track if new POI is being created
 
   // Update task progress - marking completed steps
   // [x] Estendere geocodingService per ricerca indirizzi
@@ -320,6 +321,9 @@ const DashboardPage: React.FC = () => {
   const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
     if (!newPoiLocation || !user) return;
 
+    // Set creating state for visual feedback
+    setCreatingNewPoi(true);
+
     // Tutti gli utenti possono inserire POI direttamente ispezionabili
     // Il valore di ispezionabile viene mantenuto come selezionato nel form
     let finalIspezionabile = ispezionabile;
@@ -423,12 +427,14 @@ const DashboardPage: React.FC = () => {
         setPois(prevPois => [...prevPois, data[0]]);
         setShowAddForm(false);
         setNewPoiLocation(null);
+        setCreatingNewPoi(false); // Reset creating state on success
       }
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Error adding POI:', err);
       }
       alert('Errore nella creazione del POI. Riprova.');
+      setCreatingNewPoi(false); // Reset creating state on error
     }
   }, [newPoiLocation, user, pois]);
 
@@ -503,7 +509,10 @@ const DashboardPage: React.FC = () => {
                 adminLevel={user?.admin || 0}
                 newPoiLocation={showAddForm ? newPoiLocation : null}
                 onAddPoi={handleAddPoi}
-                onCancelAddPoi={() => setShowAddForm(false)}
+                onCancelAddPoi={() => {
+                  setShowAddForm(false);
+                  setCreatingNewPoi(false); // Reset creating state when canceling
+                }}
                 filterShowInspectable={filterShowInspectable}
                 filterShowNonInspectable={filterShowNonInspectable}
                 filterShowPendingApproval={filterShowPendingApproval}
@@ -514,6 +523,7 @@ const DashboardPage: React.FC = () => {
                 height="66vh"
                 workingPoiId={workingPoiId}
                 selectedPoiId={selectedPoiId}
+                creatingNewPoi={creatingNewPoi}
               />
             </Suspense>
           </div>

@@ -55,6 +55,7 @@ interface MapComponentProps {
   height?: string;
   workingPoiId?: string | null; // ID of POI currently being worked on
   selectedPoiId?: string | null; // ID of POI currently selected
+  creatingNewPoi?: boolean; // Whether a new POI is currently being created
 }
 
 // Fix for default marker icons in React
@@ -449,7 +450,7 @@ const POIFormPopup: React.FC<{
   );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height, workingPoiId = null, selectedPoiId = null }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
   // Use mapCenter if provided, otherwise use initialPosition, otherwise default to Rome coordinates
   const centerPosition: [number, number] = mapCenter || initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
