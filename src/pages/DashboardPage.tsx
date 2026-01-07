@@ -105,8 +105,8 @@ const DashboardPage: React.FC = () => {
 
       // Filtra i POI in base ai privilegi dell'utente
       if (user?.admin === 0) {
-        // Utenti non admin possono vedere tutti i propri POI (inclusi quelli con da_approvare = 2)
-        query = query.eq('username', user.username);
+        // Utenti non admin possono vedere tutti i POI ispezionabili (verdi) più i propri POI personali
+        query = query.or(`ispezionabile.eq.1,username.eq.${user.username}`);
       }
       // Utenti admin possono vedere tutti i POI (nessun filtro aggiuntivo)
 
@@ -315,15 +315,9 @@ const DashboardPage: React.FC = () => {
   const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
     if (!newPoiLocation || !user) return;
 
-    // Determina il valore di ispezionabile basato sui privilegi dell'utente
-    // Utenti admin (admin >= 1) possono inserire POI direttamente ispezionabili (ispezionabile = 1)
-    // Utenti non admin (admin = 0):
-    //   - Se volevano ispezionabile = 0: rimane 0 (non ispezionabile)
-    //   - Se volevano ispezionabile = 1: diventa 2 (in attesa di approvazione)
+    // Tutti gli utenti possono inserire POI direttamente ispezionabili
+    // Il valore di ispezionabile viene mantenuto come selezionato nel form
     let finalIspezionabile = ispezionabile;
-    if (user.admin === 0 && ispezionabile === 1) {
-      finalIspezionabile = 2; // In attesa di approvazione
-    }
 
     // Se l'indirizzo è solo coordinate, prova a ottenere l'indirizzo topografico
     let finalAddress = indirizzo;

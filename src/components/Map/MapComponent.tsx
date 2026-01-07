@@ -679,9 +679,9 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                   <p className="text-sm text-gray-600 mb-1">Team: {poi.team || 'N/D'}</p>
                   <p className="text-sm text-gray-600 mb-1">Tipo: {poi.tipo || 'N/D'}</p>
                   {poi.note && <p className="text-sm text-gray-600 mb-1">Note: {poi.note}</p>}
-                  {poi.ispezionabile === 1 && !poi.da_approvare && poi.data_inattivita && (
+                  {poi.data_inattivita && (
                     <p className="text-sm text-gray-600 mb-1">
-                      Ultima inattività: {new Date(poi.data_inattivita).toLocaleString()}
+                      Inattività segnalata in {new Date(poi.data_inattivita).toLocaleString()}
                     </p>
                   )}
                   {poi.photo_url && (
@@ -871,8 +871,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                             </button>
                           )}
 
-                          {/* Admin delete button for green POIs - centered */}
-                          {adminLevel >= 1 && poi.ispezionabile === 1 && (
+                          {/* Delete button for green POIs - available to all users */}
+                          {poi.ispezionabile === 1 && (
                             <div className="flex justify-center">
                               <button
                                 onClick={async (e) => {
