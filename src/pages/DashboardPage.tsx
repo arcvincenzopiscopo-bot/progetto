@@ -107,9 +107,9 @@ const DashboardPage: React.FC = () => {
 
       // Filtra i POI in base ai privilegi dell'utente
       if (user?.admin === 0) {
-        // Utenti non admin possono vedere tutti i POI ispezionabili (verdi) più i propri POI personali
+        // Utenti non admin possono vedere tutti i POI già ispezionati (rossi) più i propri POI ispezionabili (verdi)
         // Escludi completamente i POI in attesa di approvazione (ispezionabile=2)
-        query = query.or(`and(ispezionabile.eq.1,username.eq.${user.username})`);
+        query = query.or(`ispezionabile.eq.0,and(ispezionabile.eq.1,username.eq.${user.username})`);
       }
       // Utenti admin possono vedere tutti i POI (nessun filtro aggiuntivo)
 
