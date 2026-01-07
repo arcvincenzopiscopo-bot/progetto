@@ -784,7 +784,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                   } else {
                                     setMapKey(Date.now());
                                     if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 15);
-                                    alert('POI approvato con successo!');
                                   }
                                 } catch (err) {
                                   alert('Errore durante l\'approvazione del POI');
@@ -841,7 +840,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                   if (!error) {
                                     setMapKey(Date.now());
                                     if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                    alert('Cantiere marcato come finito! Ora è in attesa di approvazione.');
                                   } else {
                                     alert('Errore nell\'aggiornamento del POI');
                                   }
@@ -902,7 +900,6 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                                     alert('Errore durante la segnalazione di inattività');
                                   } else {
                                     if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                    alert('Punto segnato come inattivo con successo!');
                                   }
                                 } catch (err) {
                                   alert('Errore durante la segnalazione di inattività');
