@@ -719,9 +719,10 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                   )}
                   {/* Dynamic buttons based on POI type */}
                   <div className="space-y-2">
-                    {/* For historical POIs (2024, 2025) - only share button */}
+                    {/* For historical POIs (2024, 2025) */}
                     {poi.anno ? (
                       <div className="flex gap-2">
+                        {/* Share button - always present */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -744,6 +745,34 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                         >
                           📤 Condividi
                         </button>
+
+                        {/* Delete button for admin level 3 */}
+                        {adminLevel === 3 && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse storico? Questa azione non può essere annullata.');
+                              if (!confirmed) return;
+                              try {
+                                // Determine which table to delete from based on year
+                                const tableName = poi.anno === 2024 ? 'points_old_2024' : 'points_old_2025';
+
+                                // Delete photo from Cloudinary if it exists
+                                if (poi.photo_url) {
+                                  await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
+                                }
+
+                                const { error } = await supabase.from(tableName).delete().eq('id', poi.id);
+                                if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                              } catch (err) {
+                                console.error('Error deleting historical POI:', err);
+                              }
+                            }}
+                            className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1"
+                          >
+                            🗑️ Elimina
+                          </button>
+                        )}
                       </div>
                     ) : (
                       /* For current POIs - full button set */
