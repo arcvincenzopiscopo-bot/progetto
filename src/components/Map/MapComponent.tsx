@@ -594,15 +594,21 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
 
       {pois
         .filter((poi) => {
-          // Filter POIs based on filter settings
+          // For historical POIs, only apply type and year filters
+          if (poi.anno) {
+            if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;
+            if (poi.tipo === 'altro' && !filterShowAltro) return false;
+            if (poi.anno === 2024 && !filterShow2024) return false;
+            if (poi.anno === 2025 && !filterShow2025) return false;
+            return true;
+          }
+
+          // For current POIs, apply all filters including status
           if (poi.ispezionabile === 1 && !filterShowInspectable) return false;
           if (poi.ispezionabile === 0 && !filterShowNonInspectable) return false;
           if (poi.ispezionabile === 2 && !filterShowPendingApproval) return false;
           if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;
           if (poi.tipo === 'altro' && !filterShowAltro) return false;
-          // Filter by year - historical POIs
-          if (poi.anno === 2024 && !filterShow2024) return false;
-          if (poi.anno === 2025 && !filterShow2025) return false;
           return true;
         })
         .map((poi) => {
