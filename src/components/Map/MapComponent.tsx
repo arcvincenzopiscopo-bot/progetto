@@ -779,8 +779,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                         </button>
                       );
 
-                      // Admin level 3: show share + delete for all POIs
-                      if (adminLevel === 3) {
+                      // Admin level 2: show share + delete for all POIs
+                      if (adminLevel === 2) {
                         return (
                           <div className="flex gap-2">
                             {shareButton}
