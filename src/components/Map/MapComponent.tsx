@@ -719,8 +719,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                   )}
                   {/* Dynamic buttons based on POI type */}
                   <div className="space-y-2">
-                    {/* For historical POIs (2024, 2025) */}
-                    {poi.anno ? (
+                    {/* Admin level 3 can delete ALL POIs (both historical and current) */}
+                    {adminLevel === 3 ? (
                       <div className="flex gap-2">
                         {/* Share button - always present */}
                         <button
@@ -746,39 +746,68 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                           📤 Condividi
                         </button>
 
-                        {/* Delete button for admin level 3 */}
-                        {adminLevel === 3 && (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse storico? Questa azione non può essere annullata.');
-                              if (!confirmed) return;
-                              try {
-                                // Determine which table to delete from based on year
-                                const tableName = poi.anno === 2024 ? 'points_old_2024' : 'points_old_2025';
-
-                                // Delete photo from Cloudinary if it exists
-                                if (poi.photo_url) {
-                                  await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
-                                }
-
-                                const { error } = await supabase.from(tableName).delete().eq('id', poi.id);
-                                if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                              } catch (err) {
-                                console.error('Error deleting historical POI:', err);
+                        {/* Delete button for admin level 3 - works for both historical and current POIs */}
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
+                            if (!confirmed) return;
+                            try {
+                              // Determine which table to delete from based on whether it's historical or current
+                              let tableName = 'points'; // Default for current POIs
+                              if (poi.anno) {
+                                tableName = poi.anno === 2024 ? 'points_old_2024' : 'points_old_2025';
                               }
-                            }}
-                            className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1"
-                          >
-                            🗑️ Elimina
-                          </button>
-                        )}
+
+                              // Delete photo from Cloudinary if it exists
+                              if (poi.photo_url) {
+                                await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
+                              }
+
+                              const { error } = await supabase.from(tableName).delete().eq('id', poi.id);
+                              if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                            } catch (err) {
+                              console.error('Error deleting POI:', err);
+                            }
+                          }}
+                          className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1"
+                        >
+                          🗑️ Elimina
+                        </button>
                       </div>
                     ) : (
-                      /* For current POIs - full button set */
-                      <>
-                        {/* First row - Share button and primary actions */}
+                      /* For historical POIs (2024, 2025) - non-admin users */
+                      poi.anno ? (
                         <div className="flex gap-2">
+                          {/* Share button - always present */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const shareText = `${poi.latitudine}, ${poi.longitudine}`;
+                              if (navigator.share) {
+                                navigator.share({
+                                  title: `Punto di Interesse - ${poi.indirizzo}`,
+                                  text: `Coordinate: ${shareText}`,
+                                  url: `https://www.google.com/maps/search/?api=1&query=${poi.latitudine},${poi.longitudine}`
+                                }).catch(() => {
+                                  navigator.clipboard.writeText(shareText);
+                                  alert('Coordinate copiate negli appunti: ' + shareText);
+                                });
+                              } else {
+                                navigator.clipboard.writeText(shareText);
+                                alert('Coordinate copiate negli appunti: ' + shareText);
+                              }
+                            }}
+                            className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
+                          >
+                            📤 Condividi
+                          </button>
+                        </div>
+                      ) : (
+                        /* For current POIs - full button set for non-admin-3 users */
+                        <>
+                          {/* First row - Share button and primary actions */}
+                          <div className="flex gap-2">
                           {/* Share button - always present */}
                           <button
                             onClick={(e) => {
