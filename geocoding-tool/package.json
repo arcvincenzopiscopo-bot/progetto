@@ -1,0 +1,17 @@
+{
+  "name": "geocoding-tool",
+  "version": "1.0.0",
+  "description": "Strumento di geocoding per points_old_2025 usando Google Maps",
+  "main": "index.html",
+  "scripts": {
+    "dev": "serve",
+    "build": "echo 'No build step required'",
+    "start": "serve"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "keywords": ["geocoding", "google-maps", "supabase"],
+  "author": "Geocoding Tool",
+  "license": "MIT"
+}
