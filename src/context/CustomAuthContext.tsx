@@ -7,6 +7,7 @@ interface User {
   team?: string;
   admin?: number;
   created_at: string;
+  needsPasswordChange?: boolean; // Flag to indicate if user needs to change password
 }
 
 interface CustomAuthContextType {
@@ -57,9 +58,21 @@ export const CustomAuthProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     try {
       const user = await loginUser(username, password);
       if (user) {
-        // Salva l'utente nel sessionStorage
-        sessionStorage.setItem('currentUser', JSON.stringify(user));
-        setUser(user);
+        // Check if user needs to change password (password is "123456")
+        const needsPasswordChange = password === '123456';
+
+        // Create user object without password for security
+        const userForSession = {
+          ...user,
+          needsPasswordChange
+        };
+
+        // Remove password from user object before storing
+        const { password: _, ...userWithoutPassword } = userForSession;
+
+        // Salva l'utente nel sessionStorage (senza password)
+        sessionStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+        setUser(userWithoutPassword);
         return { error: null };
       } else {
         return { error: 'Invalid username or password' };

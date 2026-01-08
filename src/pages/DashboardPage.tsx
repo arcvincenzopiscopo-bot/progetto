@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import { useCustomAuth } from '../context/CustomAuthContext';
 import { supabase } from '../services/supabaseClient';
-import { uploadPhoto } from '../services/authService';
+import { uploadPhoto, updatePassword } from '../services/authService';
 import { getAddressWithCache } from '../services/geocodingService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import SearchBox from '../components/UI/SearchBox';
+import PasswordChangePopup from '../components/Auth/PasswordChangePopup';
 
 // Lazy load heavy components
 const MapComponent = React.lazy(() => import('../components/Map/MapComponent'));
@@ -55,6 +56,7 @@ const DashboardPage: React.FC = () => {
   const [workingPoiId, setWorkingPoiId] = useState<string | null>(null); // Track POI currently being worked on
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null); // Track POI currently selected
   const [creatingNewPoi, setCreatingNewPoi] = useState<boolean>(false); // Track if new POI is being created
+  const [showPasswordChange, setShowPasswordChange] = useState<boolean>(false); // Track if password change popup should be shown
 
   // Update task progress - marking completed steps
   // [x] Estendere geocodingService per ricerca indirizzi
@@ -78,6 +80,13 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     console.log('Dashboard: isInstallable changed:', isInstallable);
   }, [isInstallable]);
+
+  // Check if user needs to change password
+  useEffect(() => {
+    if (user && user.needsPasswordChange) {
+      setShowPasswordChange(true);
+    }
+  }, [user]);
 
   useEffect(() => {
     // Get user's current location
@@ -492,6 +501,25 @@ const DashboardPage: React.FC = () => {
     }
   }, []);
 
+  // Handle password change
+  const handlePasswordChange = useCallback(async (newPassword: string): Promise<boolean> => {
+    if (!user) return false;
+
+    try {
+      const success = await updatePassword(user.id, newPassword);
+      if (success) {
+        // Update user context to remove needsPasswordChange flag
+        // Note: This will be handled by the context, but we can refresh the page or update session
+        console.log('Password changed successfully');
+        // The popup will close automatically due to the success return
+      }
+      return success;
+    } catch (error) {
+      console.error('Error changing password:', error);
+      return false;
+    }
+  }, [user]);
+
   return (
     <div className="min-h-screen bg-gray-100">
 
@@ -697,6 +725,13 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Password Change Popup */}
+      <PasswordChangePopup
+        isOpen={showPasswordChange}
+        onClose={() => setShowPasswordChange(false)}
+        onPasswordChange={handlePasswordChange}
+      />
     </div>
   );
 };

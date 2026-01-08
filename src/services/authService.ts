@@ -154,6 +154,30 @@ export const getUserById = async (userId: string): Promise<User | null> => {
   }
 };
 
+export const updatePassword = async (userId: string, newPassword: string): Promise<boolean> => {
+  try {
+    console.log('Updating password for user:', userId);
+
+    const { error } = await supabase
+      .from('users')
+      .update({ password: newPassword })
+      .eq('id', userId);
+
+    if (error) {
+      console.error('Error updating password:', error.message);
+      console.error('Details:', error.details);
+      console.error('Hint:', error.hint);
+      return false;
+    }
+
+    console.log('Password updated successfully for user:', userId);
+    return true;
+  } catch (err) {
+    console.error('Unexpected error in updatePassword:', err);
+    return false;
+  }
+};
+
 // Funzione di compressione immagini
 export const compressImage = async (file: File, maxWidth: number = 1200, maxHeight: number = 1200, quality: number = 0.8): Promise<File> => {
   return new Promise((resolve, reject) => {
