@@ -453,13 +453,19 @@ const POIFormPopup: React.FC<{
 
         <div className="flex space-x-2 pt-2">
           <button
-            onClick={handleAddPoi}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddPoi();
+            }}
             className="bg-green-500 text-white py-1 px-2 rounded-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 text-xs font-medium"
           >
             📍 Aggiungi Punto
           </button>
           <button
-            onClick={() => onCancelAddPoi && onCancelAddPoi()}
+            onClick={(e) => {
+              e.stopPropagation();
+              onCancelAddPoi && onCancelAddPoi();
+            }}
             className="bg-red-500 text-white py-1 px-2 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 text-xs font-medium"
           >
             ❌ Annulla
