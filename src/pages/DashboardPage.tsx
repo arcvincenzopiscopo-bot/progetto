@@ -520,8 +520,31 @@ const DashboardPage: React.FC = () => {
     }
   }, [user]);
 
+  // Funzione per ottenere il ruolo basato su admin level
+  const getUserRole = (adminLevel: number): string => {
+    switch (adminLevel) {
+      case 0:
+        return 'utente ispettore';
+      case 1:
+        return 'utente responsabile di team';
+      case 2:
+        return 'utente superadmin';
+      default:
+        return 'utente';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
+
+      {/* Header di benvenuto */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="container mx-auto px-4 py-3">
+          <h1 className="text-xl font-bold text-gray-800">
+            <span className="font-bold">Benvenuto</span> {user?.username} - {getUserRole(user?.admin || 0)}
+          </h1>
+        </div>
+      </div>
 
       <div className="container mx-auto px-2 py-4">
         {/* Map Section with rounded gray borders */}
