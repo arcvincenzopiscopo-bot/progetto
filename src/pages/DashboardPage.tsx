@@ -540,7 +540,7 @@ const DashboardPage: React.FC = () => {
       {/* Header di benvenuto */}
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="container mx-auto px-4 py-3">
-          <h1 className="text-xl font-bold text-gray-800 text-center">
+          <h1 className="text-lg font-bold text-gray-800 text-center">
             <span className="font-bold">Benvenuto</span> {user?.username} - {getUserRole(user?.admin || 0)}
           </h1>
         </div>
