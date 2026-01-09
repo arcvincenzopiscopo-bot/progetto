@@ -42,6 +42,7 @@ interface MapComponentProps {
   onPoiSelect?: (poi: PointOfInterest | null) => void; // Callback when POI is selected/deselected
   currentTeam?: string;
   adminLevel?: number;
+  currentUsername?: string;
   newPoiLocation?: { lat: number; lng: number } | null;
   onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => void;
   onCancelAddPoi?: () => void;
@@ -476,7 +477,7 @@ const POIFormPopup: React.FC<{
   );
 };
 
-const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
+const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, currentUsername, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
   // Use mapCenter if provided, otherwise use initialPosition, otherwise default to Rome coordinates
   const centerPosition: [number, number] = mapCenter || initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
@@ -804,6 +805,26 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                       // Add delete button based on admin level and POI status
                       if (adminLevel === 2 && poi.ispezionabile === 0) {
                         buttons.push(deleteButton);
+                      } else if (adminLevel === 1 && poi.ispezionabile === 0) {
+                        // Check if created today for admin=1
+                        const poiDate = new Date(poi.created_at);
+                        const today = new Date();
+                        const isCreatedToday = poiDate.getDate() === today.getDate() &&
+                                               poiDate.getMonth() === today.getMonth() &&
+                                               poiDate.getFullYear() === today.getFullYear();
+                        if (isCreatedToday) {
+                          buttons.push(deleteButton);
+                        }
+                      } else if (adminLevel === 0 && poi.ispezionabile === 0) {
+                        // Check if created today and by the current user for admin=0
+                        const poiDate = new Date(poi.created_at);
+                        const today = new Date();
+                        const isCreatedToday = poiDate.getDate() === today.getDate() &&
+                                               poiDate.getMonth() === today.getMonth() &&
+                                               poiDate.getFullYear() === today.getFullYear();
+                        if (isCreatedToday && poi.username === currentUsername) {
+                          buttons.push(deleteButton);
+                        }
                       } else if (adminLevel >= 1 && poi.ispezionabile === 2) {
                         buttons.push(deleteButton);
                       } else if (adminLevel === 0 && poi.ispezionabile === 2) {
@@ -923,7 +944,7 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
                           const isCreatedToday = poiDate.getDate() === today.getDate() &&
                                                  poiDate.getMonth() === today.getMonth() &&
                                                  poiDate.getFullYear() === today.getFullYear();
-                          if (isCreatedToday) {
+                          if (isCreatedToday && poi.username === currentUsername) {
                             buttons.push(
                               <div key="delete-wrapper" className="flex justify-center">
                                 {deleteButton}

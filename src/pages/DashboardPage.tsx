@@ -561,6 +561,7 @@ const DashboardPage: React.FC = () => {
                 onPoiSelect={handlePoiSelect}
                 currentTeam={user?.team}
                 adminLevel={user?.admin || 0}
+                currentUsername={user?.username}
                 newPoiLocation={showAddForm ? newPoiLocation : null}
                 onAddPoi={handleAddPoi}
                 onCancelAddPoi={() => {

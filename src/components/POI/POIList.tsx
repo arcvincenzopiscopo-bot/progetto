@@ -7,7 +7,7 @@ interface PointOfInterest {
   indirizzo: string;
   username: string;
   team: string;
-  ispezionabile: boolean;
+  ispezionabile: number; // 0 = not inspectable, 1 = inspectable, 2 = pending approval
   tipo: string;
   note?: string;
   latitudine: number;
@@ -56,8 +56,33 @@ const POIList: React.FC<POIListProps> = ({ pois, onPoiSelect, onPoiDeleted, curr
               Ispezionabile: {poi.ispezionabile ? 'Sì' : 'No'}
             </p>
 
-            {/* Delete button - only visible for records created today by the current user (for admin=0) or all records for admins */}
-            {isCreatedToday && (currentUser?.admin !== 0 || poi.username === currentUser?.username) && (
+            {/* Delete button - visible based on admin level and POI status */}
+            {(() => {
+              // For red POIs (ispezionabile=0)
+              if (poi.ispezionabile === 0) {
+                if (currentUser?.admin === 2) {
+                  return true; // admin=2 can delete all red POIs
+                } else if (currentUser?.admin === 1 && isCreatedToday) {
+                  return true; // admin=1 can delete red POIs created today
+                } else if (currentUser?.admin === 0 && isCreatedToday && poi.username === currentUser?.username) {
+                  return true; // admin=0 can delete red POIs created today by themselves
+                }
+                return false;
+              }
+              // For green POIs (ispezionabile=1)
+              else if (poi.ispezionabile === 1) {
+                if (currentUser?.admin !== 0) {
+                  return true; // admins can delete all green POIs
+                } else if (isCreatedToday && poi.username === currentUser?.username) {
+                  return true; // admin=0 can delete green POIs created today by themselves
+                }
+                return false;
+              }
+              // For yellow POIs (ispezionabile=2)
+              else {
+                return isCreatedToday; // Can delete yellow POIs created today regardless of admin level
+              }
+            })() && (
               <button
                 onClick={async (e) => {
                   e.stopPropagation(); // Prevent triggering the onPoiSelect
