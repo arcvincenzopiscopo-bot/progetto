@@ -1,13 +1,35 @@
 import { supabase } from './supabaseClient';
+import CryptoJS from 'crypto-js';
 
 interface User {
   id: string;
   username: string;
-  password: string; // In un'applicazione reale, dovrebbe essere hashata
+  password: string; // Ora hashata con SHA-256
   team?: string; // Campo opzionale per il team
   admin?: number; // Campo per i privilegi di amministratore (0 = non admin, 1 = admin)
   created_at: string;
 }
+
+// Salt fisso per l'applicazione - cambiare in produzione per sicurezza aggiuntiva
+const PASSWORD_SALT = 'punti-interesse-app-2024-secure-salt';
+
+/**
+ * Hashes a password using SHA-256 with salt
+ * @param password Plain text password
+ * @returns Hex string hash
+ */
+const hashPassword = (password: string): string => {
+  return CryptoJS.SHA256(password + PASSWORD_SALT).toString();
+};
+
+/**
+ * Checks if a password string is already hashed (SHA-256 produces 64 char hex)
+ * @param password Password string to check
+ * @returns True if hashed, false if plaintext
+ */
+const isHashedPassword = (password: string): boolean => {
+  return /^[a-f0-9]{64}$/.test(password);
+};
 
 export const registerUser = async (username: string, password: string): Promise<User | null> => {
   try {
@@ -31,13 +53,16 @@ export const registerUser = async (username: string, password: string): Promise<
       return null;
     }
 
+    // Hash the password before storing
+    const hashedPassword = hashPassword(password);
+
     // Crea il nuovo utente
     const { data, error } = await supabase
       .from('users')
       .insert([
         {
           username,
-          password, // In produzione, usa bcrypt per hashare la password
+          password: hashedPassword, // Password hashata con SHA-256
           created_at: new Date().toISOString(),
         },
       ])
@@ -117,9 +142,29 @@ export const loginUser = async (username: string, password: string): Promise<Use
       return null;
     }
 
-    // In un'applicazione reale, dovresti verificare la password hashata
-    // Esempio: const isValid = await bcrypt.compare(password, data.password);
-    if (data.password !== password) {
+    let isValidPassword = false;
+
+    // Check if stored password is already hashed
+    if (isHashedPassword(data.password)) {
+      // Password is hashed - compare hashes
+      const inputHash = hashPassword(password);
+      isValidPassword = (inputHash === data.password);
+    } else {
+      // Legacy plaintext password - verify and migrate
+      isValidPassword = (password === data.password);
+
+      if (isValidPassword) {
+        // Migrate to hashed password automatically
+        console.log('Migrating legacy plaintext password to hash for user:', username);
+        const hashedPassword = hashPassword(password);
+        await supabase
+          .from('users')
+          .update({ password: hashedPassword })
+          .eq('id', data.id);
+      }
+    }
+
+    if (!isValidPassword) {
       console.error('Invalid password');
       return null;
     }
@@ -158,9 +203,12 @@ export const updatePassword = async (userId: string, newPassword: string): Promi
   try {
     console.log('Updating password for user:', userId);
 
+    // Hash the new password before storing
+    const hashedPassword = hashPassword(newPassword);
+
     const { error } = await supabase
       .from('users')
-      .update({ password: newPassword })
+      .update({ password: hashedPassword }) // Password hashata
       .eq('id', userId);
 
     if (error) {
