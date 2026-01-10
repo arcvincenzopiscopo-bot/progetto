@@ -3,9 +3,7 @@
  * Provides forward and reverse geocoding with house number support
  */
 
-import { googleMapsGeocoding } from './googleMapsGeocoding';
-import { openCageGeocoding } from './openCageGeocoding';
-import { photonGeocoding } from './photonGeocoding';
+// Dynamic imports for geocoding services to reduce initial bundle size
 
 interface NominatimResponse {
   place_id: number;
@@ -240,6 +238,7 @@ export async function getAddressWithCache(lat: number, lng: number): Promise<Geo
       console.log('🔍 [REVERSE] Trying Google Maps...');
 
       try {
+        const { googleMapsGeocoding } = await import('./googleMapsGeocoding');
         const googleResult = await googleMapsGeocoding(coordinateQuery);
 
         const result: GeocodingResult = {
@@ -267,6 +266,7 @@ export async function getAddressWithCache(lat: number, lng: number): Promise<Geo
     console.log('🔍 [REVERSE] Trying OpenCage...');
 
     try {
+      const { openCageGeocoding } = await import('./openCageGeocoding');
       const openCageResult = await openCageGeocoding(coordinateQuery);
 
       const result: GeocodingResult = {
@@ -289,6 +289,7 @@ export async function getAddressWithCache(lat: number, lng: number): Promise<Geo
     console.log('🔍 [REVERSE] Trying Photon...');
 
     try {
+      const { photonGeocoding } = await import('./photonGeocoding');
       const photonResult = await photonGeocoding(coordinateQuery);
 
       const result: GeocodingResult = {
@@ -394,6 +395,7 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
       console.log('🔍 [CASCATA] Trying Google Maps geocoding for:', trimmedQuery);
 
       try {
+        const { googleMapsGeocoding } = await import('./googleMapsGeocoding');
         const googleResult = await googleMapsGeocoding(trimmedQuery);
 
         const result: SearchResult = {
@@ -437,6 +439,7 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
     }
 
     try {
+      const { openCageGeocoding } = await import('./openCageGeocoding');
       const openCageResult = await openCageGeocoding(trimmedQuery);
 
       const result: SearchResult = {
@@ -475,6 +478,7 @@ export async function searchAddress(query: string): Promise<SearchResult[]> {
     }
 
     try {
+      const { photonGeocoding } = await import('./photonGeocoding');
       const photonResult = await photonGeocoding(trimmedQuery);
 
       const result: SearchResult = {
