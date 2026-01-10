@@ -1,6 +1,7 @@
 import React from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { deletePhotoFromCloudinary } from '../../services/authService';
+import { canDeletePoi } from '../../utils/poiPermissions';
 
 interface PointOfInterest {
   id: string;
@@ -56,33 +57,8 @@ const POIList: React.FC<POIListProps> = ({ pois, onPoiSelect, onPoiDeleted, curr
               Ispezionabile: {poi.ispezionabile ? 'Sì' : 'No'}
             </p>
 
-            {/* Delete button - visible based on admin level and POI status */}
-            {(() => {
-              // For red POIs (ispezionabile=0)
-              if (poi.ispezionabile === 0) {
-                if (currentUser?.admin === 2) {
-                  return true; // admin=2 can delete all red POIs
-                } else if (currentUser?.admin === 1 && isCreatedToday) {
-                  return true; // admin=1 can delete red POIs created today
-                } else if (currentUser?.admin === 0 && isCreatedToday && poi.username === currentUser?.username) {
-                  return true; // admin=0 can delete red POIs created today by themselves
-                }
-                return false;
-              }
-              // For green POIs (ispezionabile=1)
-              else if (poi.ispezionabile === 1) {
-                if (currentUser?.admin !== 0) {
-                  return true; // admins can delete all green POIs
-                } else if (isCreatedToday && poi.username === currentUser?.username) {
-                  return true; // admin=0 can delete green POIs created today by themselves
-                }
-                return false;
-              }
-              // For yellow POIs (ispezionabile=2)
-              else {
-                return isCreatedToday; // Can delete yellow POIs created today regardless of admin level
-              }
-            })() && (
+            {/* Delete button - visible based on permissions */}
+            {currentUser && canDeletePoi(poi, currentUser) && (
               <button
                 onClick={async (e) => {
                   e.stopPropagation(); // Prevent triggering the onPoiSelect

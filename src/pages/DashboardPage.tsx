@@ -6,6 +6,7 @@ import { getAddressWithCache } from '../services/geocodingService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import SearchBox from '../components/UI/SearchBox';
 import PasswordChangePopup from '../components/Auth/PasswordChangePopup';
+import { validatePoi, PointOfInterest } from '../utils/validatePoi';
 
 // Lazy load heavy components
 const MapComponent = React.lazy(() => import('../components/Map/MapComponent'));
@@ -20,21 +21,7 @@ const MapLoadingFallback = () => (
   </div>
 );
 
-interface PointOfInterest {
-  id: string;
-  indirizzo: string;
-  username: string;
-  team: string;
-  ispezionabile: number; // 0 = not inspectable, 1 = inspectable, 2 = pending approval
-  tipo: string;
-  note?: string;
-  latitudine: number;
-  longitudine: number;
-  da_approvare?: number;
-  photo_url?: string;
-  created_at: string;
-  anno?: number; // Campo aggiunto per identificare POI storici (2024, 2025)
-}
+
 
 const DashboardPage: React.FC = () => {
   const { user, logout } = useCustomAuth();
@@ -161,47 +148,7 @@ const DashboardPage: React.FC = () => {
       // Unisci tutti i POI aggiungendo il campo anno e valida coordinate
       const allPois: PointOfInterest[] = [];
 
-      // Funzione per validare e filtrare POI con coordinate valide
-      const validatePoi = (poi: any, anno?: number): PointOfInterest | null => {
-        // Verifica che latitudine e longitudine esistano e non siano null/undefined
-        if (poi.latitudine === null || poi.latitudine === undefined ||
-            poi.longitudine === null || poi.longitudine === undefined) {
-          return null;
-        }
 
-        // Converti coordinate in numeri se sono stringhe
-        let lat = poi.latitudine;
-        let lng = poi.longitudine;
-
-        if (typeof lat === 'string') {
-          lat = parseFloat(lat);
-        }
-        if (typeof lng === 'string') {
-          lng = parseFloat(lng);
-        }
-
-        // Verifica che siano effettivamente numeri (non stringhe, oggetti, ecc.)
-        if (typeof lat !== 'number' || typeof lng !== 'number') {
-          return null;
-        }
-
-        // Verifica che non siano NaN o Infinity
-        if (isNaN(lat) || isNaN(lng) ||
-            !isFinite(lat) || !isFinite(lng)) {
-          return null;
-        }
-
-        // Verifica che le coordinate siano in un range ragionevole
-        if (lat < -90 || lat > 90 ||
-            lng < -180 || lng > 180) {
-          return null;
-        }
-
-        // Crea una copia dell'oggetto con coordinate numeriche
-        const validatedPoi = { ...poi, latitudine: lat, longitudine: lng };
-
-        return anno ? { ...validatedPoi, anno } : validatedPoi;
-      };
 
       // POI attuali (anno non definito o null)
       if (currentPois) {
