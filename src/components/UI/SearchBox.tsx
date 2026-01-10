@@ -30,7 +30,7 @@ interface SearchBoxProps {
   className?: string;
 }
 
-const SearchBox: React.FC<SearchBoxProps> = ({
+const SearchBox: React.FC<SearchBoxProps> = React.memo(({
   onLocationSelect,
   placeholder = "Cerca indirizzo...",
   className = ""
@@ -285,6 +285,8 @@ const SearchBox: React.FC<SearchBoxProps> = ({
       )}
     </div>
   );
-};
+});
+
+SearchBox.displayName = 'SearchBox';
 
 export default SearchBox;

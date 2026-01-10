@@ -73,65 +73,15 @@ const MapClickHandler: React.FC<{
   newPoiLocation?: { lat: number; lng: number } | null;
   onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => void;
   onCancelAddPoi?: () => void;
-}> = ({ onMapClick, onPoiSelect, newPoiLocation, onAddPoi, onCancelAddPoi }) => {
-  const [clickPosition, setClickPosition] = useState<{ lat: number; lng: number } | null>(null);
-  const [ispezionabile, setIspezionabile] = useState('1');
-  const [tipo, setTipo] = useState('cantiere');
-  const [note, setNote] = useState('');
-  const [address, setAddress] = useState<string>('');
-
+}> = ({ onMapClick, onPoiSelect, newPoiLocation }) => {
   useMapEvents({
-    click: async (e) => {
+    click: (e) => {
       const { lat, lng } = e.latlng;
-      setClickPosition({ lat, lng });
       onMapClick(lat, lng);
-
-      // Try to get address using geocoding service
-      try {
-        const result = await getAddressWithCache(lat, lng);
-        if (result.success && result.address) {
-          setAddress(result.address);
-        } else {
-          // Fallback to coordinates if geocoding fails
-          setAddress(`Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`);
-        }
-      } catch (error) {
-        console.error('Error getting address:', error);
-        setAddress(`Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`);
-      }
     },
   });
 
-  // Automatically show popup when newPoiLocation is provided
-  useEffect(() => {
-    if (newPoiLocation) {
-      setClickPosition(newPoiLocation);
-      // Reset form state when opening
-      setIspezionabile('1');
-      setTipo('cantiere');
-      setNote('');
-
-      // Try to get address for the new location
-      const fetchAddress = async () => {
-        try {
-          const result = await getAddressWithCache(newPoiLocation.lat, newPoiLocation.lng);
-          if (result.success && result.address) {
-            setAddress(result.address);
-          } else {
-            // Fallback to coordinates if geocoding fails
-            setAddress(`Lat: ${newPoiLocation.lat.toFixed(6)}, Lng: ${newPoiLocation.lng.toFixed(6)}`);
-          }
-        } catch (error) {
-          console.error('Error getting address:', error);
-          setAddress(`Lat: ${newPoiLocation.lat.toFixed(6)}, Lng: ${newPoiLocation.lng.toFixed(6)}`);
-        }
-      };
-
-      fetchAddress();
-    }
-  }, [newPoiLocation]);
-
-  return null; // Remove the marker from MapClickHandler - it's now handled in MapComponent
+  return null;
 };
 
 // Component to handle map clicks for POI deselection
@@ -156,7 +106,7 @@ const MapDeselectHandler: React.FC<{
 
 
 
-const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, currentUsername, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
+const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, currentUsername, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
   // Use mapCenter if provided, otherwise use initialPosition, otherwise default to Rome coordinates
   const centerPosition: [number, number] = mapCenter || initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
@@ -689,6 +639,8 @@ const MapComponent: React.FC<MapComponentProps> = ({ pois, onMapClick, selectedP
       <MapDeselectHandler onPoiSelect={onPoiSelect} />
     </MapContainer>
   );
-};
+});
+
+MapComponent.displayName = 'MapComponent';
 
 export default MapComponent;

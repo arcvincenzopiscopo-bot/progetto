@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useCustomAuth } from '../context/CustomAuthContext';
 import { supabase } from '../services/supabaseClient';
 import { uploadPhoto, updatePassword } from '../services/authService';
@@ -39,6 +39,11 @@ const DashboardPage: React.FC = () => {
   const [creatingNewPoi, setCreatingNewPoi] = useState<boolean>(false); // Track if new POI is being created
   const [showPasswordChange, setShowPasswordChange] = useState<boolean>(false); // Track if password change popup should be shown
 
+  // Loading states for granular feedback
+  const [isLoadingPois, setIsLoadingPois] = useState<boolean>(true); // Loading POI data
+  const [isGeocodingAddress, setIsGeocodingAddress] = useState<boolean>(false); // Geocoding new POI address
+  const [updatingPoiId, setUpdatingPoiId] = useState<string | null>(null); // Track which POI is being updated
+
   // Update task progress - marking completed steps
   // [x] Estendere geocodingService per ricerca indirizzi
   // [x] Creare componente SearchBox con autocompletamento
@@ -47,6 +52,8 @@ const DashboardPage: React.FC = () => {
 
   const fetchPois = useCallback(async () => {
     try {
+      setIsLoadingPois(true);
+
       // Recupera POI dalla tabella principale 'points'
       let query = supabase
         .from('points')
@@ -216,10 +223,12 @@ const DashboardPage: React.FC = () => {
       }
 
       setPois(allPois);
+      setIsLoadingPois(false);
     } catch (err) {
       if (process.env.NODE_ENV === 'development') {
         console.error('Error fetching POIs:', err);
       }
+      setIsLoadingPois(false);
     }
   }, [user]);
 
@@ -389,7 +398,7 @@ const DashboardPage: React.FC = () => {
       alert('Errore nella creazione del POI. Riprova.');
       setCreatingNewPoi(false); // Reset creating state on error
     }
-  }, [newPoiLocation, user, pois, fetchPois]);
+  }, [newPoiLocation, user, fetchPois]);
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
     // Reset any working POI when clicking on map to add new POI
@@ -410,7 +419,7 @@ const DashboardPage: React.FC = () => {
       setMapCenter(poiPosition);
       setMapZoom(zoomLevel);
     }
-  }, []);
+  }, [fetchPois]);
 
   const handleLogout = useCallback(async () => {
     logout();
@@ -460,8 +469,9 @@ const DashboardPage: React.FC = () => {
     }
   }, [user]);
 
-  // Funzione per ottenere il ruolo basato su admin level
-  const getUserRole = (adminLevel: number): string => {
+  // Memoized user role calculation - only recalculates when user.admin changes
+  const userRole = useMemo(() => {
+    const adminLevel = user?.admin || 0;
     switch (adminLevel) {
       case 0:
         return 'utente ispettore';
@@ -472,7 +482,7 @@ const DashboardPage: React.FC = () => {
       default:
         return 'utente';
     }
-  };
+  }, [user?.admin]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -481,7 +491,7 @@ const DashboardPage: React.FC = () => {
       <div className="bg-white shadow-sm border-b border-gray-200">
         <div className="container mx-auto px-4 py-3">
           <h1 className="text-lg font-bold text-gray-800 text-center">
-            <span className="font-bold">Benvenuto</span> {user?.username} - {getUserRole(user?.admin || 0)}
+            <span className="font-bold">Benvenuto</span> {user?.username} - {userRole}
           </h1>
         </div>
       </div>
