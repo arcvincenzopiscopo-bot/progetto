@@ -30,13 +30,15 @@ const DashboardPage: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPoiLocation, setNewPoiLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [currentPosition, setCurrentPosition] = useState<[number, number] | undefined>(undefined);
-  const [filterShowInspectable, setFilterShowInspectable] = useState(true);
-  const [filterShowNonInspectable, setFilterShowNonInspectable] = useState(true);
-  const [filterShowPendingApproval, setFilterShowPendingApproval] = useState(true);
-  const [filterShowCantiere, setFilterShowCantiere] = useState(true);
-  const [filterShowAltro, setFilterShowAltro] = useState(true);
-  const [filterShow2024, setFilterShow2024] = useState(false); // Default: non selezionato
-  const [filterShow2025, setFilterShow2025] = useState(false); // Default: non selezionato
+  const [filters, setFilters] = useState({
+    showInspectable: true,
+    showNonInspectable: true,
+    showPendingApproval: true,
+    showCantiere: true,
+    showAltro: true,
+    show2024: false, // Default: non selezionato
+    show2025: false, // Default: non selezionato
+  });
   const [lastPoiPosition, setLastPoiPosition] = useState<[number, number] | null>(null); // Track last interacted POI position
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null); // Separate state for map centering
   const [mapZoom, setMapZoom] = useState<number>(13); // Separate state for map zoom level
@@ -51,52 +53,7 @@ const DashboardPage: React.FC = () => {
   // [x] Integrare SearchBox nella dashboard sopra la mappa
   // [x] Implementare callback per centrare mappa sui risultati
 
-  useEffect(() => {
-    // Log user info without sensitive data
-    if (user) {
-      console.log('Dashboard: Component mounted for user:', {
-        id: user.id,
-        username: user.username,
-        team: user.team,
-        admin: user.admin
-      });
-      fetchPois();
-    }
-  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    console.log('Dashboard: isInstallable changed:', isInstallable);
-  }, [isInstallable]);
-
-  // Check if user needs to change password
-  useEffect(() => {
-    if (user && user.needsPasswordChange) {
-      setShowPasswordChange(true);
-    }
-  }, [user]);
-
-  useEffect(() => {
-    // Get user's current location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setCurrentPosition([latitude, longitude]);
-        },
-        (error) => {
-          console.error('Error getting location:', error);
-          // Fallback to default position (Rome) if geolocation fails
-          setCurrentPosition(undefined);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-      );
-    } else {
-      console.error('Geolocation is not supported by this browser.');
-      setCurrentPosition(undefined);
-    }
-  }, []);
-
-  const fetchPois = async () => {
+  const fetchPois = useCallback(async () => {
     try {
       // Recupera POI dalla tabella principale 'points'
       let query = supabase
@@ -272,7 +229,52 @@ const DashboardPage: React.FC = () => {
         console.error('Error fetching POIs:', err);
       }
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    // Log user info without sensitive data
+    if (user) {
+      console.log('Dashboard: Component mounted for user:', {
+        id: user.id,
+        username: user.username,
+        team: user.team,
+        admin: user.admin
+      });
+      fetchPois();
+    }
+  }, [user, fetchPois]);
+
+  useEffect(() => {
+    console.log('Dashboard: isInstallable changed:', isInstallable);
+  }, [isInstallable]);
+
+  // Check if user needs to change password
+  useEffect(() => {
+    if (user && user.needsPasswordChange) {
+      setShowPasswordChange(true);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    // Get user's current location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setCurrentPosition([latitude, longitude]);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          // Fallback to default position (Rome) if geolocation fails
+          setCurrentPosition(undefined);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    } else {
+      console.error('Geolocation is not supported by this browser.');
+      setCurrentPosition(undefined);
+    }
+  }, []);
 
   const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
     if (!newPoiLocation || !user) return;
@@ -515,13 +517,13 @@ const DashboardPage: React.FC = () => {
                   setShowAddForm(false);
                   setCreatingNewPoi(false); // Reset creating state when canceling
                 }}
-                filterShowInspectable={filterShowInspectable}
-                filterShowNonInspectable={filterShowNonInspectable}
-                filterShowPendingApproval={filterShowPendingApproval}
-                filterShowCantiere={filterShowCantiere}
-                filterShowAltro={filterShowAltro}
-                filterShow2024={filterShow2024}
-                filterShow2025={filterShow2025}
+                filterShowInspectable={filters.showInspectable}
+                filterShowNonInspectable={filters.showNonInspectable}
+                filterShowPendingApproval={filters.showPendingApproval}
+                filterShowCantiere={filters.showCantiere}
+                filterShowAltro={filters.showAltro}
+                filterShow2024={filters.show2024}
+                filterShow2025={filters.show2025}
                 height="66vh"
                 workingPoiId={workingPoiId}
                 selectedPoiId={selectedPoiId}
@@ -604,8 +606,8 @@ const DashboardPage: React.FC = () => {
                   <input
                     type="checkbox"
                     id="filter-inspectable"
-                    checked={filterShowInspectable}
-                    onChange={(e) => setFilterShowInspectable(e.target.checked)}
+                    checked={filters.showInspectable}
+                    onChange={(e) => setFilters(prev => ({ ...prev, showInspectable: e.target.checked }))}
                     className="h-5 w-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
                   />
                   <label htmlFor="filter-inspectable" className="text-sm font-medium text-gray-700">
@@ -616,8 +618,8 @@ const DashboardPage: React.FC = () => {
                   <input
                     type="checkbox"
                     id="filter-non-inspectable"
-                    checked={filterShowNonInspectable}
-                    onChange={(e) => setFilterShowNonInspectable(e.target.checked)}
+                    checked={filters.showNonInspectable}
+                    onChange={(e) => setFilters(prev => ({ ...prev, showNonInspectable: e.target.checked }))}
                     className="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
                   />
                   <label htmlFor="filter-non-inspectable" className="text-sm font-medium text-gray-700">
@@ -630,8 +632,8 @@ const DashboardPage: React.FC = () => {
                     <input
                       type="checkbox"
                       id="filter-pending-approval"
-                      checked={filterShowPendingApproval}
-                      onChange={(e) => setFilterShowPendingApproval(e.target.checked)}
+                      checked={filters.showPendingApproval}
+                      onChange={(e) => setFilters(prev => ({ ...prev, showPendingApproval: e.target.checked }))}
                       className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
                     />
                     <label htmlFor="filter-pending-approval" className="text-sm font-medium text-gray-700">
@@ -647,8 +649,8 @@ const DashboardPage: React.FC = () => {
                   <input
                     type="checkbox"
                     id="filter-cantiere"
-                    checked={filterShowCantiere}
-                    onChange={(e) => setFilterShowCantiere(e.target.checked)}
+                    checked={filters.showCantiere}
+                    onChange={(e) => setFilters(prev => ({ ...prev, showCantiere: e.target.checked }))}
                     className="h-5 w-5 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
                   />
                   <label htmlFor="filter-cantiere" className="text-sm font-medium text-gray-700">
@@ -659,8 +661,8 @@ const DashboardPage: React.FC = () => {
                   <input
                     type="checkbox"
                     id="filter-altro"
-                    checked={filterShowAltro}
-                    onChange={(e) => setFilterShowAltro(e.target.checked)}
+                    checked={filters.showAltro}
+                    onChange={(e) => setFilters(prev => ({ ...prev, showAltro: e.target.checked }))}
                     className="h-5 w-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                   />
                   <label htmlFor="filter-altro" className="text-sm font-medium text-gray-700">
@@ -671,8 +673,8 @@ const DashboardPage: React.FC = () => {
                   <input
                     type="checkbox"
                     id="filter-2024"
-                    checked={filterShow2024}
-                    onChange={(e) => setFilterShow2024(e.target.checked)}
+                    checked={filters.show2024}
+                    onChange={(e) => setFilters(prev => ({ ...prev, show2024: e.target.checked }))}
                     className="h-5 w-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
                   />
                   <label htmlFor="filter-2024" className="text-sm font-medium text-gray-700">
@@ -683,8 +685,8 @@ const DashboardPage: React.FC = () => {
                   <input
                     type="checkbox"
                     id="filter-2025"
-                    checked={filterShow2025}
-                    onChange={(e) => setFilterShow2025(e.target.checked)}
+                    checked={filters.show2025}
+                    onChange={(e) => setFilters(prev => ({ ...prev, show2025: e.target.checked }))}
                     className="h-5 w-5 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500"
                   />
                   <label htmlFor="filter-2025" className="text-sm font-medium text-gray-700">
