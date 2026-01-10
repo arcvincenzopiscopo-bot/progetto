@@ -12,7 +12,6 @@
     "@types/react-router-dom": "^5.3.3",
     "crypto-js": "^4.2.0",
     "csv-parser": "^3.2.0",
-    "dotenv": "^17.2.3",
     "leaflet": "^1.9.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
@@ -26,8 +25,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "webpack": "webpack serve --open"
+    "eject": "react-scripts eject"
   },
   "eslintConfig": {
     "extends": [
@@ -49,9 +47,13 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@types/jest": "^30.0.0",
     "autoprefixer": "^10.4.23",
     "css-loader": "^7.1.2",
     "html-webpack-plugin": "^5.6.5",
+    "jest-environment-jsdom": "^30.2.0",
     "postcss": "^8.5.6",
     "postcss-loader": "^8.2.0",
     "style-loader": "^4.0.0",

@@ -12,6 +12,7 @@ import { MapSkeleton } from '../components/SkeletonLoader';
 
 // Lazy load heavy components
 const MapComponent = React.lazy(() => import('../components/Map/MapComponent'));
+const MapErrorBoundary = React.lazy(() => import('../components/Map/MapErrorBoundary'));
 
 // Loading component
 const MapLoadingFallback = () => (
@@ -502,7 +503,8 @@ const DashboardPage: React.FC = () => {
         <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm mb-4">
           <div className="h-[66vh] w-full">
             <Suspense fallback={<MapSkeleton />}>
-              <MapComponent
+              <MapErrorBoundary>
+                <MapComponent
                 pois={pois}
                 onMapClick={handleMapClick}
                 initialPosition={currentPosition}
@@ -530,7 +532,8 @@ const DashboardPage: React.FC = () => {
                 workingPoiId={workingPoiId}
                 selectedPoiId={selectedPoiId}
                 creatingNewPoi={creatingNewPoi}
-              />
+                />
+              </MapErrorBoundary>
             </Suspense>
           </div>
         </div>
