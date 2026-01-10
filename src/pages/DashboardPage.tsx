@@ -14,16 +14,6 @@ import { MapSkeleton } from '../components/SkeletonLoader';
 const MapComponent = React.lazy(() => import('../components/Map/MapComponent'));
 const MapErrorBoundary = React.lazy(() => import('../components/Map/MapErrorBoundary'));
 
-// Loading component
-const MapLoadingFallback = () => (
-  <div className="flex items-center justify-center h-[66vh] bg-gray-100">
-    <div className="text-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-      <p className="mt-4 text-gray-600">Caricamento mappa...</p>
-    </div>
-  </div>
-);
-
 
 
 const DashboardPage: React.FC = () => {
@@ -42,7 +32,6 @@ const DashboardPage: React.FC = () => {
     show2024: false, // Default: non selezionato
     show2025: false, // Default: non selezionato
   });
-  const [lastPoiPosition, setLastPoiPosition] = useState<[number, number] | null>(null); // Track last interacted POI position
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null); // Separate state for map centering
   const [mapZoom, setMapZoom] = useState<number>(13); // Separate state for map zoom level
   const [workingPoiId, setWorkingPoiId] = useState<string | null>(null); // Track POI currently being worked on
@@ -400,7 +389,7 @@ const DashboardPage: React.FC = () => {
       alert('Errore nella creazione del POI. Riprova.');
       setCreatingNewPoi(false); // Reset creating state on error
     }
-  }, [newPoiLocation, user, pois]);
+  }, [newPoiLocation, user, pois, fetchPois]);
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
     // Reset any working POI when clicking on map to add new POI
@@ -417,7 +406,6 @@ const DashboardPage: React.FC = () => {
       setWorkingPoiId(workingPoiIdParam);
     }
     if (poiPosition) {
-      setLastPoiPosition(poiPosition);
       // Center map on POI with specified zoom without moving user's location marker
       setMapCenter(poiPosition);
       setMapZoom(zoomLevel);

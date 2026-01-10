@@ -37,7 +37,7 @@ if (process.env.NODE_ENV === 'development') {
     if (typeof message === 'string' &&
         (message.includes('mozPressure') ||
          message.includes('mozInputSource') ||
-         message.includes('MouseEvent') && message.includes('deprecato'))) {
+         (message.includes('MouseEvent') && message.includes('deprecato')))) {
       return;
     }
 

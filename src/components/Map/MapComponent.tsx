@@ -1,13 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
-import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { supabase } from '../../services/supabaseClient';
 import { deletePhotoFromCloudinary } from '../../services/authService';
 import { getAddressWithCache } from '../../services/geocodingService';
 import POIFormPopup from '../POI/POIFormPopup';
 import {
-  defaultIcon,
   greenIcon,
   redIcon,
   yellowIcon,
@@ -76,25 +74,20 @@ const MapClickHandler: React.FC<{
   onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => void;
   onCancelAddPoi?: () => void;
 }> = ({ onMapClick, onPoiSelect, newPoiLocation, onAddPoi, onCancelAddPoi }) => {
-  const [showPopup, setShowPopup] = useState(false);
   const [clickPosition, setClickPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [ispezionabile, setIspezionabile] = useState('1');
   const [tipo, setTipo] = useState('cantiere');
   const [note, setNote] = useState('');
-  const [photo, setPhoto] = useState<File | null>(null);
   const [address, setAddress] = useState<string>('');
-  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
 
   useMapEvents({
     click: async (e) => {
       const { lat, lng } = e.latlng;
       setClickPosition({ lat, lng });
-      setShowPopup(true);
       onMapClick(lat, lng);
 
       // Try to get address using geocoding service
       try {
-        setIsLoadingAddress(true);
         const result = await getAddressWithCache(lat, lng);
         if (result.success && result.address) {
           setAddress(result.address);
@@ -105,8 +98,6 @@ const MapClickHandler: React.FC<{
       } catch (error) {
         console.error('Error getting address:', error);
         setAddress(`Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`);
-      } finally {
-        setIsLoadingAddress(false);
       }
     },
   });
@@ -115,7 +106,6 @@ const MapClickHandler: React.FC<{
   useEffect(() => {
     if (newPoiLocation) {
       setClickPosition(newPoiLocation);
-      setShowPopup(true);
       // Reset form state when opening
       setIspezionabile('1');
       setTipo('cantiere');
@@ -124,7 +114,6 @@ const MapClickHandler: React.FC<{
       // Try to get address for the new location
       const fetchAddress = async () => {
         try {
-          setIsLoadingAddress(true);
           const result = await getAddressWithCache(newPoiLocation.lat, newPoiLocation.lng);
           if (result.success && result.address) {
             setAddress(result.address);
@@ -135,46 +124,12 @@ const MapClickHandler: React.FC<{
         } catch (error) {
           console.error('Error getting address:', error);
           setAddress(`Lat: ${newPoiLocation.lat.toFixed(6)}, Lng: ${newPoiLocation.lng.toFixed(6)}`);
-        } finally {
-          setIsLoadingAddress(false);
         }
       };
 
       fetchAddress();
     }
   }, [newPoiLocation]);
-
-  const handleAddPoi = () => {
-    console.log('handleAddPoi called');
-    console.log('clickPosition:', clickPosition);
-    console.log('onAddPoi:', onAddPoi);
-    console.log('ispezionabile:', ispezionabile);
-    console.log('tipo:', tipo);
-    console.log('note:', note);
-    console.log('address:', address);
-
-    if (!clickPosition) {
-      console.error('clickPosition is null');
-      return;
-    }
-    if (!onAddPoi) {
-      console.error('onAddPoi is not defined');
-      return;
-    }
-
-    // Use the address from geocoding service, fallback to coordinates if not available
-    const indirizzo = address || `Lat: ${clickPosition.lat.toFixed(6)}, Lng: ${clickPosition.lng.toFixed(6)}`;
-    console.log('Calling onAddPoi with:', indirizzo, Number(ispezionabile), tipo, note);
-
-    try {
-      onAddPoi(indirizzo, Number(ispezionabile), tipo, note, photo || undefined);
-      console.log('onAddPoi completed successfully');
-    } catch (error) {
-      console.error('Error in onAddPoi:', error);
-    }
-
-    setShowPopup(false);
-  };
 
   return null; // Remove the marker from MapClickHandler - it's now handled in MapComponent
 };
