@@ -7,6 +7,8 @@ import { usePWAInstall } from '../hooks/usePWAInstall';
 import SearchBox from '../components/UI/SearchBox';
 import PasswordChangePopup from '../components/Auth/PasswordChangePopup';
 import { validatePoi, PointOfInterest } from '../utils/validatePoi';
+import { FilterState } from '../types';
+import { MapSkeleton } from '../components/SkeletonLoader';
 
 // Lazy load heavy components
 const MapComponent = React.lazy(() => import('../components/Map/MapComponent'));
@@ -30,7 +32,7 @@ const DashboardPage: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPoiLocation, setNewPoiLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [currentPosition, setCurrentPosition] = useState<[number, number] | undefined>(undefined);
-  const [filters, setFilters] = useState({
+  const [filters, setFilters] = useState<FilterState>({
     showInspectable: true,
     showNonInspectable: true,
     showPendingApproval: true,
@@ -499,7 +501,7 @@ const DashboardPage: React.FC = () => {
         {/* Map Section with rounded gray borders */}
         <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm mb-4">
           <div className="h-[66vh] w-full">
-            <Suspense fallback={<MapLoadingFallback />}>
+            <Suspense fallback={<MapSkeleton />}>
               <MapComponent
                 pois={pois}
                 onMapClick={handleMapClick}
