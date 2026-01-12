@@ -10,7 +10,7 @@ interface POIFormPopupProps {
 const POIFormPopup: React.FC<POIFormPopupProps> = ({ location, onAddPoi, onCancelAddPoi }) => {
   const [address, setAddress] = useState<string>('');
   const [isLoadingAddress, setIsLoadingAddress] = useState(false);
-  const [ispezionabile, setIspezionabile] = useState('1');
+  const [ispezionabile, setIspezionabile] = useState('0');
   const [tipo, setTipo] = useState('cantiere');
   const [note, setNote] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
