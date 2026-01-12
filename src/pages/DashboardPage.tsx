@@ -13,6 +13,7 @@ import { MapSkeleton } from '../components/SkeletonLoader';
 // Lazy load heavy components
 const MapComponent = React.lazy(() => import('../components/Map/MapComponent'));
 const MapErrorBoundary = React.lazy(() => import('../components/Map/MapErrorBoundary'));
+const POIFormPopup = React.lazy(() => import('../components/POI/POIFormPopup'));
 
 
 
@@ -701,6 +702,27 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Add POI Modal - appears as overlay when clicking on map */}
+      {showAddForm && newPoiLocation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div className="p-4">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
+                🗺️ Aggiungi Punto di Interesse
+              </h3>
+              <POIFormPopup
+                location={newPoiLocation}
+                onAddPoi={handleAddPoi}
+                onCancelAddPoi={() => {
+                  setShowAddForm(false);
+                  setCreatingNewPoi(false);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Password Change Popup */}
       <PasswordChangePopup

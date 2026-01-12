@@ -747,27 +747,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
         );
       })}
 
-      {/* Add POI Form Popup - appears when adding a new POI */}
-      {newPoiLocation && (
-        <Marker
-          position={[newPoiLocation.lat, newPoiLocation.lng]}
-          icon={largeDefaultIcon} // Use large icon when adding new POI
-          eventHandlers={{
-            click: () => {
-              // This ensures the popup opens automatically when the marker is clicked
-              // The popup should open automatically since we're using Leaflet's Popup component
-            }
-          }}
-        >
-          <Popup autoPan={true} autoClose={false}>
-            <POIFormPopup
-              location={newPoiLocation}
-              onAddPoi={onAddPoi}
-              onCancelAddPoi={onCancelAddPoi}
-            />
-          </Popup>
-        </Marker>
-      )}
+
 
       <MapClickHandler onMapClick={onMapClick} onAddPoi={onAddPoi} onCancelAddPoi={onCancelAddPoi} />
       <MapDeselectHandler onPoiSelect={onPoiSelect} />
