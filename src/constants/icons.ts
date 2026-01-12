@@ -153,7 +153,7 @@ export const constructionGreenIcon = L.divIcon({
     <div style="
       width: 32px;
       height: 32px;
-      border-radius: 50%;
+      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
       background-color: #22c55e;
       border: 3px solid white;
       box-shadow: 0 3px 6px rgba(0,0,0,0.4);
@@ -168,8 +168,8 @@ export const constructionGreenIcon = L.divIcon({
   `,
   className: 'custom-construction-icon',
   iconSize: [38, 38],
-  iconAnchor: [19, 38],
-  popupAnchor: [0, -38]
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19]
 });
 
 export const constructionRedIcon = L.divIcon({
@@ -177,7 +177,7 @@ export const constructionRedIcon = L.divIcon({
     <div style="
       width: 32px;
       height: 32px;
-      border-radius: 50%;
+      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
       background-color: #ef4444;
       border: 3px solid white;
       box-shadow: 0 3px 6px rgba(0,0,0,0.4);
@@ -192,8 +192,8 @@ export const constructionRedIcon = L.divIcon({
   `,
   className: 'custom-construction-icon',
   iconSize: [38, 38],
-  iconAnchor: [19, 38],
-  popupAnchor: [0, -38]
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19]
 });
 
 export const constructionYellowIcon = L.divIcon({
@@ -201,7 +201,7 @@ export const constructionYellowIcon = L.divIcon({
     <div style="
       width: 32px;
       height: 32px;
-      border-radius: 50%;
+      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
       background-color: #eab308;
       border: 3px solid white;
       box-shadow: 0 3px 6px rgba(0,0,0,0.4);
@@ -216,8 +216,8 @@ export const constructionYellowIcon = L.divIcon({
   `,
   className: 'custom-construction-icon',
   iconSize: [38, 38],
-  iconAnchor: [19, 38],
-  popupAnchor: [0, -38]
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19]
 });
 
 export const constructionMagentaIcon = L.divIcon({
@@ -225,7 +225,7 @@ export const constructionMagentaIcon = L.divIcon({
     <div style="
       width: 32px;
       height: 32px;
-      border-radius: 50%;
+      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
       background-color: #d946ef;
       border: 3px solid white;
       box-shadow: 0 3px 6px rgba(0,0,0,0.4);
@@ -240,8 +240,8 @@ export const constructionMagentaIcon = L.divIcon({
   `,
   className: 'custom-construction-icon',
   iconSize: [38, 38],
-  iconAnchor: [19, 38],
-  popupAnchor: [0, -38]
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19]
 });
 
 export const constructionDarkGreyIcon = L.divIcon({
@@ -249,7 +249,7 @@ export const constructionDarkGreyIcon = L.divIcon({
     <div style="
       width: 32px;
       height: 32px;
-      border-radius: 50%;
+      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
       background-color: #374151;
       border: 3px solid white;
       box-shadow: 0 3px 6px rgba(0,0,0,0.4);
@@ -264,8 +264,8 @@ export const constructionDarkGreyIcon = L.divIcon({
   `,
   className: 'custom-construction-icon',
   iconSize: [38, 38],
-  iconAnchor: [19, 38],
-  popupAnchor: [0, -38]
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19]
 });
 
 // Large construction site emoji icons for selected/working POIs
@@ -274,7 +274,7 @@ export const largeConstructionGreenIcon = L.divIcon({
     <div style="
       width: 48px;
       height: 48px;
-      border-radius: 50%;
+      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
       background-color: #22c55e;
       border: 4px solid white;
       box-shadow: 0 4px 8px rgba(0,0,0,0.4);
@@ -289,8 +289,8 @@ export const largeConstructionGreenIcon = L.divIcon({
   `,
   className: 'custom-construction-icon-large',
   iconSize: [56, 56],
-  iconAnchor: [28, 56],
-  popupAnchor: [0, -56]
+  iconAnchor: [28, 28],
+  popupAnchor: [0, -28]
 });
 
 export const largeConstructionRedIcon = L.divIcon({
@@ -298,7 +298,7 @@ export const largeConstructionRedIcon = L.divIcon({
     <div style="
       width: 48px;
       height: 48px;
-      border-radius: 50%;
+      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
       background-color: #ef4444;
       border: 4px solid white;
       box-shadow: 0 4px 8px rgba(0,0,0,0.4);
@@ -313,8 +313,8 @@ export const largeConstructionRedIcon = L.divIcon({
   `,
   className: 'custom-construction-icon-large',
   iconSize: [56, 56],
-  iconAnchor: [28, 56],
-  popupAnchor: [0, -56]
+  iconAnchor: [28, 28],
+  popupAnchor: [0, -28]
 });
 
 export const largeConstructionYellowIcon = L.divIcon({
@@ -322,7 +322,7 @@ export const largeConstructionYellowIcon = L.divIcon({
     <div style="
       width: 48px;
       height: 48px;
-      border-radius: 50%;
+      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
       background-color: #eab308;
       border: 4px solid white;
       box-shadow: 0 4px 8px rgba(0,0,0,0.4);
@@ -337,8 +337,8 @@ export const largeConstructionYellowIcon = L.divIcon({
   `,
   className: 'custom-construction-icon-large',
   iconSize: [56, 56],
-  iconAnchor: [28, 56],
-  popupAnchor: [0, -56]
+  iconAnchor: [28, 28],
+  popupAnchor: [0, -28]
 });
 
 export const largeConstructionMagentaIcon = L.divIcon({
@@ -346,7 +346,7 @@ export const largeConstructionMagentaIcon = L.divIcon({
     <div style="
       width: 48px;
       height: 48px;
-      border-radius: 50%;
+      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
       background-color: #d946ef;
       border: 4px solid white;
       box-shadow: 0 4px 8px rgba(0,0,0,0.4);
@@ -361,8 +361,8 @@ export const largeConstructionMagentaIcon = L.divIcon({
   `,
   className: 'custom-construction-icon-large',
   iconSize: [56, 56],
-  iconAnchor: [28, 56],
-  popupAnchor: [0, -56]
+  iconAnchor: [28, 28],
+  popupAnchor: [0, -28]
 });
 
 export const largeConstructionDarkGreyIcon = L.divIcon({
@@ -370,7 +370,7 @@ export const largeConstructionDarkGreyIcon = L.divIcon({
     <div style="
       width: 48px;
       height: 48px;
-      border-radius: 50%;
+      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
       background-color: #374151;
       border: 4px solid white;
       box-shadow: 0 4px 8px rgba(0,0,0,0.4);
@@ -385,6 +385,6 @@ export const largeConstructionDarkGreyIcon = L.divIcon({
   `,
   className: 'custom-construction-icon-large',
   iconSize: [56, 56],
-  iconAnchor: [28, 56],
-  popupAnchor: [0, -56]
+  iconAnchor: [28, 28],
+  popupAnchor: [0, -28]
 });
