@@ -168,8 +168,8 @@ export const constructionGreenIcon = L.divIcon({
   `,
   className: 'custom-construction-icon',
   iconSize: [38, 38],
-  iconAnchor: [19, 19],
-  popupAnchor: [0, -19]
+  iconAnchor: [19, 38],
+  popupAnchor: [0, -38]
 });
 
 export const constructionRedIcon = L.divIcon({
@@ -192,8 +192,8 @@ export const constructionRedIcon = L.divIcon({
   `,
   className: 'custom-construction-icon',
   iconSize: [38, 38],
-  iconAnchor: [19, 19],
-  popupAnchor: [0, -19]
+  iconAnchor: [19, 38],
+  popupAnchor: [0, -38]
 });
 
 export const constructionYellowIcon = L.divIcon({
@@ -216,8 +216,8 @@ export const constructionYellowIcon = L.divIcon({
   `,
   className: 'custom-construction-icon',
   iconSize: [38, 38],
-  iconAnchor: [19, 19],
-  popupAnchor: [0, -19]
+  iconAnchor: [19, 38],
+  popupAnchor: [0, -38]
 });
 
 export const constructionMagentaIcon = L.divIcon({
@@ -240,8 +240,8 @@ export const constructionMagentaIcon = L.divIcon({
   `,
   className: 'custom-construction-icon',
   iconSize: [38, 38],
-  iconAnchor: [19, 19],
-  popupAnchor: [0, -19]
+  iconAnchor: [19, 38],
+  popupAnchor: [0, -38]
 });
 
 export const constructionDarkGreyIcon = L.divIcon({
@@ -264,8 +264,8 @@ export const constructionDarkGreyIcon = L.divIcon({
   `,
   className: 'custom-construction-icon',
   iconSize: [38, 38],
-  iconAnchor: [19, 19],
-  popupAnchor: [0, -19]
+  iconAnchor: [19, 38],
+  popupAnchor: [0, -38]
 });
 
 // Large construction site emoji icons for selected/working POIs
@@ -289,8 +289,8 @@ export const largeConstructionGreenIcon = L.divIcon({
   `,
   className: 'custom-construction-icon-large',
   iconSize: [56, 56],
-  iconAnchor: [28, 28],
-  popupAnchor: [0, -28]
+  iconAnchor: [28, 56],
+  popupAnchor: [0, -56]
 });
 
 export const largeConstructionRedIcon = L.divIcon({
@@ -313,8 +313,8 @@ export const largeConstructionRedIcon = L.divIcon({
   `,
   className: 'custom-construction-icon-large',
   iconSize: [56, 56],
-  iconAnchor: [28, 28],
-  popupAnchor: [0, -28]
+  iconAnchor: [28, 56],
+  popupAnchor: [0, -56]
 });
 
 export const largeConstructionYellowIcon = L.divIcon({
@@ -337,8 +337,8 @@ export const largeConstructionYellowIcon = L.divIcon({
   `,
   className: 'custom-construction-icon-large',
   iconSize: [56, 56],
-  iconAnchor: [28, 28],
-  popupAnchor: [0, -28]
+  iconAnchor: [28, 56],
+  popupAnchor: [0, -56]
 });
 
 export const largeConstructionMagentaIcon = L.divIcon({
@@ -361,8 +361,8 @@ export const largeConstructionMagentaIcon = L.divIcon({
   `,
   className: 'custom-construction-icon-large',
   iconSize: [56, 56],
-  iconAnchor: [28, 28],
-  popupAnchor: [0, -28]
+  iconAnchor: [28, 56],
+  popupAnchor: [0, -56]
 });
 
 export const largeConstructionDarkGreyIcon = L.divIcon({
@@ -385,6 +385,6 @@ export const largeConstructionDarkGreyIcon = L.divIcon({
   `,
   className: 'custom-construction-icon-large',
   iconSize: [56, 56],
-  iconAnchor: [28, 28],
-  popupAnchor: [0, -28]
+  iconAnchor: [28, 56],
+  popupAnchor: [0, -56]
 });
