@@ -147,190 +147,140 @@ export const userLocationIcon = L.divIcon({
   popupAnchor: [0, -19]
 });
 
-// Construction site drop-shaped emoji icons
+// Construction site icons styled like standard Leaflet markers
 export const constructionGreenIcon = L.divIcon({
   html: `
     <div style="
-      width: 32px;
-      height: 40px;
+      width: 25px;
+      height: 41px;
       background-color: #22c55e;
-      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border-radius: 50% 50% 50% 50% / 20% 20% 80% 80%;
       border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 14px;
       color: white;
-      text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
       position: relative;
+      clip-path: polygon(50% 0%, 100% 30%, 100% 70%, 50% 100%, 0% 70%, 0% 30%);
     ">
       🏗️
-      <div style="
-        position: absolute;
-        bottom: -2px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: 8px solid #22c55e;
-      "></div>
     </div>
   `,
-  className: 'custom-construction-drop-icon',
-  iconSize: [32, 48],
-  iconAnchor: [16, 48],
-  popupAnchor: [0, -48]
+  className: 'custom-construction-marker-icon',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34]
 });
 
 export const constructionRedIcon = L.divIcon({
   html: `
     <div style="
-      width: 32px;
-      height: 40px;
+      width: 25px;
+      height: 41px;
       background-color: #ef4444;
-      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border-radius: 50% 50% 50% 50% / 20% 20% 80% 80%;
       border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 14px;
       color: white;
-      text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
       position: relative;
+      clip-path: polygon(50% 0%, 100% 30%, 100% 70%, 50% 100%, 0% 70%, 0% 30%);
     ">
       🏗️
-      <div style="
-        position: absolute;
-        bottom: -2px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: 8px solid #ef4444;
-      "></div>
     </div>
   `,
-  className: 'custom-construction-drop-icon',
-  iconSize: [32, 48],
-  iconAnchor: [16, 48],
-  popupAnchor: [0, -48]
+  className: 'custom-construction-marker-icon',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34]
 });
 
 export const constructionYellowIcon = L.divIcon({
   html: `
     <div style="
-      width: 32px;
-      height: 40px;
+      width: 25px;
+      height: 41px;
       background-color: #eab308;
-      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border-radius: 50% 50% 50% 50% / 20% 20% 80% 80%;
       border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 14px;
       color: white;
-      text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
       position: relative;
+      clip-path: polygon(50% 0%, 100% 30%, 100% 70%, 50% 100%, 0% 70%, 0% 30%);
     ">
       🏗️
-      <div style="
-        position: absolute;
-        bottom: -2px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: 8px solid #eab308;
-      "></div>
     </div>
   `,
-  className: 'custom-construction-drop-icon',
-  iconSize: [32, 48],
-  iconAnchor: [16, 48],
-  popupAnchor: [0, -48]
+  className: 'custom-construction-marker-icon',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34]
 });
 
 export const constructionMagentaIcon = L.divIcon({
   html: `
     <div style="
-      width: 32px;
-      height: 40px;
+      width: 25px;
+      height: 41px;
       background-color: #d946ef;
-      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border-radius: 50% 50% 50% 50% / 20% 20% 80% 80%;
       border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 14px;
       color: white;
-      text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
       position: relative;
+      clip-path: polygon(50% 0%, 100% 30%, 100% 70%, 50% 100%, 0% 70%, 0% 30%);
     ">
       🏗️
-      <div style="
-        position: absolute;
-        bottom: -2px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: 8px solid #d946ef;
-      "></div>
     </div>
   `,
-  className: 'custom-construction-drop-icon',
-  iconSize: [32, 48],
-  iconAnchor: [16, 48],
-  popupAnchor: [0, -48]
+  className: 'custom-construction-marker-icon',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34]
 });
 
 export const constructionDarkGreyIcon = L.divIcon({
   html: `
     <div style="
-      width: 32px;
-      height: 40px;
+      width: 25px;
+      height: 41px;
       background-color: #374151;
-      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border-radius: 50% 50% 50% 50% / 20% 20% 80% 80%;
       border: 2px solid white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 16px;
+      font-size: 14px;
       color: white;
-      text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
       position: relative;
+      clip-path: polygon(50% 0%, 100% 30%, 100% 70%, 50% 100%, 0% 70%, 0% 30%);
     ">
       🏗️
-      <div style="
-        position: absolute;
-        bottom: -2px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: 8px solid #374151;
-      "></div>
     </div>
   `,
-  className: 'custom-construction-drop-icon',
-  iconSize: [32, 48],
-  iconAnchor: [16, 48],
-  popupAnchor: [0, -48]
+  className: 'custom-construction-marker-icon',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34]
 });
 
 // Large construction site drop-shaped emoji icons
