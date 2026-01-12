@@ -711,14 +711,16 @@ const DashboardPage: React.FC = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4 text-center">
                 🗺️ Aggiungi Punto di Interesse
               </h3>
-              <POIFormPopup
-                location={newPoiLocation}
-                onAddPoi={handleAddPoi}
-                onCancelAddPoi={() => {
-                  setShowAddForm(false);
-                  setCreatingNewPoi(false);
-                }}
-              />
+              <Suspense fallback={<div className="text-center py-4">Caricamento...</div>}>
+                <POIFormPopup
+                  location={newPoiLocation}
+                  onAddPoi={handleAddPoi}
+                  onCancelAddPoi={() => {
+                    setShowAddForm(false);
+                    setCreatingNewPoi(false);
+                  }}
+                />
+              </Suspense>
             </div>
           </div>
         </div>
