@@ -146,3 +146,245 @@ export const userLocationIcon = L.divIcon({
   iconAnchor: [19, 19],
   popupAnchor: [0, -19]
 });
+
+// Construction site emoji icons for different statuses
+export const constructionGreenIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: #22c55e;
+      border: 3px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    ">
+      🏗️
+    </div>
+  `,
+  className: 'custom-construction-icon',
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19]
+});
+
+export const constructionRedIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: #ef4444;
+      border: 3px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    ">
+      🏗️
+    </div>
+  `,
+  className: 'custom-construction-icon',
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19]
+});
+
+export const constructionYellowIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: #eab308;
+      border: 3px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    ">
+      🏗️
+    </div>
+  `,
+  className: 'custom-construction-icon',
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19]
+});
+
+export const constructionMagentaIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: #d946ef;
+      border: 3px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    ">
+      🏗️
+    </div>
+  `,
+  className: 'custom-construction-icon',
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19]
+});
+
+export const constructionDarkGreyIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background-color: #374151;
+      border: 3px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    ">
+      🏗️
+    </div>
+  `,
+  className: 'custom-construction-icon',
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19]
+});
+
+// Large construction site emoji icons for selected/working POIs
+export const largeConstructionGreenIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: #22c55e;
+      border: 4px solid white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    ">
+      🏗️
+    </div>
+  `,
+  className: 'custom-construction-icon-large',
+  iconSize: [56, 56],
+  iconAnchor: [28, 28],
+  popupAnchor: [0, -28]
+});
+
+export const largeConstructionRedIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: #ef4444;
+      border: 4px solid white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    ">
+      🏗️
+    </div>
+  `,
+  className: 'custom-construction-icon-large',
+  iconSize: [56, 56],
+  iconAnchor: [28, 28],
+  popupAnchor: [0, -28]
+});
+
+export const largeConstructionYellowIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: #eab308;
+      border: 4px solid white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    ">
+      🏗️
+    </div>
+  `,
+  className: 'custom-construction-icon-large',
+  iconSize: [56, 56],
+  iconAnchor: [28, 28],
+  popupAnchor: [0, -28]
+});
+
+export const largeConstructionMagentaIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: #d946ef;
+      border: 4px solid white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    ">
+      🏗️
+    </div>
+  `,
+  className: 'custom-construction-icon-large',
+  iconSize: [56, 56],
+  iconAnchor: [28, 28],
+  popupAnchor: [0, -28]
+});
+
+export const largeConstructionDarkGreyIcon = L.divIcon({
+  html: `
+    <div style="
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background-color: #374151;
+      border: 4px solid white;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    ">
+      🏗️
+    </div>
+  `,
+  className: 'custom-construction-icon-large',
+  iconSize: [56, 56],
+  iconAnchor: [28, 28],
+  popupAnchor: [0, -28]
+});

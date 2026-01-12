@@ -17,7 +17,17 @@ import {
   largeYellowIcon,
   largeMagentaIcon,
   largeDarkGreyIcon,
-  userLocationIcon
+  userLocationIcon,
+  constructionGreenIcon,
+  constructionRedIcon,
+  constructionYellowIcon,
+  constructionMagentaIcon,
+  constructionDarkGreyIcon,
+  largeConstructionGreenIcon,
+  largeConstructionRedIcon,
+  largeConstructionYellowIcon,
+  largeConstructionMagentaIcon,
+  largeConstructionDarkGreyIcon
 } from '../../constants/icons';
 
 interface PointOfInterest {
@@ -205,8 +215,10 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
           position={initialPosition}
           icon={userLocationIcon}
           eventHandlers={{
-            click: () => {
-              // Optional click handling for user location
+            click: (e) => {
+              e.originalEvent.stopPropagation();
+              // Trigger POI creation at current location
+              onMapClick(initialPosition[0], initialPosition[1]);
             },
           }}
         >
@@ -217,6 +229,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
                 Lat: {initialPosition[0].toFixed(6)}<br />
                 Lng: {initialPosition[1].toFixed(6)}
               </p>
+              <p className="text-xs text-gray-500 mt-1">Clicca per aggiungere un POI qui</p>
             </div>
           </Popup>
         </Marker>
@@ -242,34 +255,54 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
           return true;
         })
         .map((poi) => {
-        // Determine which icon to use based on working/selected state first, then year, then status
+        // Determine which icon to use based on working/selected state first, then construction type, then year/status
         // Priority: Working POI -> large colored icon (double size, maintains original color)
         // Then: Selected POI -> large colored icon (double size, maintains original color)
-        // Then: Historical POIs (2024, 2025) -> special colored markers
-        // Then: ispezionabile = 2 -> yellow marker (pending approval)
-        // Then: ispezionabile = 1 -> green marker, = 0 -> red marker
+        // Then: Construction POIs (cantiere, 2024, 2025) -> construction emoji icons
+        // Then: Regular POIs -> colored markers based on status
         let markerIcon;
         const isWorkingOrSelected = workingPoiId === poi.id || selectedPoiId === poi.id;
+        const isConstructionType = poi.tipo === 'cantiere' || poi.anno === 2024 || poi.anno === 2025;
 
         if (isWorkingOrSelected) {
           // This POI is currently being worked on or selected - use large icon with original color
-          if (poi.anno === 2024) {
-            markerIcon = largeMagentaIcon; // 🟣 Large magenta for 2024 working/selected POI
-          } else if (poi.anno === 2025) {
-            markerIcon = largeDarkGreyIcon; // ⚫ Large dark grey for 2025 working/selected POI
-          } else if (poi.ispezionabile === 2) {
-            markerIcon = largeYellowIcon; // 🟡 Large yellow for pending approval working/selected POI
+          if (isConstructionType) {
+            // Use large construction icons for construction-type POIs
+            if (poi.anno === 2024) {
+              markerIcon = largeConstructionMagentaIcon; // 🏗️ Large magenta construction for 2024 working/selected POI
+            } else if (poi.anno === 2025) {
+              markerIcon = largeConstructionDarkGreyIcon; // 🏗️ Large dark grey construction for 2025 working/selected POI
+            } else if (poi.ispezionabile === 2) {
+              markerIcon = largeConstructionYellowIcon; // 🏗️ Large yellow construction for pending approval working/selected POI
+            } else {
+              markerIcon = poi.ispezionabile === 1 ? largeConstructionGreenIcon : largeConstructionRedIcon; // 🏗️ Large green or red construction
+            }
           } else {
-            markerIcon = poi.ispezionabile === 1 ? largeGreenIcon : largeRedIcon; // 🟢 Large green or 🔴 Large red
+            // Use regular large icons for non-construction POIs
+            if (poi.ispezionabile === 2) {
+              markerIcon = largeYellowIcon; // 🟡 Large yellow for pending approval working/selected POI
+            } else {
+              markerIcon = poi.ispezionabile === 1 ? largeGreenIcon : largeRedIcon; // 🟢 Large green or 🔴 Large red
+            }
           }
-        } else if (poi.anno === 2024) {
-          markerIcon = magentaIcon; // 🟣 Magenta for 2024
-        } else if (poi.anno === 2025) {
-          markerIcon = darkGreyIcon; // ⚫ Dark grey for 2025
-        } else if (poi.ispezionabile === 2) {
-          markerIcon = yellowIcon;
+        } else if (isConstructionType) {
+          // Construction-type POIs use construction emoji icons
+          if (poi.anno === 2024) {
+            markerIcon = constructionMagentaIcon; // 🏗️ Magenta construction for 2024
+          } else if (poi.anno === 2025) {
+            markerIcon = constructionDarkGreyIcon; // 🏗️ Dark grey construction for 2025
+          } else if (poi.ispezionabile === 2) {
+            markerIcon = constructionYellowIcon; // 🏗️ Yellow construction for pending approval
+          } else {
+            markerIcon = poi.ispezionabile === 1 ? constructionGreenIcon : constructionRedIcon; // 🏗️ Green or red construction
+          }
         } else {
-          markerIcon = poi.ispezionabile === 1 ? greenIcon : redIcon;
+          // Regular POIs use standard colored markers
+          if (poi.ispezionabile === 2) {
+            markerIcon = yellowIcon;
+          } else {
+            markerIcon = poi.ispezionabile === 1 ? greenIcon : redIcon;
+          }
         }
 
         return (
@@ -409,14 +442,126 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
                         </button>
                       );
 
-                      // Admin level 2: show share + delete for all POIs
+                      // Admin level 2 (superadmin): show ALL buttons for all POIs
                       if (adminLevel === 2) {
-                        return (
-                          <div className="flex gap-2">
-                            {shareButton}
-                            {deleteButton}
-                          </div>
-                        );
+                        const buttons = [shareButton];
+
+                        // Always show delete button for superadmin
+                        buttons.push(deleteButton);
+
+                        // For current POIs, add action buttons regardless of status
+                        if (!poi.anno) {
+                          // Cantiere finito button (always available for superadmin)
+                          buttons.push(
+                            <button
+                              key="cantiere-finito"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
+                                if (!confirmed) return;
+                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                                try {
+                                  const { error } = await supabase
+                                    .from('points')
+                                    .update({
+                                      ispezionabile: 2,
+                                      created_at: new Date().toISOString(),
+                                      team: currentTeam || poi.team
+                                    })
+                                    .eq('id', poi.id);
+                                  if (!error) {
+                                    setMapKey(Date.now());
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                  } else {
+                                    alert('Errore nell\'aggiornamento del POI');
+                                  }
+                                } catch (err) {
+                                  console.error('Error updating POI:', err);
+                                  alert('Errore nell\'aggiornamento del POI');
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
+                            >
+                              🏗️ Cantiere finito
+                            </button>
+                          );
+
+                          // Ispezionato button (always available for superadmin)
+                          buttons.push(
+                            <button
+                              key="ispezionato"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
+                                if (!confirmed) return;
+                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                                try {
+                                  const { error } = await supabase
+                                    .from('points')
+                                    .update({
+                                      ispezionabile: 0,
+                                      created_at: new Date().toISOString(),
+                                      team: currentTeam || poi.team
+                                    })
+                                    .eq('id', poi.id);
+                                  if (!error) {
+                                    setMapKey(Date.now());
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                  }
+                                } catch (err) {
+                                  console.error('Error toggling ispezionabile:', err);
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm"
+                            >
+                              👮‍♂️ Ispezionato
+                            </button>
+                          );
+
+                          // Segnala inattività button (always available for superadmin)
+                          buttons.push(
+                            <button
+                              key="segnala-inattivita"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
+                                if (!confirmed) return;
+                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                                try {
+                                  const { error } = await supabase
+                                    .from('points')
+                                    .update({ data_inattivita: new Date().toISOString() })
+                                    .eq('id', poi.id);
+                                  if (error) {
+                                    alert('Errore durante la segnalazione di inattività');
+                                  } else {
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                  }
+                                } catch (err) {
+                                  alert('Errore durante la segnalazione di inattività');
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm"
+                            >
+                              ⚠️ Segnala inattività
+                            </button>
+                          );
+                        }
+
+                        // Return buttons in appropriate layout
+                        if (buttons.length <= 2) {
+                          return <div className="flex gap-2">{buttons}</div>;
+                        } else {
+                          // Split into rows for better layout
+                          const firstRow = buttons.slice(0, 2);
+                          const secondRow = buttons.slice(2);
+                          return (
+                            <>
+                              <div className="flex gap-2">{firstRow}</div>
+                              <div className="flex gap-2 flex-wrap">{secondRow}</div>
+                            </>
+                          );
+                        }
                       }
 
                       // Historical POIs (2024, 2025): only share button for non-admin users
@@ -555,7 +700,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
                                   alert('Errore durante la segnalazione di inattività');
                                 } else {
                                   if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                }
+                                  }
                               } catch (err) {
                                 alert('Errore durante la segnalazione di inattività');
                               }

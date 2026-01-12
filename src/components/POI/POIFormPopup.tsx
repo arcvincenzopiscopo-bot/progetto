@@ -96,7 +96,7 @@ const POIFormPopup: React.FC<POIFormPopupProps> = ({ location, onAddPoi, onCance
 
         <div>
           <label htmlFor="add-poi-note" className="block text-sm font-medium text-gray-700 mb-1">
-            Note (max 20 caratteri)
+            Note (max 30 caratteri)
           </label>
           <input
             id="add-poi-note"
@@ -104,7 +104,7 @@ const POIFormPopup: React.FC<POIFormPopupProps> = ({ location, onAddPoi, onCance
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Inserisci note..."
-            maxLength={20}
+            maxLength={30}
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
           />
         </div>
