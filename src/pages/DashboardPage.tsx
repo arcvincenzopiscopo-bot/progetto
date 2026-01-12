@@ -670,7 +670,7 @@ const DashboardPage: React.FC = () => {
                     className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="filter-altro" className="text-sm font-medium text-gray-700">
-                    🔵 Altro
+                    🔵📍 Altro
                   </label>
                 </div>
                 <div className="flex items-center space-x-3">
