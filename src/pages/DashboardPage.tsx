@@ -667,7 +667,7 @@ const DashboardPage: React.FC = () => {
                     id="filter-altro"
                     checked={filters.showAltro}
                     onChange={(e) => setFilters(prev => ({ ...prev, showAltro: e.target.checked }))}
-                    className="h-5 w-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                    className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                   <label htmlFor="filter-altro" className="text-sm font-medium text-gray-700">
                     🔵 Altro
