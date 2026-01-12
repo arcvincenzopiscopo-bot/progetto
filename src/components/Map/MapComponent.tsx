@@ -221,18 +221,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
               onMapClick(initialPosition[0], initialPosition[1]);
             },
           }}
-        >
-          <Popup>
-            <div className="text-center">
-              <h3 className="font-bold text-blue-600">📍 La Tua Posizione</h3>
-              <p className="text-sm text-gray-600">
-                Lat: {initialPosition[0].toFixed(6)}<br />
-                Lng: {initialPosition[1].toFixed(6)}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Clicca per aggiungere un POI qui</p>
-            </div>
-          </Popup>
-        </Marker>
+        />
       )}
 
       {pois
