@@ -691,7 +691,7 @@ const DashboardPage: React.FC = () => {
                     id="filter-2025"
                     checked={filters.show2025}
                     onChange={(e) => setFilters(prev => ({ ...prev, show2025: e.target.checked }))}
-                    className="h-5 w-5 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500"
+                    className="h-5 w-5 text-gray-700 border-gray-300 rounded focus:ring-gray-500"
                   />
                   <label htmlFor="filter-2025" className="text-sm font-medium text-gray-700">
                     🟦 Anno 2025
