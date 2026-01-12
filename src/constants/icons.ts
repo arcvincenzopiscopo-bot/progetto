@@ -147,244 +147,374 @@ export const userLocationIcon = L.divIcon({
   popupAnchor: [0, -19]
 });
 
-// Construction site icons using standard marker shape with construction emoji overlay
+// Construction site drop-shaped emoji icons
 export const constructionGreenIcon = L.divIcon({
   html: `
-    <div style="position: relative; width: 25px; height: 41px;">
-      <img src="https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png"
-           style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+    <div style="
+      width: 32px;
+      height: 40px;
+      background-color: #22c55e;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: white;
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+      position: relative;
+    ">
+      🏗️
       <div style="
         position: absolute;
-        top: 50%;
+        bottom: -2px;
         left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 12px;
-        line-height: 1;
-        color: white;
-        text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
-        z-index: 1;
-      ">🏗️</div>
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 8px solid #22c55e;
+      "></div>
     </div>
   `,
-  className: 'custom-construction-marker',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34]
+  className: 'custom-construction-drop-icon',
+  iconSize: [32, 48],
+  iconAnchor: [16, 48],
+  popupAnchor: [0, -48]
 });
 
 export const constructionRedIcon = L.divIcon({
   html: `
-    <div style="position: relative; width: 25px; height: 41px;">
-      <img src="https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png"
-           style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+    <div style="
+      width: 32px;
+      height: 40px;
+      background-color: #ef4444;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: white;
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+      position: relative;
+    ">
+      🏗️
       <div style="
         position: absolute;
-        top: 50%;
+        bottom: -2px;
         left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 12px;
-        line-height: 1;
-        color: white;
-        text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
-        z-index: 1;
-      ">🏗️</div>
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 8px solid #ef4444;
+      "></div>
     </div>
   `,
-  className: 'custom-construction-marker',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34]
+  className: 'custom-construction-drop-icon',
+  iconSize: [32, 48],
+  iconAnchor: [16, 48],
+  popupAnchor: [0, -48]
 });
 
 export const constructionYellowIcon = L.divIcon({
   html: `
-    <div style="position: relative; width: 25px; height: 41px;">
-      <img src="https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png"
-           style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+    <div style="
+      width: 32px;
+      height: 40px;
+      background-color: #eab308;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: white;
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+      position: relative;
+    ">
+      🏗️
       <div style="
         position: absolute;
-        top: 50%;
+        bottom: -2px;
         left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 12px;
-        line-height: 1;
-        color: white;
-        text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
-        z-index: 1;
-      ">🏗️</div>
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 8px solid #eab308;
+      "></div>
     </div>
   `,
-  className: 'custom-construction-marker',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34]
+  className: 'custom-construction-drop-icon',
+  iconSize: [32, 48],
+  iconAnchor: [16, 48],
+  popupAnchor: [0, -48]
 });
 
 export const constructionMagentaIcon = L.divIcon({
   html: `
-    <div style="position: relative; width: 25px; height: 41px;">
-      <img src="https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png"
-           style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+    <div style="
+      width: 32px;
+      height: 40px;
+      background-color: #d946ef;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: white;
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+      position: relative;
+    ">
+      🏗️
       <div style="
         position: absolute;
-        top: 50%;
+        bottom: -2px;
         left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 12px;
-        line-height: 1;
-        color: white;
-        text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
-        z-index: 1;
-      ">🏗️</div>
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 8px solid #d946ef;
+      "></div>
     </div>
   `,
-  className: 'custom-construction-marker',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34]
+  className: 'custom-construction-drop-icon',
+  iconSize: [32, 48],
+  iconAnchor: [16, 48],
+  popupAnchor: [0, -48]
 });
 
 export const constructionDarkGreyIcon = L.divIcon({
   html: `
-    <div style="position: relative; width: 25px; height: 41px;">
-      <img src="https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png"
-           style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+    <div style="
+      width: 32px;
+      height: 40px;
+      background-color: #374151;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 2px solid white;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: white;
+      text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+      position: relative;
+    ">
+      🏗️
       <div style="
         position: absolute;
-        top: 50%;
+        bottom: -2px;
         left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 12px;
-        line-height: 1;
-        color: white;
-        text-shadow: 1px 1px 1px rgba(0,0,0,0.7);
-        z-index: 1;
-      ">🏗️</div>
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 6px solid transparent;
+        border-right: 6px solid transparent;
+        border-top: 8px solid #374151;
+      "></div>
     </div>
   `,
-  className: 'custom-construction-marker',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34]
+  className: 'custom-construction-drop-icon',
+  iconSize: [32, 48],
+  iconAnchor: [16, 48],
+  popupAnchor: [0, -48]
 });
 
-// Large construction site icons using standard large marker shape with construction emoji overlay
+// Large construction site drop-shaped emoji icons
 export const largeConstructionGreenIcon = L.divIcon({
   html: `
-    <div style="position: relative; width: 50px; height: 82px;">
-      <img src="https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png"
-           style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+    <div style="
+      width: 48px;
+      height: 60px;
+      background-color: #22c55e;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 3px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      text-shadow: 2px 2px 2px rgba(0,0,0,0.6);
+      position: relative;
+    ">
+      🏗️
       <div style="
         position: absolute;
-        top: 50%;
+        bottom: -3px;
         left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 18px;
-        line-height: 1;
-        color: white;
-        text-shadow: 2px 2px 2px rgba(0,0,0,0.8);
-        z-index: 1;
-      ">🏗️</div>
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 9px solid transparent;
+        border-right: 9px solid transparent;
+        border-top: 12px solid #22c55e;
+      "></div>
     </div>
   `,
-  className: 'custom-construction-marker-large',
-  iconSize: [50, 82],
-  iconAnchor: [25, 82],
-  popupAnchor: [1, -82]
+  className: 'custom-construction-drop-icon-large',
+  iconSize: [48, 72],
+  iconAnchor: [24, 72],
+  popupAnchor: [0, -72]
 });
 
 export const largeConstructionRedIcon = L.divIcon({
   html: `
-    <div style="position: relative; width: 50px; height: 82px;">
-      <img src="https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png"
-           style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+    <div style="
+      width: 48px;
+      height: 60px;
+      background-color: #ef4444;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 3px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      text-shadow: 2px 2px 2px rgba(0,0,0,0.6);
+      position: relative;
+    ">
+      🏗️
       <div style="
         position: absolute;
-        top: 50%;
+        bottom: -3px;
         left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 18px;
-        line-height: 1;
-        color: white;
-        text-shadow: 2px 2px 2px rgba(0,0,0,0.8);
-        z-index: 1;
-      ">🏗️</div>
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 9px solid transparent;
+        border-right: 9px solid transparent;
+        border-top: 12px solid #ef4444;
+      "></div>
     </div>
   `,
-  className: 'custom-construction-marker-large',
-  iconSize: [50, 82],
-  iconAnchor: [25, 82],
-  popupAnchor: [1, -82]
+  className: 'custom-construction-drop-icon-large',
+  iconSize: [48, 72],
+  iconAnchor: [24, 72],
+  popupAnchor: [0, -72]
 });
 
 export const largeConstructionYellowIcon = L.divIcon({
   html: `
-    <div style="position: relative; width: 50px; height: 82px;">
-      <img src="https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-yellow.png"
-           style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+    <div style="
+      width: 48px;
+      height: 60px;
+      background-color: #eab308;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 3px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      text-shadow: 2px 2px 2px rgba(0,0,0,0.6);
+      position: relative;
+    ">
+      🏗️
       <div style="
         position: absolute;
-        top: 50%;
+        bottom: -3px;
         left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 18px;
-        line-height: 1;
-        color: white;
-        text-shadow: 2px 2px 2px rgba(0,0,0,0.8);
-        z-index: 1;
-      ">🏗️</div>
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 9px solid transparent;
+        border-right: 9px solid transparent;
+        border-top: 12px solid #eab308;
+      "></div>
     </div>
   `,
-  className: 'custom-construction-marker-large',
-  iconSize: [50, 82],
-  iconAnchor: [25, 82],
-  popupAnchor: [1, -82]
+  className: 'custom-construction-drop-icon-large',
+  iconSize: [48, 72],
+  iconAnchor: [24, 72],
+  popupAnchor: [0, -72]
 });
 
 export const largeConstructionMagentaIcon = L.divIcon({
   html: `
-    <div style="position: relative; width: 50px; height: 82px;">
-      <img src="https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-violet.png"
-           style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+    <div style="
+      width: 48px;
+      height: 60px;
+      background-color: #d946ef;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 3px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      text-shadow: 2px 2px 2px rgba(0,0,0,0.6);
+      position: relative;
+    ">
+      🏗️
       <div style="
         position: absolute;
-        top: 50%;
+        bottom: -3px;
         left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 18px;
-        line-height: 1;
-        color: white;
-        text-shadow: 2px 2px 2px rgba(0,0,0,0.8);
-        z-index: 1;
-      ">🏗️</div>
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 9px solid transparent;
+        border-right: 9px solid transparent;
+        border-top: 12px solid #d946ef;
+      "></div>
     </div>
   `,
-  className: 'custom-construction-marker-large',
-  iconSize: [50, 82],
-  iconAnchor: [25, 82],
-  popupAnchor: [1, -82]
+  className: 'custom-construction-drop-icon-large',
+  iconSize: [48, 72],
+  iconAnchor: [24, 72],
+  popupAnchor: [0, -72]
 });
 
 export const largeConstructionDarkGreyIcon = L.divIcon({
   html: `
-    <div style="position: relative; width: 50px; height: 82px;">
-      <img src="https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-grey.png"
-           style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;" />
+    <div style="
+      width: 48px;
+      height: 60px;
+      background-color: #374151;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      border: 3px solid white;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      color: white;
+      text-shadow: 2px 2px 2px rgba(0,0,0,0.6);
+      position: relative;
+    ">
+      🏗️
       <div style="
         position: absolute;
-        top: 50%;
+        bottom: -3px;
         left: 50%;
-        transform: translate(-50%, -50%);
-        font-size: 18px;
-        line-height: 1;
-        color: white;
-        text-shadow: 2px 2px 2px rgba(0,0,0,0.8);
-        z-index: 1;
-      ">🏗️</div>
+        transform: translateX(-50%);
+        width: 0;
+        height: 0;
+        border-left: 9px solid transparent;
+        border-right: 9px solid transparent;
+        border-top: 12px solid #374151;
+      "></div>
     </div>
   `,
-  className: 'custom-construction-marker-large',
-  iconSize: [50, 82],
-  iconAnchor: [25, 82],
-  popupAnchor: [1, -82]
+  className: 'custom-construction-drop-icon-large',
+  iconSize: [48, 72],
+  iconAnchor: [24, 72],
+  popupAnchor: [0, -72]
 });
