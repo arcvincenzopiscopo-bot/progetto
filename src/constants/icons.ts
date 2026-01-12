@@ -153,7 +153,7 @@ export const constructionGreenIcon = L.divIcon({
     <div style="
       width: 32px;
       height: 32px;
-      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
+      border-radius: 50% 50% 70% 30% / 20% 80% 20% 80%;
       background-color: #22c55e;
       border: 3px solid white;
       box-shadow: 0 3px 6px rgba(0,0,0,0.4);
@@ -177,7 +177,7 @@ export const constructionRedIcon = L.divIcon({
     <div style="
       width: 32px;
       height: 32px;
-      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
+      border-radius: 50% 50% 70% 30% / 20% 80% 20% 80%;
       background-color: #ef4444;
       border: 3px solid white;
       box-shadow: 0 3px 6px rgba(0,0,0,0.4);
@@ -201,7 +201,7 @@ export const constructionYellowIcon = L.divIcon({
     <div style="
       width: 32px;
       height: 32px;
-      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
+      border-radius: 50% 50% 70% 30% / 20% 80% 20% 80%;
       background-color: #eab308;
       border: 3px solid white;
       box-shadow: 0 3px 6px rgba(0,0,0,0.4);
@@ -225,7 +225,7 @@ export const constructionMagentaIcon = L.divIcon({
     <div style="
       width: 32px;
       height: 32px;
-      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
+      border-radius: 50% 50% 70% 30% / 20% 80% 20% 80%;
       background-color: #d946ef;
       border: 3px solid white;
       box-shadow: 0 3px 6px rgba(0,0,0,0.4);
@@ -249,7 +249,7 @@ export const constructionDarkGreyIcon = L.divIcon({
     <div style="
       width: 32px;
       height: 32px;
-      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
+      border-radius: 50% 50% 70% 30% / 20% 80% 20% 80%;
       background-color: #374151;
       border: 3px solid white;
       box-shadow: 0 3px 6px rgba(0,0,0,0.4);
@@ -274,7 +274,7 @@ export const largeConstructionGreenIcon = L.divIcon({
     <div style="
       width: 48px;
       height: 48px;
-      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
+      border-radius: 50% 50% 70% 30% / 20% 80% 20% 80%;
       background-color: #22c55e;
       border: 4px solid white;
       box-shadow: 0 4px 8px rgba(0,0,0,0.4);
@@ -298,7 +298,7 @@ export const largeConstructionRedIcon = L.divIcon({
     <div style="
       width: 48px;
       height: 48px;
-      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
+      border-radius: 50% 50% 70% 30% / 20% 80% 20% 80%;
       background-color: #ef4444;
       border: 4px solid white;
       box-shadow: 0 4px 8px rgba(0,0,0,0.4);
@@ -322,7 +322,7 @@ export const largeConstructionYellowIcon = L.divIcon({
     <div style="
       width: 48px;
       height: 48px;
-      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
+      border-radius: 50% 50% 70% 30% / 20% 80% 20% 80%;
       background-color: #eab308;
       border: 4px solid white;
       box-shadow: 0 4px 8px rgba(0,0,0,0.4);
@@ -346,7 +346,7 @@ export const largeConstructionMagentaIcon = L.divIcon({
     <div style="
       width: 48px;
       height: 48px;
-      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
+      border-radius: 50% 50% 70% 30% / 20% 80% 20% 80%;
       background-color: #d946ef;
       border: 4px solid white;
       box-shadow: 0 4px 8px rgba(0,0,0,0.4);
@@ -370,7 +370,7 @@ export const largeConstructionDarkGreyIcon = L.divIcon({
     <div style="
       width: 48px;
       height: 48px;
-      border-radius: 50% 50% 30% 70% / 80% 20% 80% 20%;
+      border-radius: 50% 50% 70% 30% / 20% 80% 20% 80%;
       background-color: #374151;
       border: 4px solid white;
       box-shadow: 0 4px 8px rgba(0,0,0,0.4);
