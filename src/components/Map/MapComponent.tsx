@@ -440,40 +440,42 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
 
                         // For current POIs, add action buttons regardless of status
                         if (!poi.anno) {
-                          // Cantiere finito button (always available for superadmin)
-                          buttons.push(
-                            <button
-                              key="cantiere-finito"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
-                                if (!confirmed) return;
-                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                                try {
-                                  const { error } = await supabase
-                                    .from('points')
-                                    .update({
-                                      ispezionabile: 2,
-                                      created_at: new Date().toISOString(),
-                                      team: currentTeam || poi.team
-                                    })
-                                    .eq('id', poi.id);
-                                  if (!error) {
-                                    setMapKey(Date.now());
-                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                  } else {
+                          // Cantiere finito button (only for cantiere type, even for superadmin)
+                          if (poi.tipo === 'cantiere') {
+                            buttons.push(
+                              <button
+                                key="cantiere-finito"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
+                                  if (!confirmed) return;
+                                  if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                                  try {
+                                    const { error } = await supabase
+                                      .from('points')
+                                      .update({
+                                        ispezionabile: 2,
+                                        created_at: new Date().toISOString(),
+                                        team: currentTeam || poi.team
+                                      })
+                                      .eq('id', poi.id);
+                                    if (!error) {
+                                      setMapKey(Date.now());
+                                      if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                    } else {
+                                      alert('Errore nell\'aggiornamento del POI');
+                                    }
+                                  } catch (err) {
+                                    console.error('Error updating POI:', err);
                                     alert('Errore nell\'aggiornamento del POI');
                                   }
-                                } catch (err) {
-                                  console.error('Error updating POI:', err);
-                                  alert('Errore nell\'aggiornamento del POI');
-                                }
-                              }}
-                              className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
-                            >
-                              🏗️ Cantiere finito
-                            </button>
-                          );
+                                }}
+                                className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
+                              >
+                                🏗️ Cantiere finito
+                              </button>
+                            );
+                          }
 
                           // Ispezionato button (always available for superadmin)
                           buttons.push(
@@ -507,34 +509,36 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
                             </button>
                           );
 
-                          // Segnala inattività button (always available for superadmin)
-                          buttons.push(
-                            <button
-                              key="segnala-inattivita"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
-                                if (!confirmed) return;
-                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                                try {
-                                  const { error } = await supabase
-                                    .from('points')
-                                    .update({ data_inattivita: new Date().toISOString() })
-                                    .eq('id', poi.id);
-                                  if (error) {
+                          // Segnala inattività button (only for cantiere type, even for superadmin)
+                          if (poi.tipo === 'cantiere') {
+                            buttons.push(
+                              <button
+                                key="segnala-inattivita"
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
+                                  if (!confirmed) return;
+                                  if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                                  try {
+                                    const { error } = await supabase
+                                      .from('points')
+                                      .update({ data_inattivita: new Date().toISOString() })
+                                      .eq('id', poi.id);
+                                    if (error) {
+                                      alert('Errore durante la segnalazione di inattività');
+                                    } else {
+                                      if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                    }
+                                  } catch (err) {
                                     alert('Errore durante la segnalazione di inattività');
-                                  } else {
-                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
                                   }
-                                } catch (err) {
-                                  alert('Errore durante la segnalazione di inattività');
-                                }
-                              }}
-                              className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm"
-                            >
-                              ⚠️ Segnala inattività
-                            </button>
-                          );
+                                }}
+                                className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm"
+                              >
+                                ⚠️ Segnala inattività
+                              </button>
+                            );
+                          }
                         }
 
                         // Return buttons in appropriate layout
@@ -604,40 +608,42 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
 
                       // Add action buttons for green POIs
                       if (poi.ispezionabile === 1) {
-                        // Cantiere finito button
-                        buttons.push(
-                          <button
-                            key="cantiere-finito"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
-                              if (!confirmed) return;
-                              if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                              try {
-                                const { error } = await supabase
-                                  .from('points')
-                                  .update({
-                                    ispezionabile: 2,
-                                    created_at: new Date().toISOString(),
-                                    team: currentTeam || poi.team
-                                  })
-                                  .eq('id', poi.id);
-                                if (!error) {
-                                  setMapKey(Date.now());
-                                  if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                } else {
+                        // Cantiere finito button - only for cantiere type
+                        if (poi.tipo === 'cantiere') {
+                          buttons.push(
+                            <button
+                              key="cantiere-finito"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
+                                if (!confirmed) return;
+                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                                try {
+                                  const { error } = await supabase
+                                    .from('points')
+                                    .update({
+                                      ispezionabile: 2,
+                                      created_at: new Date().toISOString(),
+                                      team: currentTeam || poi.team
+                                    })
+                                    .eq('id', poi.id);
+                                  if (!error) {
+                                    setMapKey(Date.now());
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                  } else {
+                                    alert('Errore nell\'aggiornamento del POI');
+                                  }
+                                } catch (err) {
+                                  console.error('Error updating POI:', err);
                                   alert('Errore nell\'aggiornamento del POI');
                                 }
-                              } catch (err) {
-                                console.error('Error updating POI:', err);
-                                alert('Errore nell\'aggiornamento del POI');
-                              }
-                            }}
-                            className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
-                          >
-                            🏗️ Cantiere finito
-                          </button>
-                        );
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
+                            >
+                              🏗️ Cantiere finito
+                            </button>
+                          );
+                        }
 
                         // Ispezionato button
                         buttons.push(
@@ -671,34 +677,36 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
                           </button>
                         );
 
-                        // Segnala inattività button
-                        buttons.push(
-                          <button
-                            key="segnala-inattivita"
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
-                              if (!confirmed) return;
-                              if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                              try {
-                                const { error } = await supabase
-                                  .from('points')
-                                  .update({ data_inattivita: new Date().toISOString() })
-                                  .eq('id', poi.id);
-                                if (error) {
+                        // Segnala inattività button - only for cantiere type
+                        if (poi.tipo === 'cantiere') {
+                          buttons.push(
+                            <button
+                              key="segnala-inattivita"
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
+                                if (!confirmed) return;
+                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                                try {
+                                  const { error } = await supabase
+                                    .from('points')
+                                    .update({ data_inattivita: new Date().toISOString() })
+                                    .eq('id', poi.id);
+                                  if (error) {
+                                    alert('Errore durante la segnalazione di inattività');
+                                  } else {
+                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                    }
+                                } catch (err) {
                                   alert('Errore durante la segnalazione di inattività');
-                                } else {
-                                  if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                  }
-                              } catch (err) {
-                                alert('Errore durante la segnalazione di inattività');
-                              }
-                            }}
-                            className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm"
-                          >
-                            ⚠️ Segnala inattività
-                          </button>
-                        );
+                                }
+                              }}
+                              className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm"
+                            >
+                              ⚠️ Segnala inattività
+                            </button>
+                          );
+                        }
 
                         // Delete button for green POIs
                         if (adminLevel === 0) {
