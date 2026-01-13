@@ -468,7 +468,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
 
                       // Helper function to create cantiere finito button (only for green cantieri)
                       const createCantiereFinitoButton = () => {
-                        const canMarkFinished = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel >= 1;
+                        const canMarkFinished = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel >= 0;
                         const buttonClass = canMarkFinished
                           ? "text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
                           : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
@@ -511,7 +511,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
 
                       // Helper function to create ispezionato button (only for green POIs)
                       const createIspezionatoButton = () => {
-                        const canMarkInspected = !poi.anno && poi.ispezionabile === 1 && adminLevel >= 1;
+                        const canMarkInspected = !poi.anno && poi.ispezionabile === 1 && adminLevel >= 0;
                         const buttonClass = canMarkInspected
                           ? "text-xs px-2 py-1 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm flex-1"
                           : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
@@ -551,7 +551,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
 
                       // Helper function to create segnala inattività button (only for green cantieri)
                       const createSegnalaInattivitaButton = () => {
-                        const canReportInactive = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel >= 1;
+                        const canReportInactive = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel >= 0;
                         const buttonClass = canReportInactive
                           ? "text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm flex-1"
                           : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
