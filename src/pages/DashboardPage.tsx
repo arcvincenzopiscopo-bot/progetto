@@ -488,8 +488,8 @@ const DashboardPage: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
       {/* Map Container - Full Height */}
       <div className="relative" style={{ height: '100vh' }}>
-        {/* Search Box - Positioned on map, 0.5cm from top, 25% narrower */}
-        <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-full max-w-sm px-4 z-[1000]">
+        {/* Search Box - Positioned on map, 0.5cm from top, 1cm narrower on each side */}
+        <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-full max-w-sm px-0 z-[1000]">
           <SearchBox
             onLocationSelect={handleLocationSelect}
             placeholder="Cerca indirizzo..."
