@@ -587,6 +587,7 @@ const DashboardPage: React.FC = () => {
         </Suspense>
 
         {/* Filter Buttons - Right side of map, stacked vertically, 5cm from top */}
+        {/* Same filters for all user types to maintain consistent layout */}
         <div className="absolute top-20 right-4 z-[1000] space-y-2">
           <FilterButton
             label="Cantiere"
@@ -630,16 +631,18 @@ const DashboardPage: React.FC = () => {
             onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
             colorClass="bg-red-500 hover:bg-red-600"
           />
-          {/* Show pending approval filter only for admin users */}
-          {user?.admin !== 0 && (
-            <FilterButton
-              label="In attesa"
-              emoji="🟡"
-              active={filters.showPendingApproval}
-              onClick={() => setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }))}
-              colorClass="bg-yellow-500 hover:bg-yellow-600"
-            />
-          )}
+          {/* Show pending approval filter for all users to maintain consistent layout */}
+          <FilterButton
+            label="In attesa"
+            emoji="🟡"
+            active={user?.admin !== 0 ? filters.showPendingApproval : false}
+            onClick={() => {
+              if (user?.admin !== 0) {
+                setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }));
+              }
+            }}
+            colorClass={user?.admin !== 0 ? "bg-yellow-500 hover:bg-yellow-600" : "bg-gray-400 cursor-not-allowed"}
+          />
         </div>
 
         {/* Center Map Button - 2cm higher, Bottom center */}
