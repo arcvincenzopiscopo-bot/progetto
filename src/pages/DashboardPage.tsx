@@ -543,8 +543,8 @@ const DashboardPage: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
       {/* Map Container - Full Height */}
       <div className="relative" style={{ height: '100vh' }}>
-        {/* Search Box - Positioned on map, 0.5cm from top, 1cm narrower on each side */}
-        <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-full max-w-sm px-0 z-[1000]">
+        {/* Search Box - Positioned on map, 1cm from top, 1cm narrower on each side */}
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-full max-w-sm px-0 z-[1000]">
           <SearchBox
             onLocationSelect={handleLocationSelect}
             placeholder="Cerca indirizzo..."
@@ -631,18 +631,16 @@ const DashboardPage: React.FC = () => {
             onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
             colorClass="bg-red-500 hover:bg-red-600"
           />
-          {/* Show pending approval filter for all users to maintain consistent layout */}
-          <FilterButton
-            label="In attesa"
-            emoji="🟡"
-            active={user?.admin !== 0 ? filters.showPendingApproval : false}
-            onClick={() => {
-              if (user?.admin !== 0) {
-                setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }));
-              }
-            }}
-            colorClass={user?.admin !== 0 ? "bg-yellow-500 hover:bg-yellow-600" : "bg-gray-400 cursor-not-allowed"}
-          />
+          {/* Show pending approval filter only for admin >= 1 (capoteam and superadmin) */}
+          {user && user.admin !== undefined && user.admin >= 1 && (
+            <FilterButton
+              label="In attesa"
+              emoji="🟡"
+              active={filters.showPendingApproval}
+              onClick={() => setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }))}
+              colorClass="bg-yellow-500 hover:bg-yellow-600"
+            />
+          )}
         </div>
 
         {/* Center Map Button - 2cm higher, Bottom center */}
