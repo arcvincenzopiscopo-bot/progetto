@@ -20,10 +20,10 @@ const FilterButton: React.FC<FilterButtonProps> = ({
       return (
     <button
       onClick={onClick}
-      className={`w-full px-1 py-0.5 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center space-x-1 border ${className} ${
+      className={`w-full px-1 py-0.5 rounded-lg text-xs font-medium transition-all duration-200 flex items-center justify-center space-x-1 ${className} ${
         active
-          ? `bg-transparent text-gray-800 border-gray-400 hover:bg-gray-100 hover:border-gray-600 shadow-sm`
-          : `bg-transparent text-gray-600 border-gray-300 hover:bg-gray-50 hover:border-gray-400 cursor-not-allowed`
+          ? `${colorClass} text-white shadow-md`
+          : `${colorClass}/20 text-white hover:${colorClass}/40 border border-gray-300`
       }`}
     >
       <span>{emoji}</span>
