@@ -5,6 +5,7 @@ import { uploadPhoto, updatePassword } from '../services/authService';
 import { getAddressWithCache } from '../services/geocodingService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 import SearchBox from '../components/UI/SearchBox';
+import FilterButton from '../components/UI/FilterButton';
 import PasswordChangePopup from '../components/Auth/PasswordChangePopup';
 import { validatePoi, PointOfInterest } from '../utils/validatePoi';
 import { FilterState } from '../types';
@@ -487,59 +488,12 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-
-      {/* Header di benvenuto */}
+      {/* Header di benvenuto con pulsante Logout */}
       <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="container mx-auto px-4 py-3">
-          <h1 className="text-lg font-bold text-gray-800 text-center">
+        <div className="container mx-auto px-4 py-3 flex justify-center items-center">
+          <h1 className="text-lg font-bold text-gray-800">
             <span className="font-bold">Benvenuto</span> {user?.username} - {userRole}
           </h1>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-2 py-4">
-        {/* Map Section with rounded gray borders */}
-        <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm mb-4">
-          <div className="h-[66vh] w-full">
-            <Suspense fallback={<MapSkeleton />}>
-              <MapErrorBoundary>
-                <MapComponent
-                pois={pois}
-                onMapClick={handleMapClick}
-                initialPosition={currentPosition}
-                mapCenter={mapCenter}
-                mapZoom={mapZoom}
-                onPoiUpdated={refreshPois}
-                onPoiSelect={handlePoiSelect}
-                currentTeam={user?.team}
-                adminLevel={user?.admin || 0}
-                currentUsername={user?.username}
-                newPoiLocation={showAddForm ? newPoiLocation : null}
-                onAddPoi={handleAddPoi}
-                onCancelAddPoi={() => {
-                  setShowAddForm(false);
-                  setCreatingNewPoi(false); // Reset creating state when canceling
-                }}
-                filterShowInspectable={filters.showInspectable}
-                filterShowNonInspectable={filters.showNonInspectable}
-                filterShowPendingApproval={filters.showPendingApproval}
-                filterShowCantiere={filters.showCantiere}
-                filterShowAltro={filters.showAltro}
-                filterShow2024={filters.show2024}
-                filterShow2025={filters.show2025}
-                height="66vh"
-                workingPoiId={workingPoiId}
-                selectedPoiId={selectedPoiId}
-                creatingNewPoi={creatingNewPoi}
-                />
-              </MapErrorBoundary>
-            </Suspense>
-          </div>
-        </div>
-
-        {/* Buttons Section - Centered below map */}
-        <div className="flex justify-center gap-4 mb-4">
-          {/* Logout Button */}
           <button
             onClick={handleLogout}
             className="bg-white text-indigo-600 px-4 py-2 rounded-lg border border-indigo-300 hover:bg-indigo-50 font-medium transition-colors inline-flex items-center space-x-2 text-sm"
@@ -547,37 +501,157 @@ const DashboardPage: React.FC = () => {
             <span>🚪</span>
             <span>Logout</span>
           </button>
+        </div>
+      </div>
 
-          {/* Center Map Button */}
-          <button
-            onClick={() => {
-              if (currentPosition) {
-                setCurrentPosition([...currentPosition]);
-              } else {
-                if (navigator.geolocation) {
-                  navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                      const { latitude, longitude } = position.coords;
-                      setCurrentPosition([latitude, longitude]);
-                    },
-                    (error) => {
-                      console.error('Error getting location:', error);
-                      alert('Impossibile ottenere la posizione corrente');
-                    },
-                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                  );
-                } else {
-                  alert('La geolocalizzazione non è supportata dal browser');
-                }
-              }
-            }}
-            className="bg-white text-indigo-600 px-4 py-2 rounded-lg border border-indigo-300 hover:bg-indigo-50 font-medium transition-colors inline-flex items-center space-x-2 text-sm"
-          >
-            <span>📍</span>
-            <span>Centra la mappa</span>
-          </button>
+      <div className="max-w-none mx-auto px-0 py-4">
+        {/* Map Section with filters, search, and controls - now takes more space */}
+        <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm relative">
+          {/* Map Container - increased height */}
+          <div className="h-[90vh] w-full relative">
+            {/* Filters Panel - Top Right */}
+            <div className="absolute top-4 right-4 bg-transparent border border-gray-200 rounded-lg p-3 shadow-lg z-[400]">
+              <div className="space-y-2">
+                {/* First Row: Cantiere, Altro, 2024, 2025 */}
+                <div className="flex flex-wrap gap-2">
+                  <FilterButton
+                    label="Cantiere"
+                    emoji="🏗️"
+                    active={filters.showCantiere}
+                    onClick={() => setFilters(prev => ({ ...prev, showCantiere: !prev.showCantiere }))}
+                    colorClass="bg-orange-500 hover:bg-orange-600"
+                  />
+                  <FilterButton
+                    label="Altro"
+                    emoji="📍"
+                    active={filters.showAltro}
+                    onClick={() => setFilters(prev => ({ ...prev, showAltro: !prev.showAltro }))}
+                    colorClass="bg-blue-500 hover:bg-blue-600"
+                  />
+                  <FilterButton
+                    label="2024"
+                    emoji="🟣"
+                    active={filters.show2024}
+                    onClick={() => setFilters(prev => ({ ...prev, show2024: !prev.show2024 }))}
+                    colorClass="bg-purple-500 hover:bg-purple-600"
+                  />
+                  <FilterButton
+                    label="2025"
+                    emoji="🟦"
+                    active={filters.show2025}
+                    onClick={() => setFilters(prev => ({ ...prev, show2025: !prev.show2025 }))}
+                    colorClass="bg-gray-600 hover:bg-gray-700"
+                  />
+                </div>
 
-          {/* Install PWA Button - Only show if installable */}
+                {/* Second Row: Ispezionabili, Già ispezionati, In attesa di approvazione */}
+                <div className="flex flex-wrap gap-2">
+                  <FilterButton
+                    label="Ispezionabili"
+                    emoji="🟢"
+                    active={filters.showInspectable}
+                    onClick={() => setFilters(prev => ({ ...prev, showInspectable: !prev.showInspectable }))}
+                    colorClass="bg-green-500 hover:bg-green-600"
+                  />
+                  <FilterButton
+                    label="Già ispezionati"
+                    emoji="🔴"
+                    active={filters.showNonInspectable}
+                    onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
+                    colorClass="bg-red-500 hover:bg-red-600"
+                  />
+                  {/* Show pending approval filter only for admin users */}
+                  {user?.admin !== 0 && (
+                    <FilterButton
+                      label="In attesa"
+                      emoji="🟡"
+                      active={filters.showPendingApproval}
+                      onClick={() => setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }))}
+                      colorClass="bg-yellow-500 hover:bg-yellow-600"
+                    />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Search Box - Center Bottom */}
+            <div className="absolute bottom-74 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-[1000]">
+              <SearchBox
+                onLocationSelect={handleLocationSelect}
+                placeholder="Cerca indirizzo (es: Via Roma 123, Milano)"
+                className="w-full"
+              />
+            </div>
+
+            {/* Center Map Button - Bottom Center */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000]">
+              <button
+                onClick={() => {
+                  if (currentPosition) {
+                    setCurrentPosition([...currentPosition]);
+                  } else {
+                    if (navigator.geolocation) {
+                      navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                          const { latitude, longitude } = position.coords;
+                          setCurrentPosition([latitude, longitude]);
+                        },
+                        (error) => {
+                          console.error('Error getting location:', error);
+                          alert('Impossibile ottenere la posizione corrente');
+                        },
+                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                      );
+                    } else {
+                      alert('La geolocalizzazione non è supportata dal browser');
+                    }
+                  }
+                }}
+                className="bg-red-600 text-white px-4 py-2 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center space-x-2 text-sm shadow-lg center-map-button"
+              >
+                <span>📍</span>
+                <span>Centra la mappa</span>
+              </button>
+            </div>
+
+            <Suspense fallback={<MapSkeleton />}>
+              <MapErrorBoundary>
+                <MapComponent
+                  pois={pois}
+                  onMapClick={handleMapClick}
+                  initialPosition={currentPosition}
+                  mapCenter={mapCenter}
+                  mapZoom={mapZoom}
+                  onPoiUpdated={refreshPois}
+                  onPoiSelect={handlePoiSelect}
+                  currentTeam={user?.team}
+                  adminLevel={user?.admin || 0}
+                  currentUsername={user?.username}
+                  newPoiLocation={showAddForm ? newPoiLocation : null}
+                  onAddPoi={handleAddPoi}
+                  onCancelAddPoi={() => {
+                    setShowAddForm(false);
+                    setCreatingNewPoi(false);
+                  }}
+                  filterShowInspectable={filters.showInspectable}
+                  filterShowNonInspectable={filters.showNonInspectable}
+                  filterShowPendingApproval={filters.showPendingApproval}
+                  filterShowCantiere={filters.showCantiere}
+                  filterShowAltro={filters.showAltro}
+                  filterShow2024={filters.show2024}
+                  filterShow2025={filters.show2025}
+                  height="90vh"
+                  workingPoiId={workingPoiId}
+                  selectedPoiId={selectedPoiId}
+                  creatingNewPoi={creatingNewPoi}
+                />
+              </MapErrorBoundary>
+            </Suspense>
+          </div>
+        </div>
+
+        {/* Install PWA Button - Centered below map */}
+        <div className="flex justify-center mt-4">
           {isInstallable && (
             <button
               onClick={installPWA}
@@ -588,124 +662,11 @@ const DashboardPage: React.FC = () => {
             </button>
           )}
         </div>
-
-        {/* Search Box Section - Below buttons */}
-        <div className="mb-4">
-          <SearchBox
-            onLocationSelect={handleLocationSelect}
-            placeholder="Cerca indirizzo (es: Via Roma 123, Milano)"
-            className="max-w-md mx-auto"
-          />
-        </div>
-
-        {/* Bottom Section - Filters with rounded gray borders */}
-        <div className="bg-gray-200 border border-gray-300 rounded-lg p-6 shadow-sm">
-
-          {/* Filters Section */}
-          <div className="bg-white border border-gray-200 rounded-lg p-4 filters-section">
-            <div className="flex flex-col md:flex-row gap-4">
-              {/* Left Column - Status Filters */}
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="filter-inspectable"
-                    checked={filters.showInspectable}
-                    onChange={(e) => setFilters(prev => ({ ...prev, showInspectable: e.target.checked }))}
-                    className="h-5 w-5 text-green-600 border-gray-300 rounded focus:ring-green-500"
-                  />
-                  <label htmlFor="filter-inspectable" className="text-sm font-medium text-gray-700">
-                    🟢 Ispezionabili
-                  </label>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="filter-non-inspectable"
-                    checked={filters.showNonInspectable}
-                    onChange={(e) => setFilters(prev => ({ ...prev, showNonInspectable: e.target.checked }))}
-                    className="h-5 w-5 text-red-600 border-gray-300 rounded focus:ring-red-500"
-                  />
-                  <label htmlFor="filter-non-inspectable" className="text-sm font-medium text-gray-700">
-                    🔴 Già ispezionati
-                  </label>
-                </div>
-                {/* Hide pending approval filter for non-admin users */}
-                {user?.admin !== 0 && (
-                  <div className="flex items-center space-x-3">
-                    <input
-                      type="checkbox"
-                      id="filter-pending-approval"
-                      checked={filters.showPendingApproval}
-                      onChange={(e) => setFilters(prev => ({ ...prev, showPendingApproval: e.target.checked }))}
-                      className="h-5 w-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500"
-                    />
-                    <label htmlFor="filter-pending-approval" className="text-sm font-medium text-gray-700">
-                      🟡 In attesa di eliminazione per cantiere finito
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              {/* Right Column - Type and Year Filters */}
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="filter-cantiere"
-                    checked={filters.showCantiere}
-                    onChange={(e) => setFilters(prev => ({ ...prev, showCantiere: e.target.checked }))}
-                    className="h-5 w-5 text-orange-600 border-gray-300 rounded focus:ring-orange-500"
-                  />
-                  <label htmlFor="filter-cantiere" className="text-sm font-medium text-gray-700">
-                    🏗️ Cantiere
-                  </label>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="filter-altro"
-                    checked={filters.showAltro}
-                    onChange={(e) => setFilters(prev => ({ ...prev, showAltro: e.target.checked }))}
-                    className="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="filter-altro" className="text-sm font-medium text-gray-700">
-                    🔵📍 Altro
-                  </label>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="filter-2024"
-                    checked={filters.show2024}
-                    onChange={(e) => setFilters(prev => ({ ...prev, show2024: e.target.checked }))}
-                    className="h-5 w-5 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                  />
-                  <label htmlFor="filter-2024" className="text-sm font-medium text-gray-700">
-                    🟣 Anno 2024
-                  </label>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <input
-                    type="checkbox"
-                    id="filter-2025"
-                    checked={filters.show2025}
-                    onChange={(e) => setFilters(prev => ({ ...prev, show2025: e.target.checked }))}
-                    className="h-5 w-5 text-gray-700 border-gray-300 rounded focus:ring-gray-500"
-                  />
-                  <label htmlFor="filter-2025" className="text-sm font-medium text-gray-700">
-                    🟦 Anno 2025
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Add POI Modal - appears as overlay when clicking on map */}
       {showAddForm && newPoiLocation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[1000]">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000]">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-4">
             <Suspense fallback={<div className="text-center py-4">Caricamento...</div>}>
               <POIFormPopup

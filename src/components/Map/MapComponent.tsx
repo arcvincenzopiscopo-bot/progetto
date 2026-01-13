@@ -202,7 +202,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
       key={mapKey}
       center={centerPosition}
       zoom={mapZoom || 13}
-      style={{ height: height || '100%', width: '100%' }}
+      style={{ height: height || '100%', width: '100%', position: 'relative', zIndex: 1 }}
     >
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

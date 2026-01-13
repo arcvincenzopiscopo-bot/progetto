@@ -180,7 +180,7 @@ const SearchBox: React.FC<SearchBoxProps> = React.memo(({
   }, []);
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`relative ${className} search-box-enhanced`}>
       {/* Search Input */}
       <div className="relative">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
