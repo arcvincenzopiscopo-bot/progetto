@@ -611,7 +611,7 @@ const DashboardPage: React.FC = () => {
                 }
               }
             }}
-            className="bg-red-600 text-white px-6 py-3 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center space-x-2 shadow-lg center-map-button"
+            className="bg-red-600 text-white px-3 py-1.5 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center space-x-2 shadow-lg center-map-button"
           >
             <span>📍</span>
             <span>Centra la mappa</span>
