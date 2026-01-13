@@ -486,17 +486,17 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Search Box - Top Center */}
-      <div className="px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
-        <SearchBox
-          onLocationSelect={handleLocationSelect}
-          placeholder="Cerca indirizzo..."
-          className="w-full max-w-md mx-auto"
-        />
-      </div>
+      {/* Map Container - Full Height */}
+      <div className="relative" style={{ height: '100vh' }}>
+        {/* Search Box - Positioned on map, 3cm from top */}
+        <div className="absolute top-12 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-[1000]">
+          <SearchBox
+            onLocationSelect={handleLocationSelect}
+            placeholder="Cerca indirizzo..."
+            className="w-full"
+          />
+        </div>
 
-      {/* Map Container */}
-      <div className="relative" style={{ height: 'calc(100vh - 80px)' }}>
         <Suspense fallback={<MapSkeleton />}>
           <MapErrorBoundary>
             <MapComponent
