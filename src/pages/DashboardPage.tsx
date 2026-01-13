@@ -19,7 +19,7 @@ const POIFormPopup = React.lazy(() => import('../components/POI/POIFormPopup'));
 
 
 const DashboardPage: React.FC = () => {
-  const { user, logout } = useCustomAuth();
+  const { user } = useCustomAuth();
   const { isInstallable, installPWA } = usePWAInstall();
   const [pois, setPois] = useState<PointOfInterest[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -423,9 +423,7 @@ const DashboardPage: React.FC = () => {
     }
   }, [fetchPois]);
 
-  const handleLogout = useCallback(async () => {
-    logout();
-  }, [logout]);
+
 
   // Handle location selection from search - creates new POI at searched location
   const handleLocationSelect = useCallback((lat: number, lng: number) => {
@@ -493,20 +491,8 @@ const DashboardPage: React.FC = () => {
         <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm relative">
           {/* Map Container - responsive height */}
           <div className="h-[90vh] sm:h-[90vh] w-full relative map-container-mobile">
-            {/* Logout Button - Top Left */}
-            <div className="absolute top-4 left-4 z-[450]">
-              <button
-                onClick={handleLogout}
-                className="bg-white text-indigo-600 px-3 py-2 rounded-lg border border-indigo-300 hover:bg-indigo-50 font-medium transition-colors inline-flex items-center space-x-1 text-sm shadow-lg"
-                title="Logout"
-              >
-                <span>🚪</span>
-                <span className="hidden sm:inline">Logout</span>
-              </button>
-            </div>
-
-            {/* Filters Panel - Top Right */}
-            <div className="absolute top-4 right-4 bg-transparent border border-gray-200 rounded-lg p-3 shadow-lg z-[400]">
+            {/* Filters Panel - Top Center */}
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-transparent border border-gray-200 rounded-lg p-3 shadow-lg z-[400]">
               <div className="space-y-2">
                 {/* First Row: Cantiere, Altro, 2024, 2025 */}
                 <div className="flex flex-wrap gap-2">
@@ -571,7 +557,7 @@ const DashboardPage: React.FC = () => {
             </div>
 
             {/* Search Box - Center Bottom */}
-            <div className="absolute bottom-74 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-[1000]">
+            <div className="absolute bottom-60 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-[1000]">
               <SearchBox
                 onLocationSelect={handleLocationSelect}
                 placeholder="Cerca indirizzo (es: Via Roma 123, Milano)"
