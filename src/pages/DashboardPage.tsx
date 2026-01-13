@@ -485,116 +485,23 @@ const DashboardPage: React.FC = () => {
   }, [user?.admin]);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="max-w-none mx-auto px-0 py-4">
-        {/* Map Section with filters, search, and controls - now takes more space */}
-        <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm relative">
-          {/* Map Container - responsive height */}
-          <div className="h-[90vh] sm:h-[90vh] w-full relative map-container-mobile">
-            {/* Search Box - Desktop: Top Center, Mobile: Top Left */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-[1000] search-mobile sm:left-4 sm:transform-none sm:max-w-xs">
-              <SearchBox
-                onLocationSelect={handleLocationSelect}
-                placeholder="Cerca indirizzo..."
-                className="w-full"
-              />
-            </div>
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      {/* Search Box - Always at top center */}
+      <div className="px-4 py-3 bg-white border-b border-gray-200 shadow-sm">
+        <SearchBox
+          onLocationSelect={handleLocationSelect}
+          placeholder="Cerca indirizzo..."
+          className="w-full max-w-md mx-auto"
+        />
+      </div>
 
-            {/* Filters Panel - Desktop: Above Center Button, Mobile: Bottom Left */}
-            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-transparent border border-gray-200 rounded-lg p-3 shadow-lg z-[400] filter-panel-mobile sm:bottom-4 sm:left-4 sm:transform-none sm:p-2">
-              <div className="space-y-2">
-                {/* First Row: Cantiere, Altro, 2024, 2025 */}
-                <div className="flex flex-wrap gap-2 sm:flex-col sm:gap-1">
-                  <FilterButton
-                    label="Cantiere"
-                    emoji="🏗️"
-                    active={filters.showCantiere}
-                    onClick={() => setFilters(prev => ({ ...prev, showCantiere: !prev.showCantiere }))}
-                    colorClass="bg-orange-500 hover:bg-orange-600"
-                  />
-                  <FilterButton
-                    label="Altro"
-                    emoji="📍"
-                    active={filters.showAltro}
-                    onClick={() => setFilters(prev => ({ ...prev, showAltro: !prev.showAltro }))}
-                    colorClass="bg-blue-500 hover:bg-blue-600"
-                  />
-                  <FilterButton
-                    label="2024"
-                    emoji="🟣"
-                    active={filters.show2024}
-                    onClick={() => setFilters(prev => ({ ...prev, show2024: !prev.show2024 }))}
-                    colorClass="bg-purple-500 hover:bg-purple-600"
-                  />
-                  <FilterButton
-                    label="2025"
-                    emoji="🟦"
-                    active={filters.show2025}
-                    onClick={() => setFilters(prev => ({ ...prev, show2025: !prev.show2025 }))}
-                    colorClass="bg-gray-600 hover:bg-gray-700"
-                  />
-                </div>
-
-                {/* Second Row: Ispezionabili, Già ispezionati, In attesa di approvazione */}
-                <div className="flex flex-wrap gap-2 sm:flex-col sm:gap-1">
-                  <FilterButton
-                    label="Ispezionabili"
-                    emoji="🟢"
-                    active={filters.showInspectable}
-                    onClick={() => setFilters(prev => ({ ...prev, showInspectable: !prev.showInspectable }))}
-                    colorClass="bg-green-500 hover:bg-green-600"
-                  />
-                  <FilterButton
-                    label="Già ispezionati"
-                    emoji="🔴"
-                    active={filters.showNonInspectable}
-                    onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
-                    colorClass="bg-red-500 hover:bg-red-600"
-                  />
-                  {/* Show pending approval filter only for admin users */}
-                  {user?.admin !== 0 && (
-                    <FilterButton
-                      label="In attesa"
-                      emoji="🟡"
-                      active={filters.showPendingApproval}
-                      onClick={() => setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }))}
-                      colorClass="bg-yellow-500 hover:bg-yellow-600"
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Center Map Button - Desktop: Bottom Center, Mobile: Bottom Right */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] sm:right-4 sm:left-auto sm:transform-none">
-              <button
-                onClick={() => {
-                  if (currentPosition) {
-                    setCurrentPosition([...currentPosition]);
-                  } else {
-                    if (navigator.geolocation) {
-                      navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                          const { latitude, longitude } = position.coords;
-                          setCurrentPosition([latitude, longitude]);
-                        },
-                        (error) => {
-                          console.error('Error getting location:', error);
-                          alert('Impossibile ottenere la posizione corrente');
-                        },
-                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                      );
-                    } else {
-                      alert('La geolocalizzazione non è supportata dal browser');
-                    }
-                  }
-                }}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center space-x-2 text-sm shadow-lg center-map-button"
-              >
-                <span>📍</span>
-                <span className="hidden sm:inline">Centra la mappa</span>
-              </button>
-            </div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Mobile Layout: Stack vertically, Desktop: Side by side */}
+        <div className="flex flex-col lg:flex-row flex-1">
+          {/* Map Container - Takes available space minus UI elements */}
+          <div className="flex-1 bg-gray-200 border border-gray-300 overflow-hidden shadow-sm relative"
+               style={{ height: 'calc(100vh - 140px)' }}>
 
             <Suspense fallback={<MapSkeleton />}>
               <MapErrorBoundary>
@@ -622,7 +529,7 @@ const DashboardPage: React.FC = () => {
                   filterShowAltro={filters.showAltro}
                   filterShow2024={filters.show2024}
                   filterShow2025={filters.show2025}
-                  height="90vh"
+                  height="100%"
                   workingPoiId={workingPoiId}
                   selectedPoiId={selectedPoiId}
                   creatingNewPoi={creatingNewPoi}
@@ -630,20 +537,113 @@ const DashboardPage: React.FC = () => {
               </MapErrorBoundary>
             </Suspense>
           </div>
+
+          {/* Filters Sidebar - Desktop: Right side, Mobile: Bottom */}
+          <div className="lg:w-64 bg-white border-l lg:border-l border-gray-300 shadow-lg lg:relative absolute lg:top-0 lg:right-0 bottom-0 left-0 right-0 lg:h-full h-32 z-[500]">
+            <div className="p-3 h-full overflow-y-auto">
+              <h3 className="text-sm font-medium text-gray-900 mb-3">Filtri</h3>
+              <div className="space-y-2">
+                {/* All filters in single column */}
+                <FilterButton
+                  label="Cantiere"
+                  emoji="🏗️"
+                  active={filters.showCantiere}
+                  onClick={() => setFilters(prev => ({ ...prev, showCantiere: !prev.showCantiere }))}
+                  colorClass="bg-orange-500 hover:bg-orange-600"
+                />
+                <FilterButton
+                  label="Altro"
+                  emoji="📍"
+                  active={filters.showAltro}
+                  onClick={() => setFilters(prev => ({ ...prev, showAltro: !prev.showAltro }))}
+                  colorClass="bg-blue-500 hover:bg-blue-600"
+                />
+                <FilterButton
+                  label="2024"
+                  emoji="🟣"
+                  active={filters.show2024}
+                  onClick={() => setFilters(prev => ({ ...prev, show2024: !prev.show2024 }))}
+                  colorClass="bg-purple-500 hover:bg-purple-600"
+                />
+                <FilterButton
+                  label="2025"
+                  emoji="🟦"
+                  active={filters.show2025}
+                  onClick={() => setFilters(prev => ({ ...prev, show2025: !prev.show2025 }))}
+                  colorClass="bg-gray-600 hover:bg-gray-700"
+                />
+                <FilterButton
+                  label="Ispezionabili"
+                  emoji="🟢"
+                  active={filters.showInspectable}
+                  onClick={() => setFilters(prev => ({ ...prev, showInspectable: !prev.showInspectable }))}
+                  colorClass="bg-green-500 hover:bg-green-600"
+                />
+                <FilterButton
+                  label="Già ispezionati"
+                  emoji="🔴"
+                  active={filters.showNonInspectable}
+                  onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
+                  colorClass="bg-red-500 hover:bg-red-600"
+                />
+                {/* Show pending approval filter only for admin users */}
+                {user?.admin !== 0 && (
+                  <FilterButton
+                    label="In attesa"
+                    emoji="🟡"
+                    active={filters.showPendingApproval}
+                    onClick={() => setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }))}
+                    colorClass="bg-yellow-500 hover:bg-yellow-600"
+                  />
+                )}
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Install PWA Button - Centered below map */}
-        <div className="flex justify-center mt-4">
-          {isInstallable && (
-            <button
-              onClick={installPWA}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg border border-green-700 hover:bg-green-700 font-medium transition-colors inline-flex items-center space-x-2 text-sm"
-            >
-              <span>📱</span>
-              <span>Installa App</span>
-            </button>
-          )}
+        {/* Center Map Button - Fixed at bottom center */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000]">
+          <button
+            onClick={() => {
+              if (currentPosition) {
+                setCurrentPosition([...currentPosition]);
+              } else {
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      const { latitude, longitude } = position.coords;
+                      setCurrentPosition([latitude, longitude]);
+                    },
+                    (error) => {
+                      console.error('Error getting location:', error);
+                      alert('Impossibile ottenere la posizione corrente');
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                  );
+                } else {
+                  alert('La geolocalizzazione non è supportata dal browser');
+                }
+              }
+            }}
+            className="bg-red-600 text-white px-6 py-3 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center space-x-2 shadow-lg center-map-button"
+          >
+            <span>📍</span>
+            <span>Centra la mappa</span>
+          </button>
         </div>
+      </div>
+
+      {/* Install PWA Button - Centered below map */}
+      <div className="flex justify-center mt-4">
+        {isInstallable && (
+          <button
+            onClick={installPWA}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg border border-green-700 hover:bg-green-700 font-medium transition-colors inline-flex items-center space-x-2 text-sm"
+          >
+            <span>📱</span>
+            <span>Installa App</span>
+          </button>
+        )}
       </div>
 
       {/* Add POI Modal - appears as overlay when clicking on map */}
