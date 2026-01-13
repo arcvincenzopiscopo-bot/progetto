@@ -488,8 +488,8 @@ const DashboardPage: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
       {/* Map Container - Full Height */}
       <div className="relative" style={{ height: '100vh' }}>
-        {/* Search Box - Positioned on map, 1.5cm from top, 25% narrower */}
-        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 w-full max-w-sm px-4 z-[1000]">
+        {/* Search Box - Positioned on map, 0.5cm from top, 25% narrower */}
+        <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-full max-w-sm px-4 z-[1000]">
           <SearchBox
             onLocationSelect={handleLocationSelect}
             placeholder="Cerca indirizzo..."
@@ -587,8 +587,8 @@ const DashboardPage: React.FC = () => {
           )}
         </div>
 
-        {/* Center Map Button - Bottom center */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000]">
+        {/* Center Map Button - 2cm higher, Bottom center */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000]">
           <button
             onClick={() => {
               if (currentPosition) {
