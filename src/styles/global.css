@@ -463,3 +463,29 @@ body .existing-poi-content * {
 .leaflet-popup-pane {
   z-index: 2500 !important;
 }
+
+/* Move zoom controls to bottom left */
+.leaflet-control-container .leaflet-routing-container-hide {
+  display: none !important;
+}
+
+.leaflet-control-container .leaflet-control {
+  margin-bottom: 10px !important;
+  margin-left: 10px !important;
+}
+
+/* Specifically move zoom control to bottom left */
+.leaflet-control-container .leaflet-control-zoom {
+  position: absolute !important;
+  bottom: 20px !important;
+  left: 10px !important;
+  top: auto !important;
+  right: auto !important;
+}
+
+.leaflet-control-container .leaflet-control-zoom a {
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 30px !important;
+  font-size: 18px !important;
+}
