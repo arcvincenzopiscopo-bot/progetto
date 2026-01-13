@@ -47,7 +47,7 @@ const POIFormPopup: React.FC<POIFormPopupProps> = ({ location, onAddPoi, onCance
   };
 
   return (
-    <div className="border-2 border-indigo-600 rounded-lg p-3 bg-white">
+    <div className="border-2 border-indigo-600 rounded-lg p-3 bg-white poi-form-mobile">
       <div className="space-y-3">
 
         <div>
