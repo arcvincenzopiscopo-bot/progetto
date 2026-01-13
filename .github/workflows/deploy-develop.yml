@@ -1,0 +1,17 @@
+name: Deploy Develop Branch
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Vercel
+        run: |
+          curl -X POST ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
