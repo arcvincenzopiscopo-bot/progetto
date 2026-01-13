@@ -259,24 +259,79 @@ const DashboardPage: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    // Get user's current location
+    // Monitor user's current location continuously (like GPS navigators)
+    // IMPORTANT: This only uses native browser GPS - NO external API calls
+    let watchId: number | null = null;
+    let lastUpdateTime = 0;
+    const MIN_UPDATE_INTERVAL = 5000; // Minimum 5 seconds between updates
+
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+      // Use watchPosition to continuously monitor location changes
+      watchId = navigator.geolocation.watchPosition(
         (position) => {
-          const { latitude, longitude } = position.coords;
-          setCurrentPosition([latitude, longitude]);
+          const { latitude, longitude, accuracy } = position.coords;
+          const newPosition: [number, number] = [latitude, longitude];
+          const currentTime = Date.now();
+
+          // Throttle updates to prevent excessive API calls
+          if (currentTime - lastUpdateTime < MIN_UPDATE_INTERVAL) {
+            return; // Skip this update
+          }
+
+          // Update position only if it's significantly different or first time
+          setCurrentPosition((prevPosition) => {
+            if (!prevPosition) {
+              console.log('GPS: Initial position set:', newPosition, 'Accuracy:', accuracy, 'meters');
+              lastUpdateTime = currentTime;
+              return newPosition;
+            }
+
+            // Calculate distance between old and new position
+            const distance = Math.sqrt(
+              Math.pow((newPosition[0] - prevPosition[0]) * 111320, 2) + // 111320 meters per degree latitude
+              Math.pow((newPosition[1] - prevPosition[1]) * 111320 * Math.cos(newPosition[0] * Math.PI / 180), 2) // Adjust for longitude
+            );
+
+            // Only update if moved more than 10 meters (accuracy check removed to avoid complexity)
+            if (distance > 10) {
+              console.log('GPS: Position updated:', newPosition, 'Distance moved:', Math.round(distance), 'm, Accuracy:', accuracy, 'm, Time since last:', Math.round((currentTime - lastUpdateTime) / 1000), 's');
+              lastUpdateTime = currentTime;
+              return newPosition;
+            }
+
+            return prevPosition;
+          });
         },
         (error) => {
-          console.error('Error getting location:', error);
-          // Fallback to default position (Rome) if geolocation fails
-          setCurrentPosition(undefined);
+          console.error('GPS Error:', error.message);
+          if (error.code === 1) {
+            console.warn('GPS: User denied location access');
+          } else if (error.code === 2) {
+            console.warn('GPS: Position unavailable');
+          } else if (error.code === 3) {
+            console.warn('GPS: Position request timeout');
+          }
+          // Don't set position to undefined to avoid losing existing position
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        {
+          enableHighAccuracy: true,
+          timeout: 20000, // Increased timeout to reduce failed requests
+          maximumAge: 60000 // Allow cached positions up to 1 minute old
+        }
       );
+
+      console.log('GPS: Started watching position with ID:', watchId, '- No external API calls');
     } else {
-      console.error('Geolocation is not supported by this browser.');
-      setCurrentPosition(undefined);
+      console.error('GPS: Geolocation is not supported by this browser.');
     }
+
+    // Cleanup function to stop watching position when component unmounts
+    return () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        console.log('GPS: Stopped watching position with ID:', watchId);
+      }
+    };
   }, []);
 
   const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
@@ -486,164 +541,163 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <div className="max-w-none mx-auto px-0 py-4">
-        {/* Map Section with filters, search, and controls - now takes more space */}
-        <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm relative">
-          {/* Map Container - responsive height */}
-          <div className="h-[90vh] sm:h-[90vh] w-full relative map-container-mobile">
-            {/* Filters Panel - Top Center */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-transparent border border-gray-200 rounded-lg p-3 shadow-lg z-[400]">
-              <div className="space-y-2">
-                {/* First Row: Cantiere, Altro, 2024, 2025 */}
-                <div className="flex flex-wrap gap-2">
-                  <FilterButton
-                    label="Cantiere"
-                    emoji="🏗️"
-                    active={filters.showCantiere}
-                    onClick={() => setFilters(prev => ({ ...prev, showCantiere: !prev.showCantiere }))}
-                    colorClass="bg-orange-500 hover:bg-orange-600"
-                  />
-                  <FilterButton
-                    label="Altro"
-                    emoji="📍"
-                    active={filters.showAltro}
-                    onClick={() => setFilters(prev => ({ ...prev, showAltro: !prev.showAltro }))}
-                    colorClass="bg-blue-500 hover:bg-blue-600"
-                  />
-                  <FilterButton
-                    label="2024"
-                    emoji="🟣"
-                    active={filters.show2024}
-                    onClick={() => setFilters(prev => ({ ...prev, show2024: !prev.show2024 }))}
-                    colorClass="bg-purple-500 hover:bg-purple-600"
-                  />
-                  <FilterButton
-                    label="2025"
-                    emoji="🟦"
-                    active={filters.show2025}
-                    onClick={() => setFilters(prev => ({ ...prev, show2025: !prev.show2025 }))}
-                    colorClass="bg-gray-600 hover:bg-gray-700"
-                  />
-                </div>
+      {/* Map Container - Full Height */}
+      <div className="relative" style={{ height: '100vh' }}>
+        {/* Search Box - Positioned on map, 1.5cm from top, narrower */}
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 w-full max-w-xs px-0 z-[1000]">
+          <SearchBox
+            onLocationSelect={handleLocationSelect}
+            placeholder="Cerca indirizzo..."
+            className="w-full"
+          />
+        </div>
 
-                {/* Second Row: Ispezionabili, Già ispezionati, In attesa di approvazione */}
-                <div className="flex flex-wrap gap-2">
-                  <FilterButton
-                    label="Ispezionabili"
-                    emoji="🟢"
-                    active={filters.showInspectable}
-                    onClick={() => setFilters(prev => ({ ...prev, showInspectable: !prev.showInspectable }))}
-                    colorClass="bg-green-500 hover:bg-green-600"
-                  />
-                  <FilterButton
-                    label="Già ispezionati"
-                    emoji="🔴"
-                    active={filters.showNonInspectable}
-                    onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
-                    colorClass="bg-red-500 hover:bg-red-600"
-                  />
-                  {/* Show pending approval filter only for admin users */}
-                  {user?.admin !== 0 && (
-                    <FilterButton
-                      label="In attesa"
-                      emoji="🟡"
-                      active={filters.showPendingApproval}
-                      onClick={() => setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }))}
-                      colorClass="bg-yellow-500 hover:bg-yellow-600"
-                    />
-                  )}
-                </div>
-              </div>
-            </div>
+        <Suspense fallback={<MapSkeleton />}>
+          <MapErrorBoundary>
+            <MapComponent
+              pois={pois}
+              onMapClick={handleMapClick}
+              initialPosition={currentPosition}
+              mapCenter={mapCenter}
+              mapZoom={mapZoom}
+              onPoiUpdated={refreshPois}
+              onPoiSelect={handlePoiSelect}
+              currentTeam={user?.team}
+              adminLevel={user?.admin || 0}
+              currentUsername={user?.username}
+              newPoiLocation={showAddForm ? newPoiLocation : null}
+              onAddPoi={handleAddPoi}
+              onCancelAddPoi={() => {
+                setShowAddForm(false);
+                setCreatingNewPoi(false);
+              }}
+              filterShowInspectable={filters.showInspectable}
+              filterShowNonInspectable={filters.showNonInspectable}
+              filterShowPendingApproval={filters.showPendingApproval}
+              filterShowCantiere={filters.showCantiere}
+              filterShowAltro={filters.showAltro}
+              filterShow2024={filters.show2024}
+              filterShow2025={filters.show2025}
+              height="100%"
+              workingPoiId={workingPoiId}
+              selectedPoiId={selectedPoiId}
+              creatingNewPoi={creatingNewPoi}
+            />
+          </MapErrorBoundary>
+        </Suspense>
 
-            {/* Search Box - Center Bottom */}
-            <div className="absolute bottom-60 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-[1000]">
-              <SearchBox
-                onLocationSelect={handleLocationSelect}
-                placeholder="Cerca indirizzo (es: Via Roma 123, Milano)"
-                className="w-full"
+        {/* Filter Buttons - Right side of map, stacked vertically, moved lower, 1cm more to the right */}
+        {/* Same filters for all user types to maintain consistent layout */}
+        <div className="absolute top-28 right-6 z-[1000] space-y-2">
+          <FilterButton
+            label="Cantiere"
+            emoji="🏗️"
+            active={filters.showCantiere}
+            onClick={() => setFilters(prev => ({ ...prev, showCantiere: !prev.showCantiere }))}
+            colorClass="bg-orange-500 hover:bg-orange-600"
+          />
+          <FilterButton
+            label="Altro"
+            emoji="📍"
+            active={filters.showAltro}
+            onClick={() => setFilters(prev => ({ ...prev, showAltro: !prev.showAltro }))}
+            colorClass="bg-blue-500 hover:bg-blue-600"
+          />
+          <FilterButton
+            label="2024"
+            emoji="🟣"
+            active={filters.show2024}
+            onClick={() => setFilters(prev => ({ ...prev, show2024: !prev.show2024 }))}
+            colorClass="bg-purple-500 hover:bg-purple-600"
+          />
+          <FilterButton
+            label="2025"
+            emoji="🟦"
+            active={filters.show2025}
+            onClick={() => setFilters(prev => ({ ...prev, show2025: !prev.show2025 }))}
+            colorClass="bg-gray-600 hover:bg-gray-700"
+          />
+          <FilterButton
+            label="Ispezionabili"
+            emoji="🟢"
+            active={filters.showInspectable}
+            onClick={() => setFilters(prev => ({ ...prev, showInspectable: !prev.showInspectable }))}
+            colorClass="bg-green-500 hover:bg-green-600"
+          />
+          <FilterButton
+            label="Ispezionati"
+            emoji="🔴"
+            active={filters.showNonInspectable}
+            onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
+            colorClass="bg-red-500 hover:bg-red-600"
+          />
+          {/* Show pending approval filter only for admin >= 1 (capoteam and superadmin) */}
+          {user && user.admin !== undefined && user.admin >= 1 && (
+            <FilterButton
+              label="In attesa"
+              emoji="🟡"
+              active={filters.showPendingApproval}
+              onClick={() => setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }))}
+              colorClass="bg-yellow-500 hover:bg-yellow-600"
+            />
+          )}
+          {/* For admin=0, add invisible placeholder to maintain consistent layout */}
+          {user && user.admin !== undefined && user.admin === 0 && (
+            <div className="invisible">
+              <FilterButton
+                label="In attesa"
+                emoji="🟡"
+                active={false}
+                onClick={() => {}}
+                colorClass="bg-gray-400"
               />
             </div>
-
-            {/* Center Map Button - Bottom Center */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000]">
-              <button
-                onClick={() => {
-                  if (currentPosition) {
-                    setCurrentPosition([...currentPosition]);
-                  } else {
-                    if (navigator.geolocation) {
-                      navigator.geolocation.getCurrentPosition(
-                        (position) => {
-                          const { latitude, longitude } = position.coords;
-                          setCurrentPosition([latitude, longitude]);
-                        },
-                        (error) => {
-                          console.error('Error getting location:', error);
-                          alert('Impossibile ottenere la posizione corrente');
-                        },
-                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-                      );
-                    } else {
-                      alert('La geolocalizzazione non è supportata dal browser');
-                    }
-                  }
-                }}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center space-x-2 text-sm shadow-lg center-map-button"
-              >
-                <span>📍</span>
-                <span>Centra la mappa</span>
-              </button>
-            </div>
-
-            <Suspense fallback={<MapSkeleton />}>
-              <MapErrorBoundary>
-                <MapComponent
-                  pois={pois}
-                  onMapClick={handleMapClick}
-                  initialPosition={currentPosition}
-                  mapCenter={mapCenter}
-                  mapZoom={mapZoom}
-                  onPoiUpdated={refreshPois}
-                  onPoiSelect={handlePoiSelect}
-                  currentTeam={user?.team}
-                  adminLevel={user?.admin || 0}
-                  currentUsername={user?.username}
-                  newPoiLocation={showAddForm ? newPoiLocation : null}
-                  onAddPoi={handleAddPoi}
-                  onCancelAddPoi={() => {
-                    setShowAddForm(false);
-                    setCreatingNewPoi(false);
-                  }}
-                  filterShowInspectable={filters.showInspectable}
-                  filterShowNonInspectable={filters.showNonInspectable}
-                  filterShowPendingApproval={filters.showPendingApproval}
-                  filterShowCantiere={filters.showCantiere}
-                  filterShowAltro={filters.showAltro}
-                  filterShow2024={filters.show2024}
-                  filterShow2025={filters.show2025}
-                  height="90vh"
-                  workingPoiId={workingPoiId}
-                  selectedPoiId={selectedPoiId}
-                  creatingNewPoi={creatingNewPoi}
-                />
-              </MapErrorBoundary>
-            </Suspense>
-          </div>
-        </div>
-
-        {/* Install PWA Button - Centered below map */}
-        <div className="flex justify-center mt-4">
-          {isInstallable && (
-            <button
-              onClick={installPWA}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg border border-green-700 hover:bg-green-700 font-medium transition-colors inline-flex items-center space-x-2 text-sm"
-            >
-              <span>📱</span>
-              <span>Installa App</span>
-            </button>
           )}
         </div>
+
+        {/* Center Map Button - 2cm higher, Bottom center */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000]">
+          <button
+            onClick={() => {
+              if (currentPosition) {
+                setCurrentPosition([...currentPosition]);
+              } else {
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      const { latitude, longitude } = position.coords;
+                      setCurrentPosition([latitude, longitude]);
+                    },
+                    (error) => {
+                      console.error('Error getting location:', error);
+                      alert('Impossibile ottenere la posizione corrente');
+                    },
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                  );
+                } else {
+                  alert('La geolocalizzazione non è supportata dal browser');
+                }
+              }
+            }}
+            className="bg-red-600 text-white px-3 py-1.5 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center space-x-2 shadow-lg center-map-button"
+          >
+            <span>📍</span>
+            <span>Centra la mappa</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Install PWA Button - Centered below map */}
+      <div className="flex justify-center mt-4">
+        {isInstallable && (
+          <button
+            onClick={installPWA}
+            className="bg-green-600 text-white px-4 py-2 rounded-lg border border-green-700 hover:bg-green-700 font-medium transition-colors inline-flex items-center space-x-2 text-sm"
+          >
+            <span>📱</span>
+            <span>Installa App</span>
+          </button>
+        )}
       </div>
 
       {/* Add POI Modal - appears as overlay when clicking on map */}

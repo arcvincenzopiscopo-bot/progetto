@@ -202,6 +202,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
       key={mapKey}
       center={centerPosition}
       zoom={mapZoom || 13}
+      zoomControl={true}
       style={{ height: height || '100%', width: '100%', position: 'relative', zIndex: 1 }}
     >
       <TileLayer
@@ -369,10 +370,10 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
                       <p className="text-xs text-gray-500 text-center mt-1">Clicca per ingrandire</p>
                     </div>
                   )}
-                  {/* Dynamic buttons based on POI type */}
+                  {/* Fixed 5-slot button layout for uniform popup sizes */}
                   <div className="space-y-2">
                     {(() => {
-                      // Helper function to create share button
+                      // Helper function to create share button (always visible)
                       const shareButton = (
                         <button
                           key="share"
@@ -399,257 +400,126 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
                         </button>
                       );
 
-                      // Helper function to create delete button
-                      const deleteButton = (
-                        <button
-                          key="delete"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
-                            if (!confirmed) return;
-                            try {
-                              // Determine which table to delete from based on whether it's historical or current
-                              let tableName = 'points'; // Default for current POIs
-                              if (poi.anno) {
-                                tableName = poi.anno === 2024 ? 'points_old_2024' : 'points_old_2025';
-                              }
+                      // Helper function to create delete button (conditional)
+                      const createDeleteButton = () => {
+                        let canDelete = false;
+                        let buttonClass = "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
 
-                              // Delete photo from Cloudinary if it exists
-                              if (poi.photo_url) {
-                                await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
-                              }
-
-                              const { error } = await supabase.from(tableName).delete().eq('id', poi.id);
-                              if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                            } catch (err) {
-                              console.error('Error deleting POI:', err);
-                            }
-                          }}
-                          className="text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1"
-                        >
-                          🗑️ Elimina
-                        </button>
-                      );
-
-                      // Admin level 2 (superadmin): show ALL buttons for all POIs
-                      if (adminLevel === 2) {
-                        const buttons = [shareButton];
-
-                        // Always show delete button for superadmin
-                        buttons.push(deleteButton);
-
-                        // For current POIs, add action buttons regardless of status
-                        if (!poi.anno) {
-                          // Cantiere finito button (only for cantiere type, even for superadmin)
-                          if (poi.tipo === 'cantiere') {
-                            buttons.push(
-                              <button
-                                key="cantiere-finito"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
-                                  if (!confirmed) return;
-                                  if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                                  try {
-                                    const { error } = await supabase
-                                      .from('points')
-                                      .update({
-                                        ispezionabile: 2,
-                                        created_at: new Date().toISOString(),
-                                        team: currentTeam || poi.team
-                                      })
-                                      .eq('id', poi.id);
-                                    if (!error) {
-                                      setMapKey(Date.now());
-                                      if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                    } else {
-                                      alert('Errore nell\'aggiornamento del POI');
-                                    }
-                                  } catch (err) {
-                                    console.error('Error updating POI:', err);
-                                    alert('Errore nell\'aggiornamento del POI');
-                                  }
-                                }}
-                                className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
-                              >
-                                🏗️ Cantiere finito
-                              </button>
-                            );
-                          }
-
-                          // Ispezionato button (always available for superadmin)
-                          buttons.push(
-                            <button
-                              key="ispezionato"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
-                                if (!confirmed) return;
-                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                                try {
-                                  const { error } = await supabase
-                                    .from('points')
-                                    .update({
-                                      ispezionabile: 0,
-                                      created_at: new Date().toISOString(),
-                                      team: currentTeam || poi.team
-                                    })
-                                    .eq('id', poi.id);
-                                  if (!error) {
-                                    setMapKey(Date.now());
-                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                  }
-                                } catch (err) {
-                                  console.error('Error toggling ispezionabile:', err);
-                                }
-                              }}
-                              className="text-xs px-2 py-1 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm"
-                            >
-                              👮‍♂️ Ispezionato
-                            </button>
-                          );
-
-                          // Segnala inattività button (only for cantiere type, even for superadmin)
-                          if (poi.tipo === 'cantiere') {
-                            buttons.push(
-                              <button
-                                key="segnala-inattivita"
-                                onClick={async (e) => {
-                                  e.stopPropagation();
-                                  const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
-                                  if (!confirmed) return;
-                                  if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                                  try {
-                                    const { error } = await supabase
-                                      .from('points')
-                                      .update({ data_inattivita: new Date().toISOString() })
-                                      .eq('id', poi.id);
-                                    if (error) {
-                                      alert('Errore durante la segnalazione di inattività');
-                                    } else {
-                                      if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                    }
-                                  } catch (err) {
-                                    alert('Errore durante la segnalazione di inattività');
-                                  }
-                                }}
-                                className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm"
-                              >
-                                ⚠️ Segnala inattività
-                              </button>
-                            );
-                          }
+                        // Determine if user can delete this POI
+                        if (adminLevel === 2 && poi.ispezionabile === 0) {
+                          canDelete = true;
+                        } else if (adminLevel === 1 && poi.ispezionabile === 0) {
+                          const poiDate = new Date(poi.created_at);
+                          const today = new Date();
+                          const isCreatedToday = poiDate.getDate() === today.getDate() &&
+                                                 poiDate.getMonth() === today.getMonth() &&
+                                                 poiDate.getFullYear() === today.getFullYear();
+                          if (isCreatedToday) canDelete = true;
+                        } else if (adminLevel === 0 && poi.ispezionabile === 0) {
+                          const poiDate = new Date(poi.created_at);
+                          const today = new Date();
+                          const isCreatedToday = poiDate.getDate() === today.getDate() &&
+                                                 poiDate.getMonth() === today.getMonth() &&
+                                                 poiDate.getFullYear() === today.getFullYear();
+                          if (isCreatedToday && poi.username === currentUsername) canDelete = true;
+                        } else if (adminLevel >= 1 && poi.ispezionabile === 2) {
+                          canDelete = true;
+                        } else if (adminLevel === 0 && poi.ispezionabile === 2) {
+                          const poiDate = new Date(poi.created_at);
+                          const today = new Date();
+                          const isCreatedToday = poiDate.getDate() === today.getDate() &&
+                                                 poiDate.getMonth() === today.getMonth() &&
+                                                 poiDate.getFullYear() === today.getFullYear();
+                          if (isCreatedToday) canDelete = true;
                         }
 
-                        // Return buttons in appropriate layout
-                        if (buttons.length <= 2) {
-                          return <div className="flex gap-2">{buttons}</div>;
-                        } else {
-                          // Split into rows for better layout
-                          const firstRow = buttons.slice(0, 2);
-                          const secondRow = buttons.slice(2);
-                          return (
-                            <>
-                              <div className="flex gap-2">{firstRow}</div>
-                              <div className="flex gap-2 flex-wrap">{secondRow}</div>
-                            </>
-                          );
+                        if (canDelete) {
+                          buttonClass = "text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1";
                         }
-                      }
 
-                      // Historical POIs (2024, 2025): only share button for non-admin users
-                      if (poi.anno) {
                         return (
-                          <div className="flex gap-2">
-                            {shareButton}
-                          </div>
+                          <button
+                            key="delete"
+                            onClick={canDelete ? async (e) => {
+                              e.stopPropagation();
+                              const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
+                              if (!confirmed) return;
+                              try {
+                                let tableName = 'points';
+                                if (poi.anno) {
+                                  tableName = poi.anno === 2024 ? 'points_old_2024' : 'points_old_2025';
+                                }
+                                if (poi.photo_url) {
+                                  await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
+                                }
+                                const { error } = await supabase.from(tableName).delete().eq('id', poi.id);
+                                if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                              } catch (err) {
+                                console.error('Error deleting POI:', err);
+                              }
+                            } : undefined}
+                            disabled={!canDelete}
+                            className={buttonClass}
+                          >
+                            🗑️ Elimina
+                          </button>
                         );
-                      }
+                      };
 
-                      // Current POIs: complex logic based on status and admin level
-                      const buttons = [shareButton];
+                      // Helper function to create cantiere finito button (only for green cantieri)
+                      const createCantiereFinitoButton = () => {
+                        const canMarkFinished = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel >= 0;
+                        const buttonClass = canMarkFinished
+                          ? "text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
+                          : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
 
-                      // Add delete button based on admin level and POI status
-                      if (adminLevel === 2 && poi.ispezionabile === 0) {
-                        buttons.push(deleteButton);
-                      } else if (adminLevel === 1 && poi.ispezionabile === 0) {
-                        // Check if created today for admin=1
-                        const poiDate = new Date(poi.created_at);
-                        const today = new Date();
-                        const isCreatedToday = poiDate.getDate() === today.getDate() &&
-                                               poiDate.getMonth() === today.getMonth() &&
-                                               poiDate.getFullYear() === today.getFullYear();
-                        if (isCreatedToday) {
-                          buttons.push(deleteButton);
-                        }
-                      } else if (adminLevel === 0 && poi.ispezionabile === 0) {
-                        // Check if created today and by the current user for admin=0
-                        const poiDate = new Date(poi.created_at);
-                        const today = new Date();
-                        const isCreatedToday = poiDate.getDate() === today.getDate() &&
-                                               poiDate.getMonth() === today.getMonth() &&
-                                               poiDate.getFullYear() === today.getFullYear();
-                        if (isCreatedToday && poi.username === currentUsername) {
-                          buttons.push(deleteButton);
-                        }
-                      } else if (adminLevel >= 1 && poi.ispezionabile === 2) {
-                        buttons.push(deleteButton);
-                      } else if (adminLevel === 0 && poi.ispezionabile === 2) {
-                        // Check if created today
-                        const poiDate = new Date(poi.created_at);
-                        const today = new Date();
-                        const isCreatedToday = poiDate.getDate() === today.getDate() &&
-                                               poiDate.getMonth() === today.getMonth() &&
-                                               poiDate.getFullYear() === today.getFullYear();
-                        if (isCreatedToday) {
-                          buttons.push(deleteButton);
-                        }
-                      }
-
-                      // Add action buttons for green POIs
-                      if (poi.ispezionabile === 1) {
-                        // Cantiere finito button - only for cantiere type
-                        if (poi.tipo === 'cantiere') {
-                          buttons.push(
-                            <button
-                              key="cantiere-finito"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
-                                if (!confirmed) return;
-                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                                try {
-                                  const { error } = await supabase
-                                    .from('points')
-                                    .update({
-                                      ispezionabile: 2,
-                                      created_at: new Date().toISOString(),
-                                      team: currentTeam || poi.team
-                                    })
-                                    .eq('id', poi.id);
-                                  if (!error) {
-                                    setMapKey(Date.now());
-                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                  } else {
-                                    alert('Errore nell\'aggiornamento del POI');
-                                  }
-                                } catch (err) {
-                                  console.error('Error updating POI:', err);
+                        return (
+                          <button
+                            key="cantiere-finito"
+                            onClick={canMarkFinished ? async (e) => {
+                              e.stopPropagation();
+                              const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
+                              if (!confirmed) return;
+                              if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                              try {
+                                const { error } = await supabase
+                                  .from('points')
+                                  .update({
+                                    ispezionabile: 2,
+                                    created_at: new Date().toISOString(),
+                                    team: currentTeam || poi.team
+                                  })
+                                  .eq('id', poi.id);
+                                if (!error) {
+                                  setMapKey(Date.now());
+                                  if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                } else {
                                   alert('Errore nell\'aggiornamento del POI');
                                 }
-                              }}
-                              className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm"
-                            >
-                              🏗️ Cantiere finito
-                            </button>
-                          );
-                        }
+                              } catch (err) {
+                                console.error('Error updating POI:', err);
+                                alert('Errore nell\'aggiornamento del POI');
+                              }
+                            } : undefined}
+                            disabled={!canMarkFinished}
+                            className={buttonClass}
+                          >
+                            🏗️ Cantiere finito
+                          </button>
+                        );
+                      };
 
-                        // Ispezionato button
-                        buttons.push(
+                      // Helper function to create ispezionato button (only for green POIs)
+                      const createIspezionatoButton = () => {
+                        const canMarkInspected = !poi.anno && poi.ispezionabile === 1 && adminLevel >= 0;
+                        const buttonClass = canMarkInspected
+                          ? "text-xs px-2 py-1 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm flex-1"
+                          : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+
+                        return (
                           <button
                             key="ispezionato"
-                            onClick={async (e) => {
+                            onClick={canMarkInspected ? async (e) => {
                               e.stopPropagation();
                               const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
                               if (!confirmed) return;
@@ -670,82 +540,72 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
                               } catch (err) {
                                 console.error('Error toggling ispezionabile:', err);
                               }
-                            }}
-                            className="text-xs px-2 py-1 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm"
+                            } : undefined}
+                            disabled={!canMarkInspected}
+                            className={buttonClass}
                           >
                             👮‍♂️ Ispezionato
                           </button>
                         );
+                      };
 
-                        // Segnala inattività button - only for cantiere type
-                        if (poi.tipo === 'cantiere') {
-                          buttons.push(
-                            <button
-                              key="segnala-inattivita"
-                              onClick={async (e) => {
-                                e.stopPropagation();
-                                const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
-                                if (!confirmed) return;
-                                if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                                try {
-                                  const { error } = await supabase
-                                    .from('points')
-                                    .update({ data_inattivita: new Date().toISOString() })
-                                    .eq('id', poi.id);
-                                  if (error) {
-                                    alert('Errore durante la segnalazione di inattività');
-                                  } else {
-                                    if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                    }
-                                } catch (err) {
-                                  alert('Errore durante la segnalazione di inattività');
-                                }
-                              }}
-                              className="text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm"
-                            >
-                              ⚠️ Segnala inattività
-                            </button>
-                          );
-                        }
+                      // Helper function to create segnala inattività button (only for green cantieri)
+                      const createSegnalaInattivitaButton = () => {
+                        const canReportInactive = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel >= 0;
+                        const buttonClass = canReportInactive
+                          ? "text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm flex-1"
+                          : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
 
-                        // Delete button for green POIs
-                        if (adminLevel === 0) {
-                          const poiDate = new Date(poi.created_at);
-                          const today = new Date();
-                          const isCreatedToday = poiDate.getDate() === today.getDate() &&
-                                                 poiDate.getMonth() === today.getMonth() &&
-                                                 poiDate.getFullYear() === today.getFullYear();
-                          if (isCreatedToday && poi.username === currentUsername) {
-                            buttons.push(
-                              <div key="delete-wrapper" className="flex justify-center">
-                                {deleteButton}
-                              </div>
-                            );
-                          }
-                        } else {
-                          // Admin level >= 1 can delete all green POIs
-                          buttons.push(
-                            <div key="delete-wrapper" className="flex justify-center">
-                              {deleteButton}
-                            </div>
-                          );
-                        }
-                      }
-
-                      // Return buttons in appropriate layout
-                      if (buttons.length <= 2) {
-                        return <div className="flex gap-2">{buttons}</div>;
-                      } else {
-                        // Split into rows for better layout
-                        const firstRow = buttons.slice(0, 2);
-                        const secondRow = buttons.slice(2);
                         return (
-                          <>
-                            <div className="flex gap-2">{firstRow}</div>
-                            <div className="flex gap-2 flex-wrap">{secondRow}</div>
-                          </>
+                          <button
+                            key="segnala-inattivita"
+                            onClick={canReportInactive ? async (e) => {
+                              e.stopPropagation();
+                              const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
+                              if (!confirmed) return;
+                              if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                              try {
+                                const { error } = await supabase
+                                  .from('points')
+                                  .update({ data_inattivita: new Date().toISOString() })
+                                  .eq('id', poi.id);
+                                if (error) {
+                                  alert('Errore durante la segnalazione di inattività');
+                                } else {
+                                  if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                }
+                              } catch (err) {
+                                alert('Errore durante la segnalazione di inattività');
+                              }
+                            } : undefined}
+                            disabled={!canReportInactive}
+                            className={buttonClass}
+                          >
+                            ⚠️ Segnala inattività
+                          </button>
                         );
-                      }
+                      };
+
+                      // Fixed 5-slot layout: always same structure for uniform popup sizes
+                      const buttonSlots = [
+                        shareButton,                          // Slot 1: Always visible
+                        createDeleteButton(),                // Slot 2: Conditional delete
+                        createCantiereFinitoButton(),        // Slot 3: Only for green cantieri
+                        createIspezionatoButton(),           // Slot 4: Only for green POIs
+                        createSegnalaInattivitaButton()      // Slot 5: Only for green cantieri
+                      ];
+
+                      // Return fixed layout with 2 rows (3 buttons + 2 buttons)
+                      return (
+                        <>
+                          <div className="flex gap-2">
+                            {buttonSlots.slice(0, 3)}
+                          </div>
+                          <div className="flex gap-2">
+                            {buttonSlots.slice(3, 5)}
+                          </div>
+                        </>
+                      );
                     })()}
                   </div>
                 </div>

@@ -310,7 +310,7 @@ body .existing-poi-content * {
 
   /* Map container adjustments */
   .map-container-mobile {
-    height: 80vh !important;
+    height: 85vh !important;
   }
 
   /* Center map button adjustments */
@@ -326,6 +326,42 @@ body .existing-poi-content * {
     padding: 10px 16px !important;
     font-size: 14px !important;
     min-height: 44px;
+  }
+
+  /* Mobile filter panel adjustments */
+  @media (max-width: 640px) {
+    .filter-panel-mobile {
+      max-height: 60vh !important;
+      overflow-y: auto !important;
+      left: 8px !important;
+      bottom: 60px !important;
+      right: auto !important;
+      width: auto !important;
+      max-width: 150px !important;
+    }
+
+    /* Compact filter buttons on mobile */
+    .filter-button-mobile {
+      padding: 6px 8px !important;
+      font-size: 11px !important;
+      min-width: 100px !important;
+      margin-bottom: 4px !important;
+    }
+
+    /* Adjust search box for mobile */
+    .search-mobile {
+      left: 8px !important;
+      top: 8px !important;
+      width: calc(100vw - 16px) !important;
+      max-width: none !important;
+    }
+
+    /* Center map button mobile position */
+    .center-map-mobile {
+      right: 8px !important;
+      bottom: 8px !important;
+      min-width: 120px !important;
+    }
   }
 
   /* Enhanced search box for mobile */
@@ -426,4 +462,59 @@ body .existing-poi-content * {
 /* Ensure POI popup is above search box and filters */
 .leaflet-popup-pane {
   z-index: 2500 !important;
+}
+
+/* Force zoom controls to be visible and positioned */
+.leaflet-control-zoom {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: absolute !important;
+  bottom: 120px !important;
+  left: 20px !important;
+  top: auto !important;
+  right: auto !important;
+  z-index: 2000 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.leaflet-control-zoom a {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 50px !important;
+  height: 50px !important;
+  line-height: 48px !important;
+  font-size: 24px !important;
+  font-weight: bold !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 3px solid #333 !important;
+  color: #333 !important;
+  text-align: center !important;
+  text-decoration: none !important;
+  margin-bottom: 8px !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  transition: all 0.2s ease !important;
+}
+
+.leaflet-control-zoom a:hover {
+  background: #fff !important;
+  border-color: #000 !important;
+  transform: scale(1.1) !important;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5) !important;
+}
+
+.leaflet-control-zoom a:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Override any hiding rules */
+.leaflet-control-container .leaflet-control-zoom,
+.leaflet-control-container .leaflet-control-zoom * {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
 }
