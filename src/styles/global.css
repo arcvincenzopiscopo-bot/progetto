@@ -304,10 +304,7 @@ body .existing-poi-content * {
   }
 }
 
-+++++++ REPLACE</task_progress>
-- [ ] Reduce header size for mobile devices
-- [ ] Reduce filter button sizes by 30% on mobile
-</task_progress>
+
 
 /* Center map button enhancement */
 .center-map-button {
