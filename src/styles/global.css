@@ -470,7 +470,7 @@ body .existing-poi-content * {
   visibility: visible !important;
   opacity: 1 !important;
   position: absolute !important;
-  bottom: 40px !important;
+  bottom: 120px !important;
   left: 20px !important;
   top: auto !important;
   right: auto !important;
