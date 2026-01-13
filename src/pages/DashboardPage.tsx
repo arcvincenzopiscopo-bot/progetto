@@ -491,8 +491,17 @@ const DashboardPage: React.FC = () => {
         <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm relative">
           {/* Map Container - responsive height */}
           <div className="h-[90vh] sm:h-[90vh] w-full relative map-container-mobile">
-            {/* Filters Panel - Top Center */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 bg-transparent border border-gray-200 rounded-lg p-3 shadow-lg z-[400]">
+            {/* Search Box - Top Center */}
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-[1000]">
+              <SearchBox
+                onLocationSelect={handleLocationSelect}
+                placeholder="Cerca indirizzo (es: Via Roma 123, Milano)"
+                className="w-full"
+              />
+            </div>
+
+            {/* Filters Panel - Above Center Map Button */}
+            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-transparent border border-gray-200 rounded-lg p-3 shadow-lg z-[400]">
               <div className="space-y-2">
                 {/* First Row: Cantiere, Altro, 2024, 2025 */}
                 <div className="flex flex-wrap gap-2">
@@ -554,15 +563,6 @@ const DashboardPage: React.FC = () => {
                   )}
                 </div>
               </div>
-            </div>
-
-            {/* Search Box - Center Bottom */}
-            <div className="absolute bottom-60 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-[1000]">
-              <SearchBox
-                onLocationSelect={handleLocationSelect}
-                placeholder="Cerca indirizzo (es: Via Roma 123, Milano)"
-                className="w-full"
-              />
             </div>
 
             {/* Center Map Button - Bottom Center */}
