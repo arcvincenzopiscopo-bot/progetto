@@ -631,28 +631,18 @@ const DashboardPage: React.FC = () => {
             onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
             colorClass="bg-red-500 hover:bg-red-600"
           />
-          {/* Show pending approval filter only for admin >= 1 (capoteam and superadmin) */}
-          {user && user.admin !== undefined && user.admin >= 1 && (
-            <FilterButton
-              label="In attesa"
-              emoji="🟡"
-              active={filters.showPendingApproval}
-              onClick={() => setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }))}
-              colorClass="bg-yellow-500 hover:bg-yellow-600"
-            />
-          )}
-          {/* For admin=0, add invisible placeholder to maintain consistent layout */}
-          {user && user.admin !== undefined && user.admin === 0 && (
-            <div className="invisible">
-              <FilterButton
-                label="In attesa"
-                emoji="🟡"
-                active={false}
-                onClick={() => {}}
-                colorClass="bg-gray-400"
-              />
-            </div>
-          )}
+          {/* Show pending approval filter for all users, but disable for admin=0 */}
+          <FilterButton
+            label="In attesa"
+            emoji="🟡"
+            active={user && user.admin !== undefined && user.admin >= 1 ? filters.showPendingApproval : false}
+            onClick={() => {
+              if (user && user.admin !== undefined && user.admin >= 1) {
+                setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }));
+              }
+            }}
+            colorClass={user && user.admin !== undefined && user.admin >= 1 ? "bg-yellow-500 hover:bg-yellow-600" : "bg-gray-400 cursor-not-allowed"}
+          />
         </div>
 
         {/* Center Map Button - 2cm higher, Bottom center */}
