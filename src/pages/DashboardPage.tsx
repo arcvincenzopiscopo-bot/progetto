@@ -259,24 +259,68 @@ const DashboardPage: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    // Get user's current location
+    // Monitor user's current location continuously (like GPS navigators)
+    let watchId: number | null = null;
+
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
+      // Use watchPosition to continuously monitor location changes
+      watchId = navigator.geolocation.watchPosition(
         (position) => {
-          const { latitude, longitude } = position.coords;
-          setCurrentPosition([latitude, longitude]);
+          const { latitude, longitude, accuracy } = position.coords;
+          const newPosition: [number, number] = [latitude, longitude];
+
+          // Update position only if it's significantly different or first time
+          setCurrentPosition((prevPosition) => {
+            if (!prevPosition) {
+              console.log('GPS: Initial position set:', newPosition, 'Accuracy:', accuracy, 'meters');
+              return newPosition;
+            }
+
+            // Calculate distance between old and new position
+            const distance = Math.sqrt(
+              Math.pow((newPosition[0] - prevPosition[0]) * 111320, 2) + // 111320 meters per degree latitude
+              Math.pow((newPosition[1] - prevPosition[1]) * 111320 * Math.cos(newPosition[0] * Math.PI / 180), 2) // Adjust for longitude
+            );
+
+            // Only update if moved more than 5 meters or accuracy improved significantly
+            if (distance > 5) {
+              console.log('GPS: Position updated:', newPosition, 'Distance moved:', Math.round(distance), 'm, Accuracy:', accuracy, 'm');
+              return newPosition;
+            }
+
+            return prevPosition;
+          });
         },
         (error) => {
-          console.error('Error getting location:', error);
-          // Fallback to default position (Rome) if geolocation fails
-          setCurrentPosition(undefined);
+          console.error('GPS Error:', error.message);
+          if (error.code === 1) {
+            console.warn('GPS: User denied location access');
+          } else if (error.code === 2) {
+            console.warn('GPS: Position unavailable');
+          } else if (error.code === 3) {
+            console.warn('GPS: Position request timeout');
+          }
+          // Don't set position to undefined to avoid losing existing position
         },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        {
+          enableHighAccuracy: true,
+          timeout: 15000, // Increased timeout for continuous monitoring
+          maximumAge: 30000 // Allow cached positions up to 30 seconds old
+        }
       );
+
+      console.log('GPS: Started watching position with ID:', watchId);
     } else {
-      console.error('Geolocation is not supported by this browser.');
-      setCurrentPosition(undefined);
+      console.error('GPS: Geolocation is not supported by this browser.');
     }
+
+    // Cleanup function to stop watching position when component unmounts
+    return () => {
+      if (watchId !== null) {
+        navigator.geolocation.clearWatch(watchId);
+        console.log('GPS: Stopped watching position with ID:', watchId);
+      }
+    };
   }, []);
 
   const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
