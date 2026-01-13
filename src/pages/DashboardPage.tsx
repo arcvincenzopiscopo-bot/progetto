@@ -260,7 +260,10 @@ const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     // Monitor user's current location continuously (like GPS navigators)
+    // IMPORTANT: This only uses native browser GPS - NO external API calls
     let watchId: number | null = null;
+    let lastUpdateTime = 0;
+    const MIN_UPDATE_INTERVAL = 5000; // Minimum 5 seconds between updates
 
     if (navigator.geolocation) {
       // Use watchPosition to continuously monitor location changes
@@ -268,11 +271,18 @@ const DashboardPage: React.FC = () => {
         (position) => {
           const { latitude, longitude, accuracy } = position.coords;
           const newPosition: [number, number] = [latitude, longitude];
+          const currentTime = Date.now();
+
+          // Throttle updates to prevent excessive API calls
+          if (currentTime - lastUpdateTime < MIN_UPDATE_INTERVAL) {
+            return; // Skip this update
+          }
 
           // Update position only if it's significantly different or first time
           setCurrentPosition((prevPosition) => {
             if (!prevPosition) {
               console.log('GPS: Initial position set:', newPosition, 'Accuracy:', accuracy, 'meters');
+              lastUpdateTime = currentTime;
               return newPosition;
             }
 
@@ -282,9 +292,10 @@ const DashboardPage: React.FC = () => {
               Math.pow((newPosition[1] - prevPosition[1]) * 111320 * Math.cos(newPosition[0] * Math.PI / 180), 2) // Adjust for longitude
             );
 
-            // Only update if moved more than 5 meters or accuracy improved significantly
-            if (distance > 5) {
-              console.log('GPS: Position updated:', newPosition, 'Distance moved:', Math.round(distance), 'm, Accuracy:', accuracy, 'm');
+            // Only update if moved more than 10 meters (accuracy check removed to avoid complexity)
+            if (distance > 10) {
+              console.log('GPS: Position updated:', newPosition, 'Distance moved:', Math.round(distance), 'm, Accuracy:', accuracy, 'm, Time since last:', Math.round((currentTime - lastUpdateTime) / 1000), 's');
+              lastUpdateTime = currentTime;
               return newPosition;
             }
 
@@ -304,12 +315,12 @@ const DashboardPage: React.FC = () => {
         },
         {
           enableHighAccuracy: true,
-          timeout: 15000, // Increased timeout for continuous monitoring
-          maximumAge: 30000 // Allow cached positions up to 30 seconds old
+          timeout: 20000, // Increased timeout to reduce failed requests
+          maximumAge: 60000 // Allow cached positions up to 1 minute old
         }
       );
 
-      console.log('GPS: Started watching position with ID:', watchId);
+      console.log('GPS: Started watching position with ID:', watchId, '- No external API calls');
     } else {
       console.error('GPS: Geolocation is not supported by this browser.');
     }
