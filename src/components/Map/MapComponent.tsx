@@ -202,6 +202,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
       key={mapKey}
       center={centerPosition}
       zoom={mapZoom || 13}
+      zoomControl={true}
       style={{ height: height || '100%', width: '100%', position: 'relative', zIndex: 1 }}
     >
       <TileLayer
