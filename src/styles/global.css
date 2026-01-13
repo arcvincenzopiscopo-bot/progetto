@@ -266,7 +266,7 @@ body .existing-poi-content * {
 
 /* Enhanced filter button styling */
 .filter-button-enhanced {
-  min-width: 120px;
+  min-width: 80px;
   justify-content: center;
 }
 
@@ -284,9 +284,9 @@ body .existing-poi-content * {
 
   /* Filter button adjustments */
   .filter-button-enhanced {
-    min-width: 80px;
+    min-width: 60px;
     font-size: 12px;
-    padding: 6px 10px;
+    padding: 4px 6px;
   }
 
   /* Filter panel positioning */
