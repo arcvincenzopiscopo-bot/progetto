@@ -310,7 +310,7 @@ body .existing-poi-content * {
 
   /* Map container adjustments */
   .map-container-mobile {
-    height: 80vh !important;
+    height: 85vh !important;
   }
 
   /* Center map button adjustments */
@@ -326,6 +326,42 @@ body .existing-poi-content * {
     padding: 10px 16px !important;
     font-size: 14px !important;
     min-height: 44px;
+  }
+
+  /* Mobile filter panel adjustments */
+  @media (max-width: 640px) {
+    .filter-panel-mobile {
+      max-height: 60vh !important;
+      overflow-y: auto !important;
+      left: 8px !important;
+      bottom: 60px !important;
+      right: auto !important;
+      width: auto !important;
+      max-width: 150px !important;
+    }
+
+    /* Compact filter buttons on mobile */
+    .filter-button-mobile {
+      padding: 6px 8px !important;
+      font-size: 11px !important;
+      min-width: 100px !important;
+      margin-bottom: 4px !important;
+    }
+
+    /* Adjust search box for mobile */
+    .search-mobile {
+      left: 8px !important;
+      top: 8px !important;
+      width: calc(100vw - 16px) !important;
+      max-width: none !important;
+    }
+
+    /* Center map button mobile position */
+    .center-map-mobile {
+      right: 8px !important;
+      bottom: 8px !important;
+      min-width: 120px !important;
+    }
   }
 
   /* Enhanced search box for mobile */

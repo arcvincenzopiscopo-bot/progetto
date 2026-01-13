@@ -491,20 +491,20 @@ const DashboardPage: React.FC = () => {
         <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm relative">
           {/* Map Container - responsive height */}
           <div className="h-[90vh] sm:h-[90vh] w-full relative map-container-mobile">
-            {/* Search Box - Top Center */}
-            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-[1000]">
+            {/* Search Box - Desktop: Top Center, Mobile: Top Left */}
+            <div className="absolute top-4 left-1/2 transform -translate-x-1/2 w-full max-w-md px-4 z-[1000] search-mobile sm:left-4 sm:transform-none sm:max-w-xs">
               <SearchBox
                 onLocationSelect={handleLocationSelect}
-                placeholder="Cerca indirizzo (es: Via Roma 123, Milano)"
+                placeholder="Cerca indirizzo..."
                 className="w-full"
               />
             </div>
 
-            {/* Filters Panel - Above Center Map Button */}
-            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-transparent border border-gray-200 rounded-lg p-3 shadow-lg z-[400]">
+            {/* Filters Panel - Desktop: Above Center Button, Mobile: Bottom Left */}
+            <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 bg-transparent border border-gray-200 rounded-lg p-3 shadow-lg z-[400] filter-panel-mobile sm:bottom-4 sm:left-4 sm:transform-none sm:p-2">
               <div className="space-y-2">
                 {/* First Row: Cantiere, Altro, 2024, 2025 */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 sm:flex-col sm:gap-1">
                   <FilterButton
                     label="Cantiere"
                     emoji="🏗️"
@@ -536,7 +536,7 @@ const DashboardPage: React.FC = () => {
                 </div>
 
                 {/* Second Row: Ispezionabili, Già ispezionati, In attesa di approvazione */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 sm:flex-col sm:gap-1">
                   <FilterButton
                     label="Ispezionabili"
                     emoji="🟢"
@@ -565,8 +565,8 @@ const DashboardPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Center Map Button - Bottom Center */}
-            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000]">
+            {/* Center Map Button - Desktop: Bottom Center, Mobile: Bottom Right */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-[1000] sm:right-4 sm:left-auto sm:transform-none">
               <button
                 onClick={() => {
                   if (currentPosition) {
@@ -592,7 +592,7 @@ const DashboardPage: React.FC = () => {
                 className="bg-red-600 text-white px-4 py-2 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center space-x-2 text-sm shadow-lg center-map-button"
               >
                 <span>📍</span>
-                <span>Centra la mappa</span>
+                <span className="hidden sm:inline">Centra la mappa</span>
               </button>
             </div>
 
