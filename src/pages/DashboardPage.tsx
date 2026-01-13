@@ -641,6 +641,18 @@ const DashboardPage: React.FC = () => {
               colorClass="bg-yellow-500 hover:bg-yellow-600"
             />
           )}
+          {/* For admin=0, add invisible placeholder to maintain consistent layout */}
+          {user && user.admin !== undefined && user.admin === 0 && (
+            <div className="invisible">
+              <FilterButton
+                label="In attesa"
+                emoji="🟡"
+                active={false}
+                onClick={() => {}}
+                colorClass="bg-gray-400"
+              />
+            </div>
+          )}
         </div>
 
         {/* Center Map Button - 2cm higher, Bottom center */}
