@@ -7,6 +7,18 @@ import DashboardPage from './pages/DashboardPage';
 import PrivateRoute from './components/Auth/PrivateRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 
+// Development Banner Component
+const DevelopmentBanner: React.FC = () => {
+  // Only show in development environment and on develop branch
+  if (process.env.NODE_ENV === 'production') return null;
+
+  return (
+    <div className="bg-orange-500 text-white text-center py-2 px-4 text-sm font-medium">
+      🚧 VERSIONE DI SVILUPPO - Non utilizzare per uso produttivo 🚧
+    </div>
+  );
+};
+
 // Configure React Router future flags to suppress v7 warnings
 // and filter out third-party library warnings in development
 if (process.env.NODE_ENV === 'development') {
@@ -48,6 +60,7 @@ if (process.env.NODE_ENV === 'development') {
 function App() {
   return (
     <ErrorBoundary>
+      <DevelopmentBanner />
       <Router
         future={{
           v7_startTransition: true,
