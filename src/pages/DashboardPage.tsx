@@ -488,30 +488,23 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header di benvenuto con pulsante Logout */}
-      <div className="bg-white shadow-sm border-b border-gray-200 mobile-header">
-        <div className="container mx-auto px-4 py-3">
-          {/* Mobile: Stack vertically, Desktop: Horizontal */}
-          <div className="flex flex-col sm:flex-row sm:justify-center sm:items-center gap-3">
-            <h1 className="text-lg font-bold text-gray-800 text-center sm:text-left">
-              <span className="font-bold">Benvenuto</span> {user?.username} - {userRole}
-            </h1>
-            <button
-              onClick={handleLogout}
-              className="bg-white text-indigo-600 px-4 py-2 rounded-lg border border-indigo-300 hover:bg-indigo-50 font-medium transition-colors inline-flex items-center justify-center space-x-2 text-sm mx-auto sm:mx-0"
-            >
-              <span>🚪</span>
-              <span>Logout</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
       <div className="max-w-none mx-auto px-0 py-4">
         {/* Map Section with filters, search, and controls - now takes more space */}
         <div className="bg-gray-200 border border-gray-300 rounded-lg overflow-hidden shadow-sm relative">
           {/* Map Container - responsive height */}
           <div className="h-[90vh] sm:h-[90vh] w-full relative map-container-mobile">
+            {/* Logout Button - Top Left */}
+            <div className="absolute top-4 left-4 z-[450]">
+              <button
+                onClick={handleLogout}
+                className="bg-white text-indigo-600 px-3 py-2 rounded-lg border border-indigo-300 hover:bg-indigo-50 font-medium transition-colors inline-flex items-center space-x-1 text-sm shadow-lg"
+                title="Logout"
+              >
+                <span>🚪</span>
+                <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
+
             {/* Filters Panel - Top Right */}
             <div className="absolute top-4 right-4 bg-transparent border border-gray-200 rounded-lg p-3 shadow-lg z-[400]">
               <div className="space-y-2">
