@@ -273,24 +273,41 @@ body .existing-poi-content * {
 /* Responsive adjustments for smaller screens */
 @media (max-width: 768px) {
   .filter-button-enhanced {
-    min-width: 100px;
-    font-size: 13px;
-    padding: 6px 12px;
+    min-width: 70px;
+    font-size: 11px;
+    padding: 4px 8px;
   }
 
-  /* Adjust filter panel for mobile */
   .filter-panel {
-    width: 90%;
-    left: 5% !important;
+    width: 95%;
+    left: 2.5% !important;
     right: auto !important;
   }
 
-  /* Adjust search box for mobile */
   .search-box-mobile {
-    width: 90% !important;
-    left: 5% !important;
+    width: 95% !important;
+    left: 2.5% !important;
+  }
+
+  .mobile-header {
+    padding: 8px 12px !important;
+  }
+
+  .mobile-header h1 {
+    font-size: 14px !important;
+    line-height: 1.2 !important;
+  }
+
+  .mobile-header button {
+    padding: 6px 12px !important;
+    font-size: 12px !important;
   }
 }
+
++++++++ REPLACE</task_progress>
+- [ ] Reduce header size for mobile devices
+- [ ] Reduce filter button sizes by 30% on mobile
+</task_progress>
 
 /* Center map button enhancement */
 .center-map-button {

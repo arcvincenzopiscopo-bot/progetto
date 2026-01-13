@@ -489,7 +489,7 @@ const DashboardPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header di benvenuto con pulsante Logout */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
+      <div className="bg-white shadow-sm border-b border-gray-200 mobile-header">
         <div className="container mx-auto px-4 py-3 flex justify-center items-center">
           <h1 className="text-lg font-bold text-gray-800">
             <span className="font-bold">Benvenuto</span> {user?.username} - {userRole}
