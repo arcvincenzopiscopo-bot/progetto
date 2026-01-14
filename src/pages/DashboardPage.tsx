@@ -654,7 +654,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex gap-[0.2cm] justify-center">
             <div className="w-24">
               <FilterButton
-                label="Ispezionabili"
+                label="Ispez.li"
                 emoji="🟢"
                 active={filters.showInspectable}
                 onClick={() => setFilters(prev => ({ ...prev, showInspectable: !prev.showInspectable }))}
@@ -663,7 +663,7 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="w-24">
               <FilterButton
-                label="Ispezionati"
+                label="Ispez.ti"
                 emoji="🔴"
                 active={filters.showNonInspectable}
                 onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
@@ -673,7 +673,7 @@ const DashboardPage: React.FC = () => {
             {/* Show pending approval filter for all users, but disable for admin=0 */}
             <div className="w-24">
               <FilterButton
-                label="In attesa"
+                label="pending"
                 emoji="🟡"
                 active={user && user.admin !== undefined && user.admin >= 1 ? filters.showPendingApproval : false}
                 onClick={() => {
