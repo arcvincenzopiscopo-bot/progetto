@@ -739,7 +739,7 @@ const DashboardPage: React.FC = () => {
 
       {/* Add POI Modal - appears as overlay when clicking on map */}
       {showAddForm && newPoiLocation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000] modal-overlay-mobile">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[3000] modal-overlay-mobile">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-4 modal-content-mobile">
             <Suspense fallback={<div className="text-center py-4">Caricamento...</div>}>
               <POIFormPopup
