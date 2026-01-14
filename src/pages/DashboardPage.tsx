@@ -338,6 +338,26 @@ const DashboardPage: React.FC = () => {
   const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
     if (!newPoiLocation || !user) return;
 
+    // Check for existing POI with same coordinates
+    const { data: existingPois, error: checkError } = await supabase
+      .from('points')
+      .select('id')
+      .eq('latitudine', newPoiLocation.lat)
+      .eq('longitudine', newPoiLocation.lng);
+
+    if (checkError) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error checking for duplicate POI:', checkError);
+      }
+      alert('Errore nel controllo dei duplicati. Riprova.');
+      return;
+    }
+
+    if (existingPois && existingPois.length > 0) {
+      alert('Esiste già un POI con queste coordinate. Non è possibile inserire duplicati.');
+      return;
+    }
+
     // Set creating state for visual feedback
     setCreatingNewPoi(true);
 
