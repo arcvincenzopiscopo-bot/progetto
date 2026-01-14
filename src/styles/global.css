@@ -462,7 +462,7 @@ body .existing-poi-content * {
 
 /* Ensure POI popup is above search box and filters */
 .leaflet-popup-pane {
-  z-index: 2500 !important;
+  z-index: 4000 !important;
 }
 
 /* Force zoom controls to be visible and positioned */
