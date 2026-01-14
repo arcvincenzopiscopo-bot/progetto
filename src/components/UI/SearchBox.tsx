@@ -240,7 +240,7 @@ const SearchBox: React.FC<SearchBoxProps> = React.memo(({
       {isOpen && results.length > 0 && (
         <div
           ref={resultsRef}
-          className="absolute z-[1600] w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto"
+          className="absolute z-[2000] w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto"
         >
           {results.map((result, index) => (
             <button
@@ -273,7 +273,7 @@ const SearchBox: React.FC<SearchBoxProps> = React.memo(({
 
       {/* No results message */}
       {isOpen && !isLoading && results.length === 0 && query.length >= 2 && (
-        <div className="absolute z-[1600] w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
+        <div className="absolute z-[2000] w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg p-4">
           <div className="text-center text-gray-500 text-sm">
             <svg className="mx-auto h-8 w-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
