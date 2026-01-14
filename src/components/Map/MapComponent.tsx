@@ -69,6 +69,7 @@ interface MapComponentProps {
   filterShowAltro?: boolean;
   filterShow2024?: boolean;
   filterShow2025?: boolean;
+  filterShowToday?: boolean;
   height?: string;
   workingPoiId?: string | null; // ID of POI currently being worked on
   selectedPoiId?: string | null; // ID of POI currently selected
@@ -116,7 +117,7 @@ const MapDeselectHandler: React.FC<{
 
 
 
-const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, currentUsername, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
+const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, currentUsername, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, filterShowToday = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
   // Use mapCenter if provided, otherwise use initialPosition, otherwise default to Rome coordinates
   const centerPosition: [number, number] = mapCenter || initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
@@ -227,6 +228,16 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
 
       {pois
         .filter((poi) => {
+          // Apply today filter first (affects all POIs)
+          if (filterShowToday) {
+            const poiDate = new Date(poi.created_at);
+            const today = new Date();
+            const isToday = poiDate.getDate() === today.getDate() &&
+                           poiDate.getMonth() === today.getMonth() &&
+                           poiDate.getFullYear() === today.getFullYear();
+            if (!isToday) return false;
+          }
+
           // For historical POIs, only apply type and year filters
           if (poi.anno) {
             if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;

@@ -33,6 +33,7 @@ const DashboardPage: React.FC = () => {
     showAltro: true,
     show2024: false, // Default: non selezionato
     show2025: false, // Default: non selezionato
+    showToday: false, // Default: non selezionato
   });
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null); // Separate state for map centering
   const [mapZoom, setMapZoom] = useState<number>(13); // Separate state for map zoom level
@@ -600,6 +601,7 @@ const DashboardPage: React.FC = () => {
               filterShowAltro={filters.showAltro}
               filterShow2024={filters.show2024}
               filterShow2025={filters.show2025}
+              filterShowToday={filters.showToday}
               height="100%"
               workingPoiId={workingPoiId}
               selectedPoiId={selectedPoiId}
@@ -652,7 +654,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex gap-[0.2cm] justify-center">
             <div className="w-24">
               <FilterButton
-                label="Ispezionabili"
+                label="Ispez.li"
                 emoji="🟢"
                 active={filters.showInspectable}
                 onClick={() => setFilters(prev => ({ ...prev, showInspectable: !prev.showInspectable }))}
@@ -661,7 +663,7 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="w-24">
               <FilterButton
-                label="Ispezionati"
+                label="Ispez.ti"
                 emoji="🔴"
                 active={filters.showNonInspectable}
                 onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
@@ -671,7 +673,7 @@ const DashboardPage: React.FC = () => {
             {/* Show pending approval filter for all users, but disable for admin=0 */}
             <div className="w-24">
               <FilterButton
-                label="In attesa"
+                label="pending"
                 emoji="🟡"
                 active={user && user.admin !== undefined && user.admin >= 1 ? filters.showPendingApproval : false}
                 onClick={() => {
@@ -680,6 +682,20 @@ const DashboardPage: React.FC = () => {
                   }
                 }}
                 colorClass={user && user.admin !== undefined && user.admin >= 1 ? "bg-yellow-500 hover:bg-yellow-600" : "bg-gray-400 cursor-not-allowed"}
+              />
+            </div>
+            {/* Show today filter only for admin=2 */}
+            <div className="w-24">
+              <FilterButton
+                label="Oggi"
+                emoji="📅"
+                active={user && user.admin === 2 ? filters.showToday : false}
+                onClick={() => {
+                  if (user && user.admin === 2) {
+                    setFilters(prev => ({ ...prev, showToday: !prev.showToday }));
+                  }
+                }}
+                colorClass={user && user.admin === 2 ? "bg-teal-500 hover:bg-teal-600" : "bg-gray-400 cursor-not-allowed"}
               />
             </div>
           </div>
