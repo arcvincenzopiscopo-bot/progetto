@@ -588,7 +588,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Filter Buttons - Centered below search box, arranged in two rows */}
         {/* Same filters for all user types to maintain consistent layout */}
-        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-[1000] flex flex-col gap-[0.2cm] max-w-2xl">
+        <div className="absolute top-[5rem] left-1/2 transform -translate-x-1/2 z-[1500] flex flex-col gap-[0.2cm] max-w-2xl">
           <div className="flex gap-[0.2cm]">
             <FilterButton
               label="Cantiere"
