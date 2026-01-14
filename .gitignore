@@ -151,3 +151,13 @@ Thumbs.db
 # Webpack cache
 webpack-cache/
 .vercel
+
+# Production deployment exclusions (not needed in production)
+src/__tests__/
+scripts/
+DEPLOYMENT.md
+README.md
+logo512.svg
+progetto
+webpack.config.js
+postcss.config.js
