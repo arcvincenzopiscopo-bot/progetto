@@ -338,6 +338,26 @@ const DashboardPage: React.FC = () => {
   const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
     if (!newPoiLocation || !user) return;
 
+    // Check for existing POI with same coordinates
+    const { data: existingPois, error: checkError } = await supabase
+      .from('points')
+      .select('id')
+      .eq('latitudine', newPoiLocation.lat)
+      .eq('longitudine', newPoiLocation.lng);
+
+    if (checkError) {
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Error checking for duplicate POI:', checkError);
+      }
+      alert('Errore nel controllo dei duplicati. Riprova.');
+      return;
+    }
+
+    if (existingPois && existingPois.length > 0) {
+      alert('Esiste già un POI con queste coordinate. Non è possibile inserire duplicati.');
+      return;
+    }
+
     // Set creating state for visual feedback
     setCreatingNewPoi(true);
 
@@ -590,7 +610,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Filter Buttons - Centered below search box, arranged in two rows */}
         {/* Same filters for all user types to maintain consistent layout */}
-        <div className="absolute top-[5rem] left-1/2 transform -translate-x-1/2 z-[1500] flex flex-col gap-[0.2cm] max-w-2xl">
+        <div className="absolute top-[5rem] left-1/2 transform -translate-x-1/2 z-[500] flex flex-col gap-[0.2cm] max-w-2xl">
           <div className="flex gap-[0.2cm]">
             <div className="w-24">
               <FilterButton
@@ -719,7 +739,7 @@ const DashboardPage: React.FC = () => {
 
       {/* Add POI Modal - appears as overlay when clicking on map */}
       {showAddForm && newPoiLocation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[2000] modal-overlay-mobile">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[3000] modal-overlay-mobile">
           <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-4 modal-content-mobile">
             <Suspense fallback={<div className="text-center py-4">Caricamento...</div>}>
               <POIFormPopup
