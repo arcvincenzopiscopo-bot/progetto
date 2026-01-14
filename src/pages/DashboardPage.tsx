@@ -565,7 +565,7 @@ const DashboardPage: React.FC = () => {
       {/* Map Container - Full Height */}
       <div className="relative" style={{ height: '100vh' }}>
         {/* Search Box - Positioned on map, 1.5cm from top, narrower */}
-        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 w-full max-w-xs px-0 z-[2000]">
+        <div className="absolute top-6 left-1/2 transform -translate-x-1/2 w-full max-w-xs px-0 z-[1000]">
           <SearchBox
             onLocationSelect={handleLocationSelect}
             placeholder="Cerca indirizzo..."
@@ -610,7 +610,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Filter Buttons - Centered below search box, arranged in two rows */}
         {/* Same filters for all user types to maintain consistent layout */}
-        <div className="absolute top-[5rem] left-1/2 transform -translate-x-1/2 z-[1500] flex flex-col gap-[0.2cm] max-w-2xl">
+        <div className="absolute top-[5rem] left-1/2 transform -translate-x-1/2 z-[500] flex flex-col gap-[0.2cm] max-w-2xl">
           <div className="flex gap-[0.2cm]">
             <div className="w-24">
               <FilterButton
