@@ -57,6 +57,7 @@ export interface FilterState {
   showAltro: boolean;
   show2024: boolean;
   show2025: boolean;
+  showToday: boolean;
 }
 
 export interface User {
@@ -89,6 +90,7 @@ export interface MapComponentProps {
   filterShowAltro?: boolean;
   filterShow2024?: boolean;
   filterShow2025?: boolean;
+  filterShowToday?: boolean;
   height?: string;
   workingPoiId?: string | null;
   selectedPoiId?: string | null;
