@@ -588,7 +588,7 @@ const DashboardPage: React.FC = () => {
 
         {/* Filter Buttons - Right side of map, stacked vertically, moved lower, 1cm more to the right */}
         {/* Same filters for all user types to maintain consistent layout */}
-        <div className="absolute top-28 right-6 z-[1000] space-y-2">
+        <div className="absolute top-36 right-6 z-[1000] space-y-5">
           <FilterButton
             label="Cantiere"
             emoji="🏗️"
@@ -650,13 +650,18 @@ const DashboardPage: React.FC = () => {
           <button
             onClick={() => {
               if (currentPosition) {
-                setCurrentPosition([...currentPosition]);
+                // Reset mapCenter to center on user's current position
+                setMapCenter(null);
+                setMapZoom(13);
               } else {
                 if (navigator.geolocation) {
                   navigator.geolocation.getCurrentPosition(
                     (position) => {
                       const { latitude, longitude } = position.coords;
                       setCurrentPosition([latitude, longitude]);
+                      // Reset mapCenter to center on user's current position
+                      setMapCenter(null);
+                      setMapZoom(13);
                     },
                     (error) => {
                       console.error('Error getting location:', error);
