@@ -586,63 +586,67 @@ const DashboardPage: React.FC = () => {
           </MapErrorBoundary>
         </Suspense>
 
-        {/* Filter Buttons - Right side of map, stacked vertically, moved lower, 1cm more to the right */}
+        {/* Filter Buttons - Centered below search box, arranged in two rows */}
         {/* Same filters for all user types to maintain consistent layout */}
-        <div className="absolute top-36 right-6 z-[1000] space-y-5">
-          <FilterButton
-            label="Cantiere"
-            emoji="🏗️"
-            active={filters.showCantiere}
-            onClick={() => setFilters(prev => ({ ...prev, showCantiere: !prev.showCantiere }))}
-            colorClass="bg-orange-500 hover:bg-orange-600"
-          />
-          <FilterButton
-            label="Altro"
-            emoji="📍"
-            active={filters.showAltro}
-            onClick={() => setFilters(prev => ({ ...prev, showAltro: !prev.showAltro }))}
-            colorClass="bg-blue-500 hover:bg-blue-600"
-          />
-          <FilterButton
-            label="2024"
-            emoji="🟣"
-            active={filters.show2024}
-            onClick={() => setFilters(prev => ({ ...prev, show2024: !prev.show2024 }))}
-            colorClass="bg-purple-500 hover:bg-purple-600"
-          />
-          <FilterButton
-            label="2025"
-            emoji="🟦"
-            active={filters.show2025}
-            onClick={() => setFilters(prev => ({ ...prev, show2025: !prev.show2025 }))}
-            colorClass="bg-gray-600 hover:bg-gray-700"
-          />
-          <FilterButton
-            label="Ispezionabili"
-            emoji="🟢"
-            active={filters.showInspectable}
-            onClick={() => setFilters(prev => ({ ...prev, showInspectable: !prev.showInspectable }))}
-            colorClass="bg-green-500 hover:bg-green-600"
-          />
-          <FilterButton
-            label="Ispezionati"
-            emoji="🔴"
-            active={filters.showNonInspectable}
-            onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
-            colorClass="bg-red-500 hover:bg-red-600"
-          />
-          {/* Show pending approval filter for all users, but disable for admin=0 */}
-          <FilterButton
-            label="In attesa"
-            emoji="🟡"
-            active={user && user.admin !== undefined && user.admin >= 1 ? filters.showPendingApproval : false}
-            onClick={() => {
-              if (user && user.admin !== undefined && user.admin >= 1) {
-                setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }));
-              }
-            }}
-            colorClass={user && user.admin !== undefined && user.admin >= 1 ? "bg-yellow-500 hover:bg-yellow-600" : "bg-gray-400 cursor-not-allowed"}
-          />
+        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 z-[1000] flex flex-col gap-[0.2cm] max-w-2xl">
+          <div className="flex gap-[0.2cm]">
+            <FilterButton
+              label="Cantiere"
+              emoji="🏗️"
+              active={filters.showCantiere}
+              onClick={() => setFilters(prev => ({ ...prev, showCantiere: !prev.showCantiere }))}
+              colorClass="bg-orange-500 hover:bg-orange-600"
+            />
+            <FilterButton
+              label="Altro"
+              emoji="📍"
+              active={filters.showAltro}
+              onClick={() => setFilters(prev => ({ ...prev, showAltro: !prev.showAltro }))}
+              colorClass="bg-blue-500 hover:bg-blue-600"
+            />
+            <FilterButton
+              label="2024"
+              emoji="🟣"
+              active={filters.show2024}
+              onClick={() => setFilters(prev => ({ ...prev, show2024: !prev.show2024 }))}
+              colorClass="bg-purple-500 hover:bg-purple-600"
+            />
+            <FilterButton
+              label="2025"
+              emoji="🟦"
+              active={filters.show2025}
+              onClick={() => setFilters(prev => ({ ...prev, show2025: !prev.show2025 }))}
+              colorClass="bg-gray-600 hover:bg-gray-700"
+            />
+          </div>
+          <div className="flex gap-[0.2cm]">
+            <FilterButton
+              label="Ispezionabili"
+              emoji="🟢"
+              active={filters.showInspectable}
+              onClick={() => setFilters(prev => ({ ...prev, showInspectable: !prev.showInspectable }))}
+              colorClass="bg-green-500 hover:bg-green-600"
+            />
+            <FilterButton
+              label="Ispezionati"
+              emoji="🔴"
+              active={filters.showNonInspectable}
+              onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
+              colorClass="bg-red-500 hover:bg-red-600"
+            />
+            {/* Show pending approval filter for all users, but disable for admin=0 */}
+            <FilterButton
+              label="In attesa"
+              emoji="🟡"
+              active={user && user.admin !== undefined && user.admin >= 1 ? filters.showPendingApproval : false}
+              onClick={() => {
+                if (user && user.admin !== undefined && user.admin >= 1) {
+                  setFilters(prev => ({ ...prev, showPendingApproval: !prev.showPendingApproval }));
+                }
+              }}
+              colorClass={user && user.admin !== undefined && user.admin >= 1 ? "bg-yellow-500 hover:bg-yellow-600" : "bg-gray-400 cursor-not-allowed"}
+            />
+          </div>
         </div>
 
         {/* Center Map Button - 2cm higher, Bottom center */}
