@@ -36,6 +36,7 @@ const DashboardPage: React.FC = () => {
   });
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null); // Separate state for map centering
   const [mapZoom, setMapZoom] = useState<number>(13); // Separate state for map zoom level
+  const [mapKey, setMapKey] = useState<number>(0); // Force map re-render when needed
   const [workingPoiId, setWorkingPoiId] = useState<string | null>(null); // Track POI currently being worked on
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null); // Track POI currently selected
   const [creatingNewPoi, setCreatingNewPoi] = useState<boolean>(false); // Track if new POI is being created
@@ -555,6 +556,7 @@ const DashboardPage: React.FC = () => {
         <Suspense fallback={<MapSkeleton />}>
           <MapErrorBoundary>
             <MapComponent
+              key={mapKey}
               pois={pois}
               onMapClick={handleMapClick}
               initialPosition={currentPosition}
@@ -590,7 +592,7 @@ const DashboardPage: React.FC = () => {
         {/* Same filters for all user types to maintain consistent layout */}
         <div className="absolute top-[5rem] left-1/2 transform -translate-x-1/2 z-[1500] flex flex-col gap-[0.2cm] max-w-2xl">
           <div className="flex gap-[0.2cm]">
-            <div className="w-20">
+            <div className="w-24">
               <FilterButton
                 label="Cantiere"
                 emoji="🏗️"
@@ -599,7 +601,7 @@ const DashboardPage: React.FC = () => {
                 colorClass="bg-orange-500 hover:bg-orange-600"
               />
             </div>
-            <div className="w-20">
+            <div className="w-24">
               <FilterButton
                 label="Altro"
                 emoji="📍"
@@ -608,7 +610,7 @@ const DashboardPage: React.FC = () => {
                 colorClass="bg-blue-500 hover:bg-blue-600"
               />
             </div>
-            <div className="w-20">
+            <div className="w-24">
               <FilterButton
                 label="2024"
                 emoji="🟣"
@@ -617,7 +619,7 @@ const DashboardPage: React.FC = () => {
                 colorClass="bg-purple-500 hover:bg-purple-600"
               />
             </div>
-            <div className="w-20">
+            <div className="w-24">
               <FilterButton
                 label="2025"
                 emoji="🟦"
@@ -627,8 +629,8 @@ const DashboardPage: React.FC = () => {
               />
             </div>
           </div>
-          <div className="flex gap-[0.2cm]">
-            <div className="w-20">
+          <div className="flex gap-[0.2cm] justify-center">
+            <div className="w-24">
               <FilterButton
                 label="Ispezionabili"
                 emoji="🟢"
@@ -637,7 +639,7 @@ const DashboardPage: React.FC = () => {
                 colorClass="bg-green-500 hover:bg-green-600"
               />
             </div>
-            <div className="w-20">
+            <div className="w-24">
               <FilterButton
                 label="Ispezionati"
                 emoji="🔴"
@@ -647,7 +649,7 @@ const DashboardPage: React.FC = () => {
               />
             </div>
             {/* Show pending approval filter for all users, but disable for admin=0 */}
-            <div className="w-20">
+            <div className="w-24">
               <FilterButton
                 label="In attesa"
                 emoji="🟡"
@@ -668,18 +670,20 @@ const DashboardPage: React.FC = () => {
           <button
             onClick={() => {
               if (currentPosition) {
-                // Reset mapCenter to center on user's current position
-                setMapCenter(null);
+                // Center map on user's current position and force re-render
+                setMapCenter(currentPosition);
                 setMapZoom(13);
+                setMapKey(prev => prev + 1); // Force map re-render
               } else {
                 if (navigator.geolocation) {
                   navigator.geolocation.getCurrentPosition(
                     (position) => {
                       const { latitude, longitude } = position.coords;
                       setCurrentPosition([latitude, longitude]);
-                      // Reset mapCenter to center on user's current position
-                      setMapCenter(null);
+                      // Center map on the newly obtained position and force re-render
+                      setMapCenter([latitude, longitude]);
                       setMapZoom(13);
+                      setMapKey(prev => prev + 1); // Force map re-render
                     },
                     (error) => {
                       console.error('Error getting location:', error);
