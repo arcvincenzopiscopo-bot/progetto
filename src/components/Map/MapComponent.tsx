@@ -54,6 +54,7 @@ interface MapComponentProps {
   initialPosition?: [number, number];
   mapCenter?: [number, number] | null;
   mapZoom?: number;
+  mapBearing?: number; // Bearing (rotation) of the map in degrees
   onPoiUpdated?: (poiPosition?: [number, number], zoomLevel?: number, workingPoiId?: string) => void;
   onPoiSelect?: (poi: PointOfInterest | null) => void; // Callback when POI is selected/deselected
   currentTeam?: string;
@@ -117,7 +118,7 @@ const MapDeselectHandler: React.FC<{
 
 
 
-const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, currentUsername, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, filterShowToday = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
+const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, mapBearing = 0, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, currentUsername, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, filterShowToday = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
   // State for map center - initialize once and don't change on position updates
   const [centerPosition, setCenterPosition] = useState<[number, number]>(
     () => initialPosition || [41.9028, 12.4964]

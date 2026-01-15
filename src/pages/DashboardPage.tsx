@@ -37,6 +37,7 @@ const DashboardPage: React.FC = () => {
   });
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null); // Separate state for map centering
   const [mapZoom, setMapZoom] = useState<number>(13); // Separate state for map zoom level
+  const [mapBearing, setMapBearing] = useState<number>(0); // Map rotation (bearing) in degrees
   const [mapKey, setMapKey] = useState<number>(0); // Force map re-render when needed
   const [workingPoiId, setWorkingPoiId] = useState<string | null>(null); // Track POI currently being worked on
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null); // Track POI currently selected
@@ -264,9 +265,30 @@ const DashboardPage: React.FC = () => {
     // Monitor user's current location continuously (like GPS navigators)
     // IMPORTANT: This only uses native browser GPS - NO external API calls
     // OPTIMIZATION: GPS is stopped when app is in background to save battery
+    // FEATURE: Automatic map rotation based on movement direction
     let watchId: number | null = null;
     let lastUpdateTime = 0;
+    let previousPosition: [number, number] | null = null;
     const MIN_UPDATE_INTERVAL = 5000; // Minimum 5 seconds between updates
+
+    // Helper function to calculate bearing between two GPS points
+    const calculateBearing = (prevPos: [number, number], currentPos: [number, number]): number => {
+      const [lat1, lon1] = prevPos;
+      const [lat2, lon2] = currentPos;
+
+      // Convert to radians
+      const lat1Rad = lat1 * Math.PI / 180;
+      const lat2Rad = lat2 * Math.PI / 180;
+      const deltaLonRad = (lon2 - lon1) * Math.PI / 180;
+
+      // Calculate bearing using formula
+      const y = Math.sin(deltaLonRad) * Math.cos(lat2Rad);
+      const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(deltaLonRad);
+
+      // Calculate angle in degrees and normalize to 0-360
+      const bearing = Math.atan2(y, x) * 180 / Math.PI;
+      return (bearing + 360) % 360;
+    };
 
     // Helper function to start GPS monitoring
     const startGpsMonitoring = () => {
@@ -299,7 +321,16 @@ const DashboardPage: React.FC = () => {
               // Only update if moved more than 10 meters (accuracy check removed to avoid complexity)
               if (distance > 10) {
                 console.log('GPS: Position updated:', newPosition, 'Distance moved:', Math.round(distance), 'm, Accuracy:', accuracy, 'm, Time since last:', Math.round((currentTime - lastUpdateTime) / 1000), 's');
+
+                // Calculate bearing (direction of movement) and update map rotation
+                if (previousPosition) {
+                  const bearing = calculateBearing(previousPosition, newPosition);
+                  console.log('GPS: Movement bearing calculated:', Math.round(bearing), '°');
+                  setMapBearing(bearing);
+                }
+
                 lastUpdateTime = currentTime;
+                previousPosition = newPosition; // Update for next calculation
                 return newPosition;
               }
 
@@ -613,6 +644,7 @@ const DashboardPage: React.FC = () => {
               initialPosition={currentPosition}
               mapCenter={mapCenter}
               mapZoom={mapZoom}
+              mapBearing={mapBearing}
               onPoiUpdated={refreshPois}
               onPoiSelect={handlePoiSelect}
               currentTeam={user?.team}
@@ -731,8 +763,8 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Center Map Button - 2cm higher, Bottom center */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000]">
+        {/* Center Map & Compass Buttons - Bottom center */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-3">
           <button
             onClick={() => {
               if (currentPosition) {
@@ -766,6 +798,20 @@ const DashboardPage: React.FC = () => {
           >
             <span>📍</span>
             <span>Centra la mappa</span>
+          </button>
+
+          <button
+            onClick={() => {
+              // Orient map to current movement direction (bearing)
+              // If no direction available, orient to north (0°)
+              console.log('Compass: Orienting map to bearing:', mapBearing, '°');
+              // Force map re-render to apply new bearing
+              setMapKey(prev => prev + 1);
+            }}
+            className="bg-blue-600 text-white px-3 py-1.5 rounded-lg border border-blue-700 hover:bg-blue-700 font-medium transition-colors inline-flex items-center space-x-2 shadow-lg compass-button"
+          >
+            <span>🧭</span>
+            <span>Senso di marcia</span>
           </button>
         </div>
       </div>
