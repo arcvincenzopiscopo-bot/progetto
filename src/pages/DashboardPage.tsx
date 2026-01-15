@@ -262,17 +262,18 @@ const DashboardPage: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    // Monitor user's current location continuously (like GPS navigators)
-    // IMPORTANT: This only uses native browser GPS - NO external API calls
-    // OPTIMIZATION: GPS is stopped when app is in background to save battery
-    // FEATURE: Automatic map rotation based on movement direction
+    // Advanced direction tracking system with device sensors priority
+    // PRIORITY: Device sensors (compass) > GPS position calculation (fallback)
+    // OPTIMIZATION: GPS stopped when app in background to save battery
+
     let watchId: number | null = null;
     let lastUpdateTime = 0;
     let previousPosition: [number, number] | null = null;
+    let sensorListener: ((event: DeviceOrientationEvent) => void) | null = null;
     const MIN_UPDATE_INTERVAL = 5000; // Minimum 5 seconds between updates
 
-    // Helper function to calculate bearing between two GPS points
-    const calculateBearing = (prevPos: [number, number], currentPos: [number, number]): number => {
+    // Helper function to calculate bearing from GPS positions (fallback)
+    const calculateBearingFromGPS = (prevPos: [number, number], currentPos: [number, number]): number => {
       const [lat1, lon1] = prevPos;
       const [lat2, lon2] = currentPos;
 
@@ -290,8 +291,20 @@ const DashboardPage: React.FC = () => {
       return (bearing + 360) % 360;
     };
 
-    // Helper function to start GPS monitoring
-    const startGpsMonitoring = () => {
+    // Device orientation handler (compass sensor)
+    const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
+      if (event.alpha !== null) {
+        // alpha = rotation around Z-axis (compass heading)
+        // Invert for standard compass orientation
+        const heading = 360 - event.alpha;
+        setMapBearing(heading);
+      }
+    };
+
+    // GPS fallback direction tracking
+    const startGPSDirectionTracking = () => {
+      console.log('Direction: Starting GPS-based direction tracking (sensor fallback)');
+
       if (navigator.geolocation && watchId === null) {
         watchId = navigator.geolocation.watchPosition(
           (position) => {
@@ -322,10 +335,10 @@ const DashboardPage: React.FC = () => {
               if (distance > 10) {
                 console.log('GPS: Position updated:', newPosition, 'Distance moved:', Math.round(distance), 'm, Accuracy:', accuracy, 'm, Time since last:', Math.round((currentTime - lastUpdateTime) / 1000), 's');
 
-                // Calculate bearing (direction of movement) and update map rotation
+                // Calculate bearing from GPS movement (fallback only)
                 if (previousPosition) {
-                  const bearing = calculateBearing(previousPosition, newPosition);
-                  console.log('GPS: Movement bearing calculated:', Math.round(bearing), '°');
+                  const bearing = calculateBearingFromGPS(previousPosition, newPosition);
+                  console.log('GPS Direction: Movement bearing calculated:', Math.round(bearing), '°');
                   setMapBearing(bearing);
                 }
 
@@ -359,7 +372,49 @@ const DashboardPage: React.FC = () => {
       }
     };
 
-    // Helper function to stop GPS monitoring
+    // Initialize direction tracking system
+    const initializeDirectionTracking = async () => {
+      console.log('Direction: Initializing advanced direction tracking system');
+
+      // Check if device orientation sensors are available
+      if (typeof DeviceOrientationEvent !== 'undefined') {
+        console.log('Direction: Device sensors available, requesting permissions');
+
+        // iOS requires explicit permission request
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+        if (isIOS && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
+          try {
+            console.log('Direction: Requesting iOS sensor permissions');
+            const permission = await (DeviceOrientationEvent as any).requestPermission();
+
+            if (permission === 'granted') {
+              console.log('Direction: iOS sensor permission granted, activating compass');
+              // Add device orientation listener
+              sensorListener = handleDeviceOrientation;
+              window.addEventListener('deviceorientation', sensorListener);
+            } else {
+              console.log('Direction: iOS sensor permission denied, using GPS fallback');
+              startGPSDirectionTracking();
+            }
+          } catch (error) {
+            console.error('Direction: Error requesting iOS sensor permission:', error);
+            console.log('Direction: Falling back to GPS tracking');
+            startGPSDirectionTracking();
+          }
+        } else {
+          // Android/Desktop - sensors available directly
+          console.log('Direction: Activating device sensors (Android/Desktop)');
+          sensorListener = handleDeviceOrientation;
+          window.addEventListener('deviceorientation', sensorListener);
+        }
+      } else {
+        console.log('Direction: Device sensors not supported, using GPS fallback');
+        startGPSDirectionTracking();
+      }
+    };
+
+    // Stop GPS monitoring (for battery optimization)
     const stopGpsMonitoring = () => {
       if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId);
@@ -368,32 +423,43 @@ const DashboardPage: React.FC = () => {
       }
     };
 
-    // Handle page visibility changes to save battery
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Page is hidden (app in background) - stop GPS to save battery
-        console.log('GPS: Page hidden - stopping GPS monitoring to save battery');
-        stopGpsMonitoring();
-      } else {
-        // Page is visible again - restart GPS monitoring
-        console.log('GPS: Page visible - restarting GPS monitoring');
-        startGpsMonitoring();
+    // Stop sensor tracking
+    const stopSensorTracking = () => {
+      if (sensorListener) {
+        window.removeEventListener('deviceorientation', sensorListener);
+        console.log('Direction: Stopped sensor tracking');
+        sensorListener = null;
       }
     };
 
-    // Start GPS monitoring initially if page is visible
+    // Handle page visibility changes to save battery
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is hidden (app in background) - stop all tracking to save battery
+        console.log('Tracking: Page hidden - stopping all tracking to save battery');
+        stopGpsMonitoring();
+        stopSensorTracking();
+      } else {
+        // Page is visible again - restart direction tracking
+        console.log('Tracking: Page visible - restarting direction tracking');
+        initializeDirectionTracking();
+      }
+    };
+
+    // Start direction tracking initially if page is visible
     if (!document.hidden) {
-      startGpsMonitoring();
+      initializeDirectionTracking();
     }
 
     // Add visibility change listener
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Cleanup function to stop watching position and remove listeners when component unmounts
+    // Cleanup function when component unmounts
     return () => {
       stopGpsMonitoring();
+      stopSensorTracking();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      console.log('GPS: Component unmounted - cleanup complete');
+      console.log('Direction: Component unmounted - cleanup complete');
     };
   }, []);
 
