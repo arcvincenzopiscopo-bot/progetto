@@ -714,18 +714,18 @@ const DashboardPage: React.FC = () => {
                 colorClass={user && user.admin !== undefined && user.admin >= 1 ? "bg-yellow-500 hover:bg-yellow-600" : "bg-gray-400 cursor-not-allowed"}
               />
             </div>
-            {/* Show today filter only for admin=2 */}
+            {/* Show today filter for admin=1 and admin=2 */}
             <div className="w-24">
               <FilterButton
                 label="Oggi"
                 emoji="📅"
-                active={user && user.admin === 2 ? filters.showToday : false}
+                active={user && user.admin !== undefined && user.admin >= 1 ? filters.showToday : false}
                 onClick={() => {
-                  if (user && user.admin === 2) {
+                  if (user && user.admin !== undefined && user.admin >= 1) {
                     setFilters(prev => ({ ...prev, showToday: !prev.showToday }));
                   }
                 }}
-                colorClass={user && user.admin === 2 ? "bg-teal-500 hover:bg-teal-600" : "bg-gray-400 cursor-not-allowed"}
+                colorClass={user && user.admin !== undefined && user.admin >= 1 ? "bg-teal-500 hover:bg-teal-600" : "bg-gray-400 cursor-not-allowed"}
               />
             </div>
           </div>
