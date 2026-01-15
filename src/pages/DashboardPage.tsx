@@ -763,8 +763,8 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Center Map & Compass Buttons - Bottom center */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-3">
+        {/* Center Map & Direction Buttons - Bottom center */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-2">
           <button
             onClick={() => {
               if (currentPosition) {
@@ -794,24 +794,24 @@ const DashboardPage: React.FC = () => {
                 }
               }
             }}
-            className="bg-red-600 text-white px-3 py-1.5 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center space-x-2 shadow-lg center-map-button"
+            className="bg-red-600 text-white px-4 py-2 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center justify-center space-x-2 shadow-lg center-map-button min-w-[120px]"
           >
             <span>📍</span>
-            <span>Centra la mappa</span>
+            <span>Centra</span>
           </button>
 
           <button
             onClick={() => {
               // Orient map to current movement direction (bearing)
               // If no direction available, orient to north (0°)
-              console.log('Compass: Orienting map to bearing:', mapBearing, '°');
+              console.log('Direction: Orienting map to bearing:', mapBearing, '°');
               // Force map re-render to apply new bearing
               setMapKey(prev => prev + 1);
             }}
-            className="bg-blue-600 text-white px-3 py-1.5 rounded-lg border border-blue-700 hover:bg-blue-700 font-medium transition-colors inline-flex items-center space-x-2 shadow-lg compass-button"
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg border border-blue-700 hover:bg-blue-700 font-medium transition-colors inline-flex items-center justify-center space-x-2 shadow-lg direction-button min-w-[120px]"
           >
-            <span>🧭</span>
-            <span>Senso di marcia</span>
+            <span>➡️</span>
+            <span>Marcia</span>
           </button>
         </div>
       </div>
