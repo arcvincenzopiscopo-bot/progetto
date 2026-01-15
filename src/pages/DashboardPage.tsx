@@ -263,76 +263,106 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     // Monitor user's current location continuously (like GPS navigators)
     // IMPORTANT: This only uses native browser GPS - NO external API calls
+    // OPTIMIZATION: GPS is stopped when app is in background to save battery
     let watchId: number | null = null;
     let lastUpdateTime = 0;
     const MIN_UPDATE_INTERVAL = 5000; // Minimum 5 seconds between updates
 
-    if (navigator.geolocation) {
-      // Use watchPosition to continuously monitor location changes
-      watchId = navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude, accuracy } = position.coords;
-          const newPosition: [number, number] = [latitude, longitude];
-          const currentTime = Date.now();
+    // Helper function to start GPS monitoring
+    const startGpsMonitoring = () => {
+      if (navigator.geolocation && watchId === null) {
+        watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            const { latitude, longitude, accuracy } = position.coords;
+            const newPosition: [number, number] = [latitude, longitude];
+            const currentTime = Date.now();
 
-          // Throttle updates to prevent excessive API calls
-          if (currentTime - lastUpdateTime < MIN_UPDATE_INTERVAL) {
-            return; // Skip this update
-          }
-
-          // Update position only if it's significantly different or first time
-          setCurrentPosition((prevPosition) => {
-            if (!prevPosition) {
-              console.log('GPS: Initial position set:', newPosition, 'Accuracy:', accuracy, 'meters');
-              lastUpdateTime = currentTime;
-              return newPosition;
+            // Throttle updates to prevent excessive API calls
+            if (currentTime - lastUpdateTime < MIN_UPDATE_INTERVAL) {
+              return; // Skip this update
             }
 
-            // Calculate distance between old and new position
-            const distance = Math.sqrt(
-              Math.pow((newPosition[0] - prevPosition[0]) * 111320, 2) + // 111320 meters per degree latitude
-              Math.pow((newPosition[1] - prevPosition[1]) * 111320 * Math.cos(newPosition[0] * Math.PI / 180), 2) // Adjust for longitude
-            );
+            // Update position only if it's significantly different or first time
+            setCurrentPosition((prevPosition) => {
+              if (!prevPosition) {
+                console.log('GPS: Initial position set:', newPosition, 'Accuracy:', accuracy, 'meters');
+                lastUpdateTime = currentTime;
+                return newPosition;
+              }
 
-            // Only update if moved more than 10 meters (accuracy check removed to avoid complexity)
-            if (distance > 10) {
-              console.log('GPS: Position updated:', newPosition, 'Distance moved:', Math.round(distance), 'm, Accuracy:', accuracy, 'm, Time since last:', Math.round((currentTime - lastUpdateTime) / 1000), 's');
-              lastUpdateTime = currentTime;
-              return newPosition;
+              // Calculate distance between old and new position
+              const distance = Math.sqrt(
+                Math.pow((newPosition[0] - prevPosition[0]) * 111320, 2) + // 111320 meters per degree latitude
+                Math.pow((newPosition[1] - prevPosition[1]) * 111320 * Math.cos(newPosition[0] * Math.PI / 180), 2) // Adjust for longitude
+              );
+
+              // Only update if moved more than 10 meters (accuracy check removed to avoid complexity)
+              if (distance > 10) {
+                console.log('GPS: Position updated:', newPosition, 'Distance moved:', Math.round(distance), 'm, Accuracy:', accuracy, 'm, Time since last:', Math.round((currentTime - lastUpdateTime) / 1000), 's');
+                lastUpdateTime = currentTime;
+                return newPosition;
+              }
+
+              return prevPosition;
+            });
+          },
+          (error) => {
+            console.error('GPS Error:', error.message);
+            if (error.code === 1) {
+              console.warn('GPS: User denied location access');
+            } else if (error.code === 2) {
+              console.warn('GPS: Position unavailable');
+            } else if (error.code === 3) {
+              console.warn('GPS: Position request timeout');
             }
-
-            return prevPosition;
-          });
-        },
-        (error) => {
-          console.error('GPS Error:', error.message);
-          if (error.code === 1) {
-            console.warn('GPS: User denied location access');
-          } else if (error.code === 2) {
-            console.warn('GPS: Position unavailable');
-          } else if (error.code === 3) {
-            console.warn('GPS: Position request timeout');
+            // Don't set position to undefined to avoid losing existing position
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 20000, // Increased timeout to reduce failed requests
+            maximumAge: 60000 // Allow cached positions up to 1 minute old
           }
-          // Don't set position to undefined to avoid losing existing position
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 20000, // Increased timeout to reduce failed requests
-          maximumAge: 60000 // Allow cached positions up to 1 minute old
-        }
-      );
+        );
 
-      console.log('GPS: Started watching position with ID:', watchId, '- No external API calls');
-    } else {
-      console.error('GPS: Geolocation is not supported by this browser.');
-    }
+        console.log('GPS: Started watching position with ID:', watchId, '- Battery optimized');
+      }
+    };
 
-    // Cleanup function to stop watching position when component unmounts
-    return () => {
+    // Helper function to stop GPS monitoring
+    const stopGpsMonitoring = () => {
       if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId);
-        console.log('GPS: Stopped watching position with ID:', watchId);
+        console.log('GPS: Stopped watching position with ID:', watchId, '- Battery saved');
+        watchId = null;
       }
+    };
+
+    // Handle page visibility changes to save battery
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Page is hidden (app in background) - stop GPS to save battery
+        console.log('GPS: Page hidden - stopping GPS monitoring to save battery');
+        stopGpsMonitoring();
+      } else {
+        // Page is visible again - restart GPS monitoring
+        console.log('GPS: Page visible - restarting GPS monitoring');
+        startGpsMonitoring();
+      }
+    };
+
+    // Start GPS monitoring initially if page is visible
+    if (!document.hidden) {
+      startGpsMonitoring();
+    }
+
+    // Add visibility change listener
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Cleanup function to stop watching position and remove listeners when component unmounts
+    return () => {
+      stopGpsMonitoring();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      console.log('GPS: Component unmounted - cleanup complete');
     };
   }, []);
 
