@@ -66,7 +66,7 @@ const POIFormPopup: React.FC<POIFormPopupProps> = ({ location, onAddPoi, onCance
 
         <div>
           <label htmlFor="add-poi-ispezionabile" className="block text-sm font-medium text-gray-700 mb-1">
-            Ispezionabile
+            Segnalarlo come ispezionabile?
           </label>
           <select
             id="add-poi-ispezionabile"
