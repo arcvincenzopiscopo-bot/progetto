@@ -118,8 +118,18 @@ const MapDeselectHandler: React.FC<{
 
 
 const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, currentUsername, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, filterShowToday = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
-  // Use mapCenter if provided, otherwise use initialPosition, otherwise default to Rome coordinates
-  const centerPosition: [number, number] = mapCenter || initialPosition || [41.9028, 12.4964];
+  // State for map center - initialize once and don't change on position updates
+  const [centerPosition, setCenterPosition] = useState<[number, number]>(
+    () => initialPosition || [41.9028, 12.4964]
+  );
+
+  // Update center when mapCenter prop changes (explicit centering)
+  useEffect(() => {
+    if (mapCenter) {
+      setCenterPosition(mapCenter);
+    }
+  }, [mapCenter]);
+
   const [mapKey, setMapKey] = useState(Date.now());
 
   // State for editing POI addresses
@@ -184,12 +194,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
     }
   };
 
-  useEffect(() => {
-    // Force re-render when initialPosition changes
-    if (initialPosition) {
-      setMapKey(Date.now());
-    }
-  }, [initialPosition]);
+
 
   useEffect(() => {
     // Force re-render when mapCenter or mapZoom changes (for centering on POI actions)
