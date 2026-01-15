@@ -122,12 +122,12 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
   const centerPosition: [number, number] = mapCenter || initialPosition || [41.9028, 12.4964];
   const [mapKey, setMapKey] = useState(Date.now());
 
-  // State for editing historical POI addresses
+  // State for editing POI addresses
   const [editingAddress, setEditingAddress] = useState<{ [key: string]: string | undefined }>({});
   const [updatingAddress, setUpdatingAddress] = useState<Set<string>>(new Set());
 
-  // Handle address editing for historical POIs
-  const handleAddressEdit = async (poiId: string, newAddress: string, anno: number) => {
+  // Handle address editing for all POIs (historical and current)
+  const handleAddressEdit = async (poiId: string, newAddress: string, anno?: number) => {
     if (!newAddress.trim() || updatingAddress.has(poiId)) return;
 
     setUpdatingAddress(prev => new Set(prev).add(poiId));
@@ -149,7 +149,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
       }
 
       // Determine which table to update based on year
-      const tableName = anno === 2024 ? 'points_old_2024' : 'points_old_2025';
+      const tableName = anno ? (anno === 2024 ? 'points_old_2024' : 'points_old_2025') : 'points';
 
       const { error } = await supabase
         .from(tableName)
@@ -330,31 +330,26 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
                      poi.ispezionabile === 2 ? 'Creato in data: ' : ''}
                     {new Date(poi.created_at).toLocaleString()}
                   </p>
-                  {poi.anno ? (
-                    // Editable address for historical POIs
-                    <div className="mb-1">
-                      <label className="block text-xs text-gray-500 mb-1">Indirizzo (modificabile):</label>
-                      <input
-                        type="text"
-                        value={editingAddress[poi.id] !== undefined ? editingAddress[poi.id] : poi.indirizzo || ''}
-                        onChange={(e) => setEditingAddress(prev => ({ ...prev, [poi.id]: e.target.value }))}
-                        onBlur={(e) => handleAddressEdit(poi.id, e.target.value, poi.anno!)}
-                        disabled={updatingAddress.has(poi.id)}
-                        className={`w-full px-2 py-1 text-sm border rounded ${
-                          updatingAddress.has(poi.id)
-                            ? 'bg-gray-100 border-gray-300 cursor-not-allowed'
-                            : 'bg-white border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
-                        }`}
-                        placeholder="Inserisci indirizzo..."
-                      />
-                      {updatingAddress.has(poi.id) && (
-                        <span className="text-xs text-blue-600 ml-2">🔄 Aggiornando...</span>
-                      )}
-                    </div>
-                  ) : (
-                    // Read-only address for current POIs
-                    <p className="text-sm text-gray-600 mb-1">Indirizzo: {poi.indirizzo || 'N/D'}</p>
-                  )}
+                  {/* Editable address for all POIs */}
+                  <div className="mb-1">
+                    <label className="block text-xs text-gray-500 mb-1">Indirizzo (modificabile):</label>
+                    <input
+                      type="text"
+                      value={editingAddress[poi.id] !== undefined ? editingAddress[poi.id] : poi.indirizzo || ''}
+                      onChange={(e) => setEditingAddress(prev => ({ ...prev, [poi.id]: e.target.value }))}
+                      onBlur={(e) => handleAddressEdit(poi.id, e.target.value, poi.anno)}
+                      disabled={updatingAddress.has(poi.id)}
+                      className={`w-full px-2 py-1 text-sm border rounded ${
+                        updatingAddress.has(poi.id)
+                          ? 'bg-gray-100 border-gray-300 cursor-not-allowed'
+                          : 'bg-white border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
+                      }`}
+                      placeholder="Inserisci indirizzo..."
+                    />
+                    {updatingAddress.has(poi.id) && (
+                      <span className="text-xs text-blue-600 ml-2">🔄 Aggiornando...</span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-600 mb-1">Username: {poi.username || 'N/D'}</p>
                   <p className="text-sm text-gray-600 mb-1">Team: {poi.team || 'N/D'}</p>
                   <p className="text-sm text-gray-600 mb-1">Tipo: {poi.tipo || 'N/D'}</p>
