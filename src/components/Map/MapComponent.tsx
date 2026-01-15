@@ -417,31 +417,18 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
                         let buttonClass = "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
 
                         // Determine if user can delete this POI
-                        if (adminLevel === 2 && poi.ispezionabile === 0) {
+                        // Admin level 2 and 1 can always delete existing POIs
+                        if (adminLevel >= 1) {
                           canDelete = true;
-                        } else if (adminLevel === 1 && poi.ispezionabile === 0) {
-                          const poiDate = new Date(poi.created_at);
-                          const today = new Date();
-                          const isCreatedToday = poiDate.getDate() === today.getDate() &&
-                                                 poiDate.getMonth() === today.getMonth() &&
-                                                 poiDate.getFullYear() === today.getFullYear();
-                          if (isCreatedToday) canDelete = true;
-                        } else if (adminLevel === 0 && poi.ispezionabile === 0) {
+                        }
+                        // Admin level 0 can delete green and red POIs if created by them today
+                        else if (adminLevel === 0 && (poi.ispezionabile === 1 || poi.ispezionabile === 0)) {
                           const poiDate = new Date(poi.created_at);
                           const today = new Date();
                           const isCreatedToday = poiDate.getDate() === today.getDate() &&
                                                  poiDate.getMonth() === today.getMonth() &&
                                                  poiDate.getFullYear() === today.getFullYear();
                           if (isCreatedToday && poi.username === currentUsername) canDelete = true;
-                        } else if (adminLevel >= 1 && poi.ispezionabile === 2) {
-                          canDelete = true;
-                        } else if (adminLevel === 0 && poi.ispezionabile === 2) {
-                          const poiDate = new Date(poi.created_at);
-                          const today = new Date();
-                          const isCreatedToday = poiDate.getDate() === today.getDate() &&
-                                                 poiDate.getMonth() === today.getMonth() &&
-                                                 poiDate.getFullYear() === today.getFullYear();
-                          if (isCreatedToday) canDelete = true;
                         }
 
                         if (canDelete) {
