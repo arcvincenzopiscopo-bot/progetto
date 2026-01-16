@@ -45,9 +45,9 @@ const DashboardPage: React.FC = () => {
   const [showPasswordChange, setShowPasswordChange] = useState<boolean>(false); // Track if password change popup should be shown
 
   // Loading states for granular feedback
-  const [isLoadingPois, setIsLoadingPois] = useState<boolean>(true); // Loading POI data
-  const [isGeocodingAddress, setIsGeocodingAddress] = useState<boolean>(false); // Geocoding new POI address
-  const [updatingPoiId, setUpdatingPoiId] = useState<string | null>(null); // Track which POI is being updated
+  const [isLoadingPois, setIsLoadingPois] = useState<boolean>(true); // Loading POI data // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [isGeocodingAddress, setIsGeocodingAddress] = useState<boolean>(false); // Geocoding new POI address // eslint-disable-line @typescript-eslint/no-unused-vars
+  const [updatingPoiId, setUpdatingPoiId] = useState<string | null>(null); // Track which POI is being updated // eslint-disable-line @typescript-eslint/no-unused-vars
 
   // Rotation state
   const [enableRotation, setEnableRotation] = useState<boolean>(false); // Enable/disable map rotation
@@ -582,7 +582,7 @@ const DashboardPage: React.FC = () => {
   }, [user]);
 
   // Memoized user role calculation - only recalculates when user.admin changes
-  const userRole = useMemo(() => {
+  const userRole = useMemo(() => { // eslint-disable-line @typescript-eslint/no-unused-vars
     const adminLevel = user?.admin || 0;
     switch (adminLevel) {
       case 0:

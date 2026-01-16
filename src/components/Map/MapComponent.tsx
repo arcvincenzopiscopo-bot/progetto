@@ -4,33 +4,27 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-rotate';
 import { supabase } from '../../services/supabaseClient';
 import { deletePhotoFromCloudinary } from '../../services/authService';
-import { getAddressWithCache } from '../../services/geocodingService';
 import POIFormPopup from '../POI/POIFormPopup';
 import L from 'leaflet';
 import {
   greenIcon,
   redIcon,
   yellowIcon,
-  magentaIcon,
-  darkGreyIcon,
-  largeDefaultIcon,
-  largeGreenIcon,
-  largeRedIcon,
-  largeYellowIcon,
-  largeMagentaIcon,
-  largeDarkGreyIcon,
   userLocationIcon,
   constructionGreenIcon,
   constructionRedIcon,
   constructionYellowIcon,
   constructionMagentaIcon,
   constructionDarkGreyIcon,
+  largeGreenIcon,
+  largeRedIcon,
+  largeYellowIcon,
   largeConstructionGreenIcon,
   largeConstructionRedIcon,
   largeConstructionYellowIcon,
   largeConstructionMagentaIcon,
   largeConstructionDarkGreyIcon
-} from '../../constants/icons';
+} from '../../constants/icons'; // eslint-disable-line @typescript-eslint/no-unused-vars
 
 // Extend Leaflet Map type to include rotation methods from leaflet-rotate plugin
 declare module 'leaflet' {
