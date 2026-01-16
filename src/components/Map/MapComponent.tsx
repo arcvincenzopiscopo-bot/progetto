@@ -3,6 +3,15 @@ import Map, { Marker, Popup, NavigationControl, GeolocateControl, MapRef, MapLay
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../../services/supabaseClient';
 import { deletePhotoFromCloudinary } from '../../services/authService';
+
+// Debounce utility function for performance optimization
+const debounce = (func: Function, wait: number) => {
+  let timeout: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(null, args), wait);
+  };
+};
 import {
   greenIcon,
   redIcon,
@@ -74,7 +83,7 @@ interface MapComponentProps {
 
 
 
-// GPS Rotation Handler for MapLibre GL JS
+// GPS Rotation Handler for MapLibre GL JS - Optimized
 const GPSRotationHandler: React.FC<{
   enableRotation?: boolean;
   heading?: number | null;
@@ -86,10 +95,10 @@ const GPSRotationHandler: React.FC<{
     const map = mapRef.current;
     const targetBearing = -heading; // Negative because GPS heading is clockwise from north
 
-    // Only update if bearing changed significantly
+    // Only update if bearing changed significantly (increased threshold for better performance)
     const currentBearing = map.getBearing();
-    if (Math.abs(currentBearing - targetBearing) > 1) {
-      map.rotateTo(targetBearing, { duration: 500 });
+    if (Math.abs(currentBearing - targetBearing) > 2) { // Increased from 1 to 2 degrees
+      map.rotateTo(targetBearing, { duration: 200 }); // Reduced from 500 to 200ms
 
       if (process.env.NODE_ENV === 'development') {
         console.log(`GPS rotation: ${targetBearing.toFixed(1)}° (heading: ${heading.toFixed(1)}°)`);
@@ -319,7 +328,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
     }
   };
 
-  // Filter POIs based on current filters
+  // Filter POIs based on current filters and viewport for performance
   const filteredPois = pois.filter((poi) => {
     // Always exclude soft deleted POIs (ispezionabile === 4)
     if (poi.ispezionabile === 4) return false;
@@ -349,11 +358,41 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
     return true;
   });
 
+  // Virtualize markers: only render markers in viewport + margin for better performance
+  const visiblePois = filteredPois.filter((poi) => {
+    // If zoom is high enough (>12), show all filtered POIs
+    // If zoom is lower, only show POIs in current viewport + margin
+    if (viewState.zoom > 12) return true;
+
+    // Calculate viewport bounds with margin
+    const margin = 0.01; // ~1km margin
+    const bounds = {
+      north: viewState.latitude + (viewState.zoom * 0.01) + margin,
+      south: viewState.latitude - (viewState.zoom * 0.01) - margin,
+      east: viewState.longitude + (viewState.zoom * 0.01) + margin,
+      west: viewState.longitude - (viewState.zoom * 0.01) - margin
+    };
+
+    // Check if POI is within viewport bounds
+    return poi.latitudine >= bounds.south &&
+           poi.latitudine <= bounds.north &&
+           poi.longitudine >= bounds.west &&
+           poi.longitudine <= bounds.east;
+  });
+
+  // Debounced view state update for better performance
+  const debouncedSetViewState = useCallback(
+    debounce((newViewState: any) => {
+      setViewState(newViewState);
+    }, 100), // 100ms debounce delay
+    []
+  );
+
   return (
     <div style={{ height: height || '100%', width: '100%', position: 'relative' }}>
       <Map
         {...viewState}
-        onMove={(evt: any) => setViewState(evt.viewState)}
+        onMove={(evt: any) => debouncedSetViewState(evt.viewState)}
         onClick={handleMapClick}
         ref={mapRef}
         style={{ width: '100%', height: '100%' }}
@@ -401,8 +440,8 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
           </Marker>
         )}
 
-        {/* POI markers */}
-        {filteredPois.map((poi) => {
+        {/* POI markers - using virtualized visible POIs for better performance */}
+        {visiblePois.map((poi) => {
           // Determine marker color and icon based on POI status and year
           const isWorkingOrSelected = workingPoiId === poi.id || selectedPoiId === poi.id;
           const isConstructionType = poi.tipo === 'cantiere';
