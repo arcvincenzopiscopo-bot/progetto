@@ -539,7 +539,7 @@ const DashboardPage: React.FC = () => {
       setMapCenter(poiPosition);
       setMapZoom(zoomLevel);
     }
-  }, [fetchPois]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // Remove fetchPois dependency - it's stable
 
 
 
