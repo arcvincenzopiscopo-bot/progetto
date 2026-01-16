@@ -232,9 +232,9 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
 }) => {
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState({
-    longitude: initialPosition?.[1] || 12.4964,
-    latitude: initialPosition?.[0] || 41.9028,
-    zoom: mapZoom || 13,
+    longitude: initialPosition?.[1] || 12.4964, // Back to Rome (original position)
+    latitude: initialPosition?.[0] || 41.9028,  // Back to Rome (original position)
+    zoom: mapZoom || 13,                        // Back to city zoom (original)
     bearing: 0,
     pitch: 0
   });
@@ -267,6 +267,8 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
       }));
     }
   }, [mapCenter, mapZoom]);
+
+
 
   // Handle map clicks
   const handleMapClick = useCallback((event: MapLayerMouseEvent) => {
@@ -375,44 +377,30 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
     return true;
   });
 
-  // Virtualize markers: only render markers in viewport + margin for better performance
-  const visiblePois = filteredPois.filter((poi) => {
-    // If zoom is high enough (>12), show all filtered POIs
-    // If zoom is lower, only show POIs in current viewport + margin
-    if (viewState.zoom > 12) return true;
+  // DISABLED: Virtualize markers for MAXIMUM FLUIDITY - show all filtered POIs always
+  // This consumes more resources but provides buttery smooth navigation
+  const visiblePois = filteredPois; // Always render all filtered POIs
 
-    // Calculate viewport bounds with margin
-    const margin = 0.01; // ~1km margin
-    const bounds = {
-      north: viewState.latitude + (viewState.zoom * 0.01) + margin,
-      south: viewState.latitude - (viewState.zoom * 0.01) - margin,
-      east: viewState.longitude + (viewState.zoom * 0.01) + margin,
-      west: viewState.longitude - (viewState.zoom * 0.01) - margin
-    };
-
-    // Check if POI is within viewport bounds
-    return poi.latitudine >= bounds.south &&
-           poi.latitudine <= bounds.north &&
-           poi.longitudine >= bounds.west &&
-           poi.longitudine <= bounds.east;
-  });
-
-  // Debounced view state update for better performance
-  const debouncedSetViewState = useCallback(
-    debounce((newViewState: any) => {
-      setViewState(newViewState);
-    }, 100), // 100ms debounce delay
-    []
-  );
+  // DISABLED: Debounced view state update for MAXIMUM FLUIDITY
+  // Direct state updates for buttery smooth navigation (higher resource usage)
 
   return (
     <div style={{ height: height || '100%', width: '100%', position: 'relative' }}>
       <Map
         {...viewState}
-        onMove={(evt: any) => debouncedSetViewState(evt.viewState)}
+        onMove={(evt: any) => setViewState(evt.viewState)} // Direct updates for maximum fluidity
         onClick={handleMapClick}
         ref={mapRef}
         style={{ width: '100%', height: '100%' }}
+
+        // Advanced MapLibre GL JS optimizations for global navigation
+        minZoom={1}                           // Global view
+        maxZoom={20}                          // Street level detail
+        dragRotate={false}                    // No accidental mouse rotation
+        touchZoomRotate={true}                // Keep manual mobile rotation
+        renderWorldCopies={false}             // No world copies for cleaner map
+        pitchWithRotate={false}               // No tilt during rotation
+
         mapStyle={{
           version: 8,
           sources: {
@@ -420,13 +408,20 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
               type: 'raster',
               tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
               tileSize: 256,
-              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+              // Performance optimization for raster tiles
+              maxzoom: 20,
+              minzoom: 0
             }
           },
           layers: [{
             id: 'osm-layer',
             type: 'raster',
-            source: 'osm'
+            source: 'osm',
+            // Additional performance hints
+            paint: {
+              'raster-fade-duration': 0  // Instant tile transitions
+            }
           }]
         }}
       >
@@ -474,10 +469,15 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
 
           let markerColor = '#10B981'; // Default green for inspectable
           let markerIcon = '✅'; // Default checkmark for inspectable
-          let markerSize = 30;
+
+          // Scalable marker size based on zoom level for better usability at high zoom
+          const baseSize = 30;
+          const selectedSize = 45;
+          const zoomScale = Math.max(0, (viewState.zoom - 10) * 2); // Scale factor starting from zoom 10
+          let markerSize = Math.min(baseSize + zoomScale, 60); // Max 60px to avoid oversized markers
 
           if (isWorkingOrSelected) {
-            markerSize = 45; // Larger for selected/working
+            markerSize = Math.min(selectedSize + zoomScale, 75); // Larger for selected/working, max 75px
           }
 
           // Icon based on POI type
@@ -797,7 +797,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                             createSegnalaInattivitaButton()      // Slot 5: Only for green cantieri
                           ];
 
-                          // Return fixed layout with 2 rows (3 buttons + 2 buttons)
+                          // Return fixed layout with 2 rows (3 buttons each)
                           return (
                             <>
                               <div className="flex gap-2">
@@ -805,6 +805,16 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                               </div>
                               <div className="flex gap-2">
                                 {buttonSlots.slice(3, 5)}
+                                {/* Cancel button - available for all admin levels */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onPoiSelect) onPoiSelect(null);
+                                  }}
+                                  className="text-xs px-2 py-1 rounded font-medium bg-red-500 text-white hover:bg-red-600 shadow-sm flex-1"
+                                >
+                                  ❌ Annulla
+                                </button>
                               </div>
                             </>
                           );

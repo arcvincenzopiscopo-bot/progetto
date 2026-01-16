@@ -558,15 +558,17 @@ const DashboardPage: React.FC = () => {
   // Handle POI selection/deselection
   const handlePoiSelect = useCallback((poi: PointOfInterest | null) => {
     if (poi) {
-      // Select POI - make it large
+      // Select POI - make it large and center map on it
       setSelectedPoiId(poi.id);
       // Reset working POI when selecting a different POI
       setWorkingPoiId(null);
+      // Center map on selected POI with zoom 14 (better usability than 16)
+      refreshPois([poi.latitudine, poi.longitudine], 14);
     } else {
       // Deselect POI - make all normal
       setSelectedPoiId(null);
     }
-  }, []);
+  }, [refreshPois]);
 
   // Handle password change
   const handlePasswordChange = useCallback(async (newPassword: string): Promise<boolean> => {
