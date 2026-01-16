@@ -22,7 +22,7 @@ const POIFormPopup = React.lazy(() => import('../components/POI/POIFormPopup'));
 const DashboardPage: React.FC = () => {
   const { user } = useCustomAuth();
   const { isInstallable, installPWA } = usePWAInstall();
-  const { heading, isAvailable: isHeadingAvailable } = useGpsHeading(); // GPS heading for map rotation
+  const { heading } = useGpsHeading(); // GPS heading for map rotation
   const [pois, setPois] = useState<PointOfInterest[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPoiLocation, setNewPoiLocation] = useState<{ lat: number; lng: number } | null>(null);

@@ -2,35 +2,6 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Map, { Marker, Popup, NavigationControl, GeolocateControl, MapRef, MapLayerMouseEvent } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../../services/supabaseClient';
-import { deletePhotoFromCloudinary } from '../../services/authService';
-import {
-  greenIcon,
-  redIcon,
-  yellowIcon,
-  userLocationIcon,
-  constructionGreenIcon,
-  constructionRedIcon,
-  constructionYellowIcon,
-  constructionMagentaIcon,
-  constructionDarkGreyIcon,
-  largeGreenIcon,
-  largeRedIcon,
-  largeYellowIcon,
-  largeConstructionGreenIcon,
-  largeConstructionRedIcon,
-  largeConstructionYellowIcon,
-  largeConstructionMagentaIcon,
-  largeConstructionDarkGreyIcon
-} from '../../constants/icons'; // eslint-disable-line @typescript-eslint/no-unused-vars
-
-// Debounce utility function for performance optimization
-const debounce = (func: Function, wait: number) => {
-  let timeout: NodeJS.Timeout;
-  return (...args: any[]) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(null, args), wait);
-  };
-};
 
 interface PointOfInterest {
   id: string;
@@ -457,8 +428,6 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
         {visiblePois.map((poi) => {
           // Determine marker color and icon based on POI status and year
           const isWorkingOrSelected = workingPoiId === poi.id || selectedPoiId === poi.id;
-          const isConstructionType = poi.tipo === 'cantiere';
-          const isHistoricalPoi = poi.anno === 2024 || poi.anno === 2025;
 
           // Debug logging for selected POI size
           if (process.env.NODE_ENV === 'development') {
