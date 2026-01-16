@@ -4,7 +4,6 @@ import { supabase } from '../services/supabaseClient';
 import { uploadPhoto, updatePassword } from '../services/authService';
 import { getAddressWithCache } from '../services/geocodingService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
-import { useGpsHeading } from '../hooks/useGpsHeading';
 import SearchBox from '../components/UI/SearchBox';
 import FilterButton from '../components/UI/FilterButton';
 import PasswordChangePopup from '../components/Auth/PasswordChangePopup';
@@ -45,13 +44,14 @@ const DashboardPage: React.FC = () => {
   const [showPasswordChange, setShowPasswordChange] = useState<boolean>(false); // Track if password change popup should be shown
 
   // Loading states for granular feedback
-  const [isLoadingPois, setIsLoadingPois] = useState<boolean>(true); // Loading POI data // eslint-disable-line @typescript-eslint/no-unused-vars
-  const [isGeocodingAddress, setIsGeocodingAddress] = useState<boolean>(false); // Geocoding new POI address // eslint-disable-line @typescript-eslint/no-unused-vars
-  const [updatingPoiId, setUpdatingPoiId] = useState<string | null>(null); // Track which POI is being updated // eslint-disable-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isLoadingPois, setIsLoadingPois] = useState<boolean>(true); // Loading POI data
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [isGeocodingAddress, setIsGeocodingAddress] = useState<boolean>(false); // Geocoding new POI address
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [updatingPoiId, setUpdatingPoiId] = useState<string | null>(null); // Track which POI is being updated
 
-  // Rotation state
-  const [enableRotation, setEnableRotation] = useState<boolean>(false); // Enable/disable map rotation
-  const { heading, isAvailable: isHeadingAvailable } = useGpsHeading(); // GPS heading data
+
 
   // Update task progress - marking completed steps
   // [x] Estendere geocodingService per ricerca indirizzi
@@ -68,6 +68,9 @@ const DashboardPage: React.FC = () => {
         .from('points')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Escludi sempre i POI eliminati (soft deleted)
+      query = query.neq('ispezionabile', 4);
 
       // Filtra i POI in base ai privilegi dell'utente
       if (user?.admin === 0) {
@@ -374,12 +377,13 @@ const DashboardPage: React.FC = () => {
   const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
     if (!newPoiLocation || !user) return;
 
-    // Check for existing POI with same coordinates
+    // Check for existing ACTIVE POI with same coordinates (exclude soft deleted POIs)
     const { data: existingPois, error: checkError } = await supabase
       .from('points')
       .select('id')
       .eq('latitudine', newPoiLocation.lat)
-      .eq('longitudine', newPoiLocation.lng);
+      .eq('longitudine', newPoiLocation.lng)
+      .neq('ispezionabile', 4); // Exclude soft deleted POIs from duplicate check
 
     if (checkError) {
       if (process.env.NODE_ENV === 'development') {
@@ -390,7 +394,7 @@ const DashboardPage: React.FC = () => {
     }
 
     if (existingPois && existingPois.length > 0) {
-      alert('Esiste già un POI con queste coordinate. Non è possibile inserire duplicati.');
+      alert('Esiste già un POI attivo con queste coordinate. Non è possibile inserire duplicati.');
       return;
     }
 
@@ -641,8 +645,6 @@ const DashboardPage: React.FC = () => {
               workingPoiId={workingPoiId}
               selectedPoiId={selectedPoiId}
               creatingNewPoi={creatingNewPoi}
-              enableRotation={enableRotation}
-              heading={heading}
             />
           </MapErrorBoundary>
         </Suspense>
@@ -738,29 +740,7 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Rotation Toggle Button - Bottom right */}
-        <div className="absolute bottom-8 right-4 z-[1000]">
-          <button
-            onClick={() => setEnableRotation(!enableRotation)}
-            className={`text-white px-3 py-1.5 rounded-lg border font-medium transition-colors inline-flex items-center space-x-2 shadow-lg rotation-toggle-button ${
-              enableRotation
-                ? 'bg-blue-600 hover:bg-blue-700 border-blue-700'
-                : 'bg-gray-600 hover:bg-gray-700 border-gray-700'
-            }`}
-            title={enableRotation ? 'Disattiva rotazione mappa' : 'Attiva rotazione mappa'}
-          >
-            <span>{enableRotation ? '🔄' : '🧭'}</span>
-            <span>{enableRotation ? 'Rotazione ON' : 'Rotazione OFF'}</span>
-            {!isHeadingAvailable && enableRotation && (
-              <span className="text-xs bg-yellow-500 text-black px-1 rounded">!</span>
-            )}
-          </button>
-          {enableRotation && !isHeadingAvailable && (
-            <div className="text-xs text-yellow-500 mt-1 text-center">
-              Bussola non disponibile
-            </div>
-          )}
-        </div>
+
 
         {/* Center Map Button - 2cm higher, Bottom center */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000]">
