@@ -4,8 +4,6 @@ import 'leaflet/dist/leaflet.css';
 import 'leaflet-rotate';
 import { supabase } from '../../services/supabaseClient';
 import { deletePhotoFromCloudinary } from '../../services/authService';
-import POIFormPopup from '../POI/POIFormPopup';
-import L from 'leaflet';
 import {
   greenIcon,
   redIcon,

@@ -533,7 +533,7 @@ const DashboardPage: React.FC = () => {
       setMapCenter(poiPosition);
       setMapZoom(zoomLevel);
     }
-  }, [fetchPois]);
+  }, [fetchPois]); // eslint-disable-line react-hooks/exhaustive-deps
 
 
 
