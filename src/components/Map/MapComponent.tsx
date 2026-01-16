@@ -3,15 +3,6 @@ import Map, { Marker, Popup, NavigationControl, GeolocateControl, MapRef, MapLay
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../../services/supabaseClient';
 import { deletePhotoFromCloudinary } from '../../services/authService';
-
-// Debounce utility function for performance optimization
-const debounce = (func: Function, wait: number) => {
-  let timeout: NodeJS.Timeout;
-  return (...args: any[]) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func.apply(null, args), wait);
-  };
-};
 import {
   greenIcon,
   redIcon,
@@ -31,6 +22,15 @@ import {
   largeConstructionMagentaIcon,
   largeConstructionDarkGreyIcon
 } from '../../constants/icons'; // eslint-disable-line @typescript-eslint/no-unused-vars
+
+// Debounce utility function for performance optimization
+const debounce = (func: Function, wait: number) => {
+  let timeout: NodeJS.Timeout;
+  return (...args: any[]) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(null, args), wait);
+  };
+};
 
 interface PointOfInterest {
   id: string;
@@ -447,6 +447,13 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
           const isConstructionType = poi.tipo === 'cantiere';
           const isHistoricalPoi = poi.anno === 2024 || poi.anno === 2025;
 
+          // Debug logging for selected POI size
+          if (process.env.NODE_ENV === 'development') {
+            if (isWorkingOrSelected) {
+              console.log('🎯 POI selezionato/grande:', poi.id, 'workingPoiId:', workingPoiId, 'selectedPoiId:', selectedPoiId, 'size: 45px');
+            }
+          }
+
           let markerColor = '#10B981'; // Default green for inspectable
           let markerIcon = '✅'; // Default checkmark for inspectable
           let markerSize = 30;
@@ -514,7 +521,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                   longitude={poi.longitudine}
                   latitude={poi.latitudine}
                   anchor="bottom"
-                  onClose={() => onPoiSelect?.(null)}
+                  onClose={() => {}} // Keep POI selected when popup closes
                   closeOnClick={false}
                   maxWidth="400px"
                 >
