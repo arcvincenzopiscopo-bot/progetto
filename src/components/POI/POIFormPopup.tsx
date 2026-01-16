@@ -117,7 +117,6 @@ const POIFormPopup: React.FC<POIFormPopupProps> = ({ location, onAddPoi, onCance
             id="add-poi-photo"
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={(e) => {
               const file = e.target.files?.[0] || null;
               setPhoto(file);

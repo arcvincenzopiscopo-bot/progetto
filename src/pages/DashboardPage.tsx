@@ -4,6 +4,7 @@ import { supabase } from '../services/supabaseClient';
 import { uploadPhoto, updatePassword } from '../services/authService';
 import { getAddressWithCache } from '../services/geocodingService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { useGpsHeading } from '../hooks/useGpsHeading';
 import SearchBox from '../components/UI/SearchBox';
 import FilterButton from '../components/UI/FilterButton';
 import PasswordChangePopup from '../components/Auth/PasswordChangePopup';
@@ -21,6 +22,7 @@ const POIFormPopup = React.lazy(() => import('../components/POI/POIFormPopup'));
 const DashboardPage: React.FC = () => {
   const { user } = useCustomAuth();
   const { isInstallable, installPWA } = usePWAInstall();
+  const { heading, isAvailable: isHeadingAvailable } = useGpsHeading(); // GPS heading for map rotation
   const [pois, setPois] = useState<PointOfInterest[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPoiLocation, setNewPoiLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -645,6 +647,8 @@ const DashboardPage: React.FC = () => {
               workingPoiId={workingPoiId}
               selectedPoiId={selectedPoiId}
               creatingNewPoi={creatingNewPoi}
+              enableRotation={true} // Enable GPS-based map rotation
+              heading={heading} // GPS heading for map rotation
             />
           </MapErrorBoundary>
         </Suspense>

@@ -239,6 +239,23 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
     pitch: 0
   });
 
+  // Update view state when initial position becomes available (GPS location)
+  useEffect(() => {
+    if (initialPosition && !mapCenter) {
+      // Only center on GPS if user hasn't manually centered the map
+      setViewState(prev => ({
+        ...prev,
+        longitude: initialPosition[1],
+        latitude: initialPosition[0],
+        zoom: mapZoom || prev.zoom
+      }));
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📍 Centering map on GPS location:', initialPosition);
+      }
+    }
+  }, [initialPosition, mapCenter, mapZoom]);
+
   // Update view state when center or zoom changes
   useEffect(() => {
     if (mapCenter) {
@@ -430,13 +447,14 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
             anchor="bottom"
           >
             <div style={{
-              background: '#3B82F6',
-              border: '2px solid white',
-              borderRadius: '50%',
-              width: '20px',
-              height: '20px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
-            }} />
+              fontSize: '24px',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              👮‍♂️
+            </div>
           </Marker>
         )}
 
@@ -525,7 +543,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                   closeOnClick={false}
                   maxWidth="400px"
                 >
-                  <div className="p-3">
+                  <div className="border-2 border-indigo-600 rounded-lg p-3 bg-white poi-form-mobile">
                     <div className="space-y-3">
                       <p className="text-sm font-medium text-gray-700">
                         {poi.anno === 2024 || poi.anno === 2025 ? 'inserito nel db in data ' :
