@@ -4,6 +4,7 @@ import { supabase } from '../services/supabaseClient';
 import { uploadPhoto, updatePassword } from '../services/authService';
 import { getAddressWithCache } from '../services/geocodingService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { useGpsHeading } from '../hooks/useGpsHeading';
 import SearchBox from '../components/UI/SearchBox';
 import FilterButton from '../components/UI/FilterButton';
 import PasswordChangePopup from '../components/Auth/PasswordChangePopup';
@@ -47,6 +48,10 @@ const DashboardPage: React.FC = () => {
   const [isLoadingPois, setIsLoadingPois] = useState<boolean>(true); // Loading POI data
   const [isGeocodingAddress, setIsGeocodingAddress] = useState<boolean>(false); // Geocoding new POI address
   const [updatingPoiId, setUpdatingPoiId] = useState<string | null>(null); // Track which POI is being updated
+
+  // Rotation state
+  const [enableRotation, setEnableRotation] = useState<boolean>(false); // Enable/disable map rotation
+  const { heading, isAvailable: isHeadingAvailable } = useGpsHeading(); // GPS heading data
 
   // Update task progress - marking completed steps
   // [x] Estendere geocodingService per ricerca indirizzi
@@ -636,6 +641,8 @@ const DashboardPage: React.FC = () => {
               workingPoiId={workingPoiId}
               selectedPoiId={selectedPoiId}
               creatingNewPoi={creatingNewPoi}
+              enableRotation={enableRotation}
+              heading={heading}
             />
           </MapErrorBoundary>
         </Suspense>
@@ -729,6 +736,30 @@ const DashboardPage: React.FC = () => {
               />
             </div>
           </div>
+        </div>
+
+        {/* Rotation Toggle Button - Bottom right */}
+        <div className="absolute bottom-8 right-4 z-[1000]">
+          <button
+            onClick={() => setEnableRotation(!enableRotation)}
+            className={`text-white px-3 py-1.5 rounded-lg border font-medium transition-colors inline-flex items-center space-x-2 shadow-lg rotation-toggle-button ${
+              enableRotation
+                ? 'bg-blue-600 hover:bg-blue-700 border-blue-700'
+                : 'bg-gray-600 hover:bg-gray-700 border-gray-700'
+            }`}
+            title={enableRotation ? 'Disattiva rotazione mappa' : 'Attiva rotazione mappa'}
+          >
+            <span>{enableRotation ? '🔄' : '🧭'}</span>
+            <span>{enableRotation ? 'Rotazione ON' : 'Rotazione OFF'}</span>
+            {!isHeadingAvailable && enableRotation && (
+              <span className="text-xs bg-yellow-500 text-black px-1 rounded">!</span>
+            )}
+          </button>
+          {enableRotation && !isHeadingAvailable && (
+            <div className="text-xs text-yellow-500 mt-1 text-center">
+              Bussola non disponibile
+            </div>
+          )}
         </div>
 
         {/* Center Map Button - 2cm higher, Bottom center */}

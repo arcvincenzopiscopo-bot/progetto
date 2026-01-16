@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-rotate';
 import { supabase } from '../../services/supabaseClient';
 import { deletePhotoFromCloudinary } from '../../services/authService';
 import { getAddressWithCache } from '../../services/geocodingService';
 import POIFormPopup from '../POI/POIFormPopup';
+import L from 'leaflet';
+
+// Extend Leaflet Map type to include rotation methods from leaflet-rotate plugin
+declare module 'leaflet' {
+  interface Map {
+    getBearing(): number;
+    setBearing(bearing: number, options?: { animate?: boolean }): this;
+  }
+}
 import {
   greenIcon,
   redIcon,
@@ -74,6 +84,9 @@ interface MapComponentProps {
   workingPoiId?: string | null; // ID of POI currently being worked on
   selectedPoiId?: string | null; // ID of POI currently selected
   creatingNewPoi?: boolean; // Whether a new POI is currently being created
+  // Rotation props
+  enableRotation?: boolean; // Enable map rotation following heading
+  heading?: number | null; // Current GPS heading in degrees (0-360)
 }
 
 
@@ -117,7 +130,41 @@ const MapDeselectHandler: React.FC<{
 
 
 
-const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, currentUsername, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, filterShowToday = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
+// RotationHandler component for map rotation following GPS heading
+const RotationHandler: React.FC<{
+  enableRotation?: boolean;
+  heading?: number | null;
+}> = ({ enableRotation, heading }) => {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!enableRotation || heading === null || heading === undefined) {
+      // If rotation is disabled or no heading data, reset bearing to 0 (north up)
+      if (map.getBearing() !== 0) {
+        map.setBearing(0, { animate: true });
+      }
+      return;
+    }
+
+    // Apply rotation with smooth animation
+    // Note: We use -heading because 0° heading means north, but we want the map to rotate
+    // so that the direction of travel is "up" on the screen
+    const targetBearing = -heading;
+
+    // Only update if the bearing has changed significantly (>1 degree)
+    if (Math.abs(map.getBearing() - targetBearing) > 1) {
+      map.setBearing(targetBearing, { animate: true });
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Map rotation: ${targetBearing.toFixed(1)}° (heading: ${heading.toFixed(1)}°)`);
+      }
+    }
+  }, [enableRotation, heading, map]);
+
+  return null;
+};
+
+const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, currentUsername, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, filterShowToday = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false, enableRotation, heading }) => {
   // State for map center - initialize once and don't change on position updates
   const [centerPosition, setCenterPosition] = useState<[number, number]>(
     () => initialPosition || [41.9028, 12.4964]
@@ -617,6 +664,8 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
 
       <MapClickHandler onMapClick={onMapClick} onAddPoi={onAddPoi} onCancelAddPoi={onCancelAddPoi} />
       <MapDeselectHandler onPoiSelect={onPoiSelect} />
+      {/* Rotation handler for GPS heading following */}
+      <RotationHandler enableRotation={enableRotation} heading={heading} />
     </MapContainer>
   );
 });
