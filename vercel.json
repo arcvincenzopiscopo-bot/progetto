@@ -6,7 +6,8 @@
   "regions": ["fra1"],
   "build": {
     "env": {
-      "NODE_ENV": "production"
+      "NODE_ENV": "production",
+      "SKIP_PREFLIGHT_CHECK": "true"
     }
   },
   "headers": [
