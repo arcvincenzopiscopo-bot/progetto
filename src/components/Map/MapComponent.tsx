@@ -7,14 +7,6 @@ import { deletePhotoFromCloudinary } from '../../services/authService';
 import { getAddressWithCache } from '../../services/geocodingService';
 import POIFormPopup from '../POI/POIFormPopup';
 import L from 'leaflet';
-
-// Extend Leaflet Map type to include rotation methods from leaflet-rotate plugin
-declare module 'leaflet' {
-  interface Map {
-    getBearing(): number;
-    setBearing(bearing: number, options?: { animate?: boolean }): this;
-  }
-}
 import {
   greenIcon,
   redIcon,
@@ -39,6 +31,14 @@ import {
   largeConstructionMagentaIcon,
   largeConstructionDarkGreyIcon
 } from '../../constants/icons';
+
+// Extend Leaflet Map type to include rotation methods from leaflet-rotate plugin
+declare module 'leaflet' {
+  interface Map {
+    getBearing(): number;
+    setBearing(bearing: number, options?: { animate?: boolean }): this;
+  }
+}
 
 interface PointOfInterest {
   id: string;
