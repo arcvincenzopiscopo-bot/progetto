@@ -276,7 +276,7 @@ const DashboardPage: React.FC = () => {
     // OPTIMIZATION: GPS is stopped when app is in background to save battery
     let watchId: number | null = null;
     let lastUpdateTime = 0;
-    const MIN_UPDATE_INTERVAL = 5000; // Minimum 5 seconds between updates
+    const MIN_UPDATE_INTERVAL = 2500; // Minimum 2.5 seconds between updates
 
     // Helper function to start GPS monitoring
     const startGpsMonitoring = () => {
@@ -306,8 +306,8 @@ const DashboardPage: React.FC = () => {
                 Math.pow((newPosition[1] - prevPosition[1]) * 111320 * Math.cos(newPosition[0] * Math.PI / 180), 2) // Adjust for longitude
               );
 
-              // Only update if moved more than 10 meters (accuracy check removed to avoid complexity)
-              if (distance > 10) {
+              // Only update if moved more than 5 meters (accuracy check removed to avoid complexity)
+              if (distance > 5) {
                 console.log('GPS: Position updated:', newPosition, 'Distance moved:', Math.round(distance), 'm, Accuracy:', accuracy, 'm, Time since last:', Math.round((currentTime - lastUpdateTime) / 1000), 's');
                 lastUpdateTime = currentTime;
                 return newPosition;

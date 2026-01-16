@@ -64,7 +64,7 @@ const GPSRotationHandler: React.FC<{
     if (!enableRotation || !mapRef.current || !heading) return;
 
     const map = mapRef.current;
-    const targetBearing = -heading; // Negative because GPS heading is clockwise from north
+    const targetBearing = heading; // GPS heading is clockwise from north, same as map bearing
 
     // Only update if bearing changed significantly (increased threshold for better performance)
     const currentBearing = map.getBearing();
@@ -214,18 +214,19 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
   useEffect(() => {
     if (initialPosition && !mapCenter) {
       // Only center on GPS if user hasn't manually centered the map
+      // Preserve manual zoom by using prev.zoom instead of mapZoom
       setViewState(prev => ({
         ...prev,
         longitude: initialPosition[1],
         latitude: initialPosition[0],
-        zoom: mapZoom || prev.zoom
+        zoom: prev.zoom // Always preserve manual zoom
       }));
 
       if (process.env.NODE_ENV === 'development') {
         console.log('📍 Centering map on GPS location:', initialPosition);
       }
     }
-  }, [initialPosition, mapCenter, mapZoom]);
+  }, [initialPosition, mapCenter]);
 
   // Update view state when center or zoom changes
   useEffect(() => {
