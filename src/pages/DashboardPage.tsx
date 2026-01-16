@@ -518,7 +518,7 @@ const DashboardPage: React.FC = () => {
       alert('Errore nella creazione del POI. Riprova.');
       setCreatingNewPoi(false); // Reset creating state on error
     }
-  }, [newPoiLocation, user, fetchPois]);
+  }, [newPoiLocation, user]);
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
     // Reset any working POI when clicking on map to add new POI
@@ -539,7 +539,7 @@ const DashboardPage: React.FC = () => {
       setMapCenter(poiPosition);
       setMapZoom(zoomLevel);
     }
-  }, []); // Remove fetchPois dependency - it's stable
+  }, [fetchPois]);
 
 
 
