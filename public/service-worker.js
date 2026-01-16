@@ -1,5 +1,5 @@
 // Basic Service Worker for PWA functionality
-const CACHE_NAME = 'poi-app-v1';
+const CACHE_NAME = 'poi-app-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
