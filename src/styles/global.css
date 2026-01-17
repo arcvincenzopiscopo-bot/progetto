@@ -420,11 +420,11 @@ body .existing-poi-content * {
       line-height: 1.2 !important;
     }
 
-    /* Compact buttons for existing POI popup - tighter spacing */
+    /* Compact buttons for existing POI popup - tighter spacing and 30% smaller overall */
     .existing-poi-content button {
-      font-size: 10px !important;
-      padding: 4px 6px !important;
-      min-height: 32px !important;
+      font-size: 7px !important; /* 10px * 0.7 = 7px (30% smaller) */
+      padding: 3px 4px !important; /* 4px 6px * 0.7 ≈ 3px 4px (30% smaller) */
+      min-height: 22px !important; /* 32px * 0.7 ≈ 22px (30% smaller) */
       line-height: 1 !important;
     }
 
@@ -475,7 +475,7 @@ body .existing-poi-content * {
     }
 
     .existing-poi-content button {
-      font-size: 9px !important;
+      font-size: 6px !important; /* 9px * 0.7 = 6.3px (30% smaller) */
       padding: 3px 4px !important;
       min-height: 28px !important;
     }
