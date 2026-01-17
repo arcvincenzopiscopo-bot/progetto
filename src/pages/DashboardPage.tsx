@@ -42,6 +42,7 @@ const DashboardPage: React.FC = () => {
   const [mapKey, setMapKey] = useState<number>(0); // Force map re-render when needed
   const [workingPoiId, setWorkingPoiId] = useState<string | null>(null); // Track POI currently being worked on
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null); // Track POI currently selected
+  const [highlightedPoiId, setHighlightedPoiId] = useState<string | null>(null); // Track POI that should stay highlighted after popup closes
   const [creatingNewPoi, setCreatingNewPoi] = useState<boolean>(false); // Track if new POI is being created
   const [showPasswordChange, setShowPasswordChange] = useState<boolean>(false); // Track if password change popup should be shown
 
@@ -533,8 +534,9 @@ const DashboardPage: React.FC = () => {
         }
         const newPoi = data[0];
         setPois(prevPois => [...prevPois, newPoi]);
-        // Automatically select the newly created POI
+        // Automatically select and highlight the newly created POI
         setSelectedPoiId(newPoi.id);
+        setHighlightedPoiId(newPoi.id);
         setShowAddForm(false);
         setNewPoiLocation(null);
         setCreatingNewPoi(false); // Reset creating state on success
@@ -549,8 +551,9 @@ const DashboardPage: React.FC = () => {
   }, [newPoiLocation, user]);
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
-    // Reset any working POI when clicking on map to add new POI
+    // Reset any working POI and highlighted POI when clicking on map to add new POI
     setWorkingPoiId(null);
+    setHighlightedPoiId(null); // Clear highlighted POI when clicking on map
     setNewPoiLocation({ lat, lng });
     setShowAddForm(true);
   }, []);
@@ -588,13 +591,15 @@ const DashboardPage: React.FC = () => {
     if (poi) {
       // Select POI - make it large and center map on it
       setSelectedPoiId(poi.id);
+      setHighlightedPoiId(poi.id); // Keep highlighted even after popup closes
       // Reset working POI when selecting a different POI
       setWorkingPoiId(null);
-      // Center map on selected POI with zoom 9 (even wider view)
-      refreshPois([poi.latitudine, poi.longitudine], 9);
+      // Center map on selected POI with zoom 8 (even wider view)
+      refreshPois([poi.latitudine, poi.longitudine], 8);
     } else {
-      // Deselect POI - make all normal
+      // Deselect POI - make all normal but keep highlighted
       setSelectedPoiId(null);
+      // Note: highlightedPoiId stays set so icon remains enlarged
     }
   }, [refreshPois]);
 
@@ -676,6 +681,7 @@ const DashboardPage: React.FC = () => {
               height="100%"
               workingPoiId={workingPoiId}
               selectedPoiId={selectedPoiId}
+              highlightedPoiId={highlightedPoiId}
               creatingNewPoi={creatingNewPoi}
               enableRotation={true} // Enable GPS-based map rotation
               heading={heading} // GPS heading for map rotation

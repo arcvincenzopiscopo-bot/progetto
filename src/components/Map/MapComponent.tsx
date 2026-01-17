@@ -46,6 +46,7 @@ interface MapComponentProps {
   height?: string;
   workingPoiId?: string | null; // ID of POI currently being worked on
   selectedPoiId?: string | null; // ID of POI currently selected
+  highlightedPoiId?: string | null; // ID of POI that should stay highlighted after popup closes
   creatingNewPoi?: boolean; // Whether a new POI is currently being created
   // User info for permission logic
   currentUser?: any; // User object for admin level and username
@@ -55,7 +56,6 @@ interface MapComponentProps {
   enableRotation?: boolean; // Enable map rotation following heading
   heading?: number | null; // Current GPS heading in degrees (0-360)
 }
-
 
 
 // GPS Rotation Handler for MapLibre GL JS - Optimized
@@ -201,6 +201,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
   height,
   workingPoiId = null,
   selectedPoiId = null,
+  highlightedPoiId = null,
   creatingNewPoi = false,
   enableRotation,
   heading
@@ -436,12 +437,12 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
         {/* POI markers - using virtualized visible POIs for better performance */}
         {visiblePois.map((poi) => {
           // Determine marker color and icon based on POI status and year
-          const isWorkingOrSelected = workingPoiId === poi.id || selectedPoiId === poi.id;
+          const isWorkingOrSelected = workingPoiId === poi.id || selectedPoiId === poi.id || highlightedPoiId === poi.id;
 
           // Debug logging for selected POI size
           if (process.env.NODE_ENV === 'development') {
             if (isWorkingOrSelected) {
-              console.log('🎯 POI selezionato/grande:', poi.id, 'workingPoiId:', workingPoiId, 'selectedPoiId:', selectedPoiId, 'size: 45px');
+              console.log('🎯 POI selezionato/grande:', poi.id, 'workingPoiId:', workingPoiId, 'selectedPoiId:', selectedPoiId, 'highlightedPoiId:', highlightedPoiId, 'size: 45px');
             }
           }
 
@@ -548,6 +549,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                           style={{ minWidth: '40ch', maxWidth: '40ch' }}
                           placeholder="Inserisci indirizzo..."
                           title={poi.indirizzo || ''}
+                          maxLength={30}
                         />
                       </div>
 
@@ -582,7 +584,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                                   alert('Coordinate copiate negli appunti: ' + shareText);
                                 }
                               }}
-                              className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
+                              className="text-xs px-1 py-0.5 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
                             >
                               📤 Condividi
                             </button>
@@ -591,7 +593,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                           // Helper function to create delete button (conditional)
                           const createDeleteButton = () => {
                             let canDelete = false;
-                            let buttonClass = "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+                            let buttonClass = "text-xs px-1 py-0.5 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
 
                             // Determine if user can delete this POI
                             // Admin level 2 and 1 can always delete existing POIs
@@ -609,7 +611,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                             }
 
                             if (canDelete) {
-                              buttonClass = "text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1";
+                              buttonClass = "text-xs px-1 py-0.5 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1";
                             }
 
                             return (
@@ -662,8 +664,8 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                           const createCantiereFinitoButton = () => {
                             const canMarkFinished = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel !== undefined && adminLevel >= 0;
                             const buttonClass = canMarkFinished
-                              ? "text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
-                              : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+                              ? "text-xs px-1 py-0.5 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
+                              : "text-xs px-1 py-0.5 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
 
                             return (
                               <button
@@ -700,7 +702,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                                 disabled={!canMarkFinished}
                                 className={buttonClass}
                               >
-                                🏗️ Cantiere finito
+                                🏗️ Finito
                               </button>
                             );
                           };
@@ -709,8 +711,8 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                           const createIspezionatoButton = () => {
                             const canMarkInspected = !poi.anno && poi.ispezionabile === 1 && adminLevel !== undefined && adminLevel >= 0;
                             const buttonClass = canMarkInspected
-                              ? "text-xs px-2 py-1 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm flex-1"
-                              : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+                              ? "text-xs px-1 py-0.5 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm flex-1"
+                              : "text-xs px-1 py-0.5 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
 
                             return (
                               <button
@@ -745,7 +747,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                                 disabled={!canMarkInspected}
                                 className={buttonClass}
                               >
-                                👮‍♂️ Ispezionato
+                                👮‍♂️ Ispez.to
                               </button>
                             );
                           };
@@ -754,8 +756,8 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                           const createSegnalaInattivitaButton = () => {
                             const canReportInactive = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel !== undefined && adminLevel >= 0;
                             const buttonClass = canReportInactive
-                              ? "text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm flex-1"
-                              : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+                              ? "text-xs px-1 py-0.5 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm flex-1"
+                              : "text-xs px-1 py-0.5 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
 
                             return (
                               <button
@@ -820,7 +822,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                                     e.stopPropagation();
                                     if (onPoiSelect) onPoiSelect(null);
                                   }}
-                                  className="text-xs px-2 py-1 rounded font-medium bg-red-500 text-white hover:bg-red-600 shadow-sm flex-1"
+                                  className="text-xs px-1 py-0.5 rounded font-medium bg-red-500 text-white hover:bg-red-600 shadow-sm flex-1"
                                 >
                                   ❌ Annulla
                                 </button>
