@@ -58,28 +58,42 @@ interface MapComponentProps {
 }
 
 
-// GPS Rotation Handler for MapLibre GL JS - Optimized
+// GPS Rotation Handler for MapLibre GL JS - Optimized with smoothing
 const GPSRotationHandler: React.FC<{
   enableRotation?: boolean;
   heading?: number | null;
   mapRef: React.RefObject<MapRef>;
 }> = ({ enableRotation, heading, mapRef }) => {
+  // State for smoothing GPS heading data
+  const [headingHistory, setHeadingHistory] = useState<number[]>([]);
+  const maxHistorySize = 3; // Keep last 3 readings for smoothing
+
   useEffect(() => {
     if (!enableRotation || !mapRef.current || !heading) return;
 
     const map = mapRef.current;
-    const targetBearing = heading; // GPS heading is clockwise from north, same as map bearing
 
-    // Only update if bearing changed significantly (increased threshold for better performance)
+    // Add current heading to history for smoothing
+    setHeadingHistory(prev => {
+      const newHistory = [...prev, heading];
+      return newHistory.slice(-maxHistorySize); // Keep only recent readings
+    });
+
+    // Calculate smoothed heading (average of recent readings)
+    const smoothedHeading = headingHistory.reduce((sum, h) => sum + h, heading) / (headingHistory.length + 1);
+
+    const targetBearing = smoothedHeading; // Use smoothed heading instead of raw
+
+    // Only update if bearing changed significantly (increased threshold for smoother experience)
     const currentBearing = map.getBearing();
-    if (Math.abs(currentBearing - targetBearing) > 2) { // Increased from 1 to 2 degrees
-      map.rotateTo(targetBearing, { duration: 200 }); // Reduced from 500 to 200ms
+    if (Math.abs(currentBearing - targetBearing) > 5) { // Increased from 2 to 5 degrees
+      map.rotateTo(targetBearing, { duration: 600 }); // Increased from 200 to 600ms for smoother transitions
 
       if (process.env.NODE_ENV === 'development') {
-        console.log(`GPS rotation: ${targetBearing.toFixed(1)}° (heading: ${heading.toFixed(1)}°)`);
+        console.log(`GPS rotation: ${targetBearing.toFixed(1)}° (smoothed from ${headingHistory.length + 1} readings)`);
       }
     }
-  }, [enableRotation, heading, mapRef]);
+  }, [enableRotation, heading, mapRef, headingHistory]);
 
   return null;
 };
