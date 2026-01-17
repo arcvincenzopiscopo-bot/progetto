@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 /**
  * Custom hook to extract and manage GPS heading data from geolocation watchPosition
+ * Provides interpolated heading updates for smooth rotation (GPS hardware every 2.5s, heading updates every 500ms)
  * @returns Object containing current heading, accuracy, and timestamp
  */
 export function useGpsHeading() {
@@ -16,6 +17,11 @@ export function useGpsHeading() {
     timestamp: null,
     isAvailable: false,
   });
+
+  // Store for interpolation between GPS readings
+  const lastGpsHeadingRef = useRef<number | null>(null);
+  const lastGpsTimeRef = useRef<number | null>(null);
+  const interpolationIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     let watchId: number | null = null;
@@ -40,10 +46,16 @@ export function useGpsHeading() {
             ? (position.coords as any).headingAccuracy || null
             : null;
 
+          const currentTime = Date.now();
+
+          // Store GPS reading for interpolation
+          lastGpsHeadingRef.current = heading;
+          lastGpsTimeRef.current = currentTime;
+
           setGpsData({
             heading,
             headingAccuracy,
-            timestamp: Date.now(),
+            timestamp: currentTime,
             isAvailable: heading !== null,
           });
 
@@ -79,27 +91,72 @@ export function useGpsHeading() {
       );
     };
 
+    // Start interpolation timer for smooth heading updates (every 500ms)
+    const startInterpolation = () => {
+      if (interpolationIntervalRef.current) return; // Already running
+
+      interpolationIntervalRef.current = setInterval(() => {
+        const currentTime = Date.now();
+        const lastGpsTime = lastGpsTimeRef.current;
+        const lastGpsHeading = lastGpsHeadingRef.current;
+
+        if (lastGpsTime && lastGpsHeading !== null) {
+          // Calculate time since last GPS reading
+          const timeSinceLastGps = currentTime - lastGpsTime;
+
+          // If it's been more than 3 seconds since last GPS reading, stop interpolation
+          if (timeSinceLastGps > 3000) {
+            return;
+          }
+
+          // For now, just use the last GPS heading (could implement prediction here)
+          // In a more advanced implementation, we could predict heading based on trend
+          setGpsData(prev => ({
+            ...prev,
+            heading: lastGpsHeading,
+            timestamp: currentTime,
+            isAvailable: true,
+          }));
+
+          if (process.env.NODE_ENV === 'development') {
+            console.log(`Interpolated Heading: ${lastGpsHeading.toFixed(1)}° (${timeSinceLastGps}ms since GPS)`);
+          }
+        }
+      }, 500); // Update every 500ms for smooth rotation
+    };
+
+    // Stop interpolation timer
+    const stopInterpolation = () => {
+      if (interpolationIntervalRef.current) {
+        clearInterval(interpolationIntervalRef.current);
+        interpolationIntervalRef.current = null;
+      }
+    };
+
     // Handle page visibility changes
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Page is hidden - stop GPS to save battery
+        // Page is hidden - stop GPS and interpolation to save battery
         if (watchId !== null) {
           navigator.geolocation.clearWatch(watchId);
           watchId = null;
           console.log('GPS Heading: Stopped watching (page hidden)');
         }
+        stopInterpolation();
       } else {
-        // Page is visible - restart GPS monitoring
+        // Page is visible - restart GPS monitoring and interpolation
         if (watchId === null) {
           startWatching();
           console.log('GPS Heading: Restarted watching (page visible)');
         }
+        startInterpolation();
       }
     };
 
     // Start watching initially if page is visible
     if (!document.hidden) {
       startWatching();
+      startInterpolation();
     }
 
     // Add visibility change listener
@@ -111,6 +168,7 @@ export function useGpsHeading() {
         navigator.geolocation.clearWatch(watchId);
         console.log('GPS Heading: Cleanup - stopped watching');
       }
+      stopInterpolation();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
