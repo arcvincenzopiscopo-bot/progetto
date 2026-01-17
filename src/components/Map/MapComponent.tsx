@@ -441,7 +441,10 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
               filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              transform: heading !== null && heading !== undefined ? `rotate(${heading}deg)` : 'none',
+              transformOrigin: 'center center',
+              transition: 'transform 0.3s ease-out' // Smooth rotation transition
             }}>
               👮‍♂️
             </div>
