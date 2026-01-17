@@ -42,11 +42,8 @@ const DashboardPage: React.FC = () => {
   const [mapKey, setMapKey] = useState<number>(0); // Force map re-render when needed
   const [workingPoiId, setWorkingPoiId] = useState<string | null>(null); // Track POI currently being worked on
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null); // Track POI currently selected
-  const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null); // Track selected POI data
   const [creatingNewPoi, setCreatingNewPoi] = useState<boolean>(false); // Track if new POI is being created
   const [showPasswordChange, setShowPasswordChange] = useState<boolean>(false); // Track if password change popup should be shown
-  const [addressFieldEditable, setAddressFieldEditable] = useState<boolean>(false); // Track if address field is editable
-  const [editingAddress, setEditingAddress] = useState<{ [key: string]: string | undefined }>({}); // Track editing state for POI addresses
 
   // Prevent auto-focus on modal inputs when POI selection changes
   useLayoutEffect(() => {
@@ -591,7 +588,6 @@ const DashboardPage: React.FC = () => {
     if (poi) {
       // Select POI - make it large and center map on it
       setSelectedPoiId(poi.id);
-      setSelectedPoi(poi);
       // Reset working POI when selecting a different POI
       setWorkingPoiId(null);
       // Center map on selected POI with zoom 14 (better usability than 16)
@@ -599,7 +595,6 @@ const DashboardPage: React.FC = () => {
     } else {
       // Deselect POI - make all normal
       setSelectedPoiId(null);
-      setSelectedPoi(null);
     }
   }, [refreshPois]);
 
