@@ -1,5 +1,5 @@
 // Basic Service Worker for PWA functionality
-const CACHE_NAME = 'poi-app-v4';
+const CACHE_NAME = 'poi-app-v5';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -39,7 +39,6 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Cache-first strategy for assets, network-first for API calls
   const requestUrl = new URL(event.request.url);
 
   // Skip service worker for API calls to avoid caching issues
@@ -51,36 +50,53 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  event.respondWith(
-    caches.match(event.request)
-      .then((cachedResponse) => {
-        // Return cached response if available
-        if (cachedResponse) {
-          return cachedResponse;
-        }
+  // Network-first strategy for main page and critical resources
+  if (event.request.destination === 'document' ||
+      event.request.url.includes('/index.html') ||
+      event.request.url.includes('/manifest.json')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put(event.request, responseToCache);
+              });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Fallback to cache if network fails
+          return caches.match(event.request) || caches.match('/index.html');
+        })
+    );
+  } else {
+    // Cache-first strategy for other assets
+    event.respondWith(
+      caches.match(event.request)
+        .then((cachedResponse) => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
 
-        // Otherwise fetch from network
-        return fetch(event.request)
-          .then((response) => {
-            // Cache successful responses
-            if (response && response.status === 200 && response.type === 'basic') {
-              const responseToCache = response.clone();
-              caches.open(CACHE_NAME)
-                .then((cache) => {
-                  cache.put(event.request, responseToCache);
-                });
-            }
-            return response;
-          })
-          .catch(() => {
-            // If both cache and network fail, return a fallback response
-            if (event.request.destination === 'document') {
-              return caches.match('/index.html');
-            }
-            return new Response(null, { status: 404 });
-          });
-      })
-  );
+          return fetch(event.request)
+            .then((response) => {
+              if (response && response.status === 200 && response.type === 'basic') {
+                const responseToCache = response.clone();
+                caches.open(CACHE_NAME)
+                  .then((cache) => {
+                    cache.put(event.request, responseToCache);
+                  });
+              }
+              return response;
+            })
+            .catch(() => {
+              return new Response(null, { status: 404 });
+            });
+        })
+    );
+  }
 });
 
 // Listen for push notifications (if needed in the future)
@@ -91,6 +107,13 @@ self.addEventListener('push', (event) => {
     icon: '/icon-192x192.png',
     data: data.url
   });
+});
+
+// Listen for messages from the app
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // Listen for notification clicks
