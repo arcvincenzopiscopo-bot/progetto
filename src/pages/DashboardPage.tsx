@@ -20,7 +20,7 @@ const POIFormPopup = React.lazy(() => import('../components/POI/POIFormPopup'));
 
 
 const DashboardPage: React.FC = () => {
-  const { user } = useCustomAuth();
+  const { user, logout } = useCustomAuth();
   const { isInstallable, installPWA } = usePWAInstall();
   const { heading } = useGpsHeading(); // GPS heading for map rotation
   const [pois, setPois] = useState<PointOfInterest[]>([]);
@@ -603,7 +603,7 @@ const DashboardPage: React.FC = () => {
         // Find the POI coordinates from the current POI list
         const poiToCenter = pois.find(p => p.id === highlightedPoiId);
         if (poiToCenter) {
-          refreshPois([poiToCenter.latitudine, poiToCenter.longitudine], 8);
+          refreshPois([poiToCenter.latitudine, poiToCenter.longitudine], 14);
         }
       }
       // Note: highlightedPoiId stays set so icon remains enlarged
@@ -789,8 +789,8 @@ const DashboardPage: React.FC = () => {
 
 
 
-        {/* Center Map Button - 2cm higher, Bottom center */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000]">
+        {/* Center Map and Logout Buttons - Bottom center */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-2">
           <button
             onClick={() => {
               if (currentPosition) {
@@ -824,6 +824,20 @@ const DashboardPage: React.FC = () => {
           >
             <span>📍</span>
             <span>Centra la mappa</span>
+          </button>
+
+          {/* Logout Button */}
+          <button
+            onClick={() => {
+              if (window.confirm('Sei sicuro di voler effettuare il logout?')) {
+                logout();
+              }
+            }}
+            className="bg-gray-600 text-white px-3 py-1.5 rounded-lg border border-gray-700 hover:bg-gray-700 font-medium transition-colors inline-flex items-center space-x-2 shadow-lg"
+            title="Logout"
+          >
+            <span>🚪</span>
+            <span>Logout</span>
           </button>
         </div>
       </div>
