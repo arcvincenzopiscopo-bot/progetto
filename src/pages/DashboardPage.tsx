@@ -42,6 +42,7 @@ const DashboardPage: React.FC = () => {
   const [mapKey, setMapKey] = useState<number>(0); // Force map re-render when needed
   const [workingPoiId, setWorkingPoiId] = useState<string | null>(null); // Track POI currently being worked on
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null); // Track POI currently selected
+  const [selectedPoi, setSelectedPoi] = useState<PointOfInterest | null>(null); // Track selected POI data
   const [creatingNewPoi, setCreatingNewPoi] = useState<boolean>(false); // Track if new POI is being created
   const [showPasswordChange, setShowPasswordChange] = useState<boolean>(false); // Track if password change popup should be shown
 
@@ -560,6 +561,7 @@ const DashboardPage: React.FC = () => {
     if (poi) {
       // Select POI - make it large and center map on it
       setSelectedPoiId(poi.id);
+      setSelectedPoi(poi);
       // Reset working POI when selecting a different POI
       setWorkingPoiId(null);
       // Center map on selected POI with zoom 14 (better usability than 16)
@@ -567,6 +569,7 @@ const DashboardPage: React.FC = () => {
     } else {
       // Deselect POI - make all normal
       setSelectedPoiId(null);
+      setSelectedPoi(null);
     }
   }, [refreshPois]);
 
@@ -814,6 +817,376 @@ const DashboardPage: React.FC = () => {
                 }}
               />
             </Suspense>
+          </div>
+        </div>
+      )}
+
+      {/* Existing POI Modal - appears as overlay when selecting existing POI */}
+      {selectedPoi && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[3000] modal-overlay-mobile">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-4 modal-content-mobile">
+            <div className="border-2 border-indigo-600 rounded-lg p-3 bg-white poi-form-mobile">
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-gray-700">
+                  {selectedPoi.anno === 2024 || selectedPoi.anno === 2025 ? 'inserito nel db in data ' :
+                   selectedPoi.ispezionabile === 1 ? 'Proposto da ispezionare in data ' :
+                   selectedPoi.ispezionabile === 0 ? 'Ispezionato in data: ' :
+                   selectedPoi.ispezionabile === 2 ? 'Creato in data: ' : ''}
+                  {new Date(selectedPoi.created_at).toLocaleString()}
+                </p>
+
+                {/* Editable address */}
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Indirizzo (modificabile):</label>
+                  <input
+                    type="text"
+                    defaultValue={selectedPoi.indirizzo?.slice(0, 20) || ''}
+                    autoFocus={false}
+                    tabIndex={-1}
+                    onChange={(e) => {
+                      // Update local state for immediate UI feedback
+                      setSelectedPoi(prev => prev ? { ...prev, indirizzo: e.target.value } : null);
+                    }}
+                    onBlur={async (e) => {
+                      // Save to database when focus is lost
+                      const newAddress = e.target.value;
+                      if (!newAddress.trim() || !selectedPoi) return;
+
+                      console.log('🔄 Starting address edit for POI:', selectedPoi.id, 'New address:', newAddress.trim());
+                      setUpdatingPoiId(selectedPoi.id);
+
+                      try {
+                        const { searchAddress } = await import('../services/geocodingService');
+                        console.log('🔍 Calling geocoding service...');
+                        const searchResults = await searchAddress(newAddress.trim());
+
+                        console.log('📍 Geocoding results:', searchResults);
+
+                        let updateData: any = { indirizzo: newAddress.trim() };
+
+                        if (searchResults && searchResults.length > 0) {
+                          const bestResult = searchResults[0];
+                          const newLat = parseFloat(bestResult.lat);
+                          const newLng = parseFloat(bestResult.lon);
+
+                          console.log('📌 Updating coordinates - Old:', selectedPoi.latitudine, selectedPoi.longitudine, 'New:', { lat: newLat, lng: newLng });
+                          updateData.latitudine = newLat;
+                          updateData.longitudine = newLng;
+                        } else {
+                          console.warn('⚠️ No geocoding results found for address:', newAddress.trim());
+                        }
+
+                        console.log('💾 Update data:', updateData);
+
+                        const tableName = selectedPoi.anno ? (selectedPoi.anno === 2024 ? 'points_old_2024' : 'points_old_2025') : 'points';
+                        console.log('🗄️ Updating table:', tableName, 'for POI ID:', selectedPoi.id);
+
+                        const { data, error } = await supabase
+                          .from(tableName)
+                          .update(updateData)
+                          .eq('id', selectedPoi.id)
+                          .select();
+
+                        console.log('🗃️ Database update result:', { data, error });
+
+                        if (error) {
+                          console.error('❌ Error updating POI address:', error);
+                          alert('Errore durante l\'aggiornamento dell\'indirizzo');
+                          // Revert local change
+                          setSelectedPoi(prev => prev ? { ...prev, indirizzo: selectedPoi.indirizzo } : null);
+                        } else {
+                          console.log('✅ POI address updated successfully:', data);
+                          if (data && data[0]) {
+                            // Update local POI data
+                            setSelectedPoi(data[0]);
+                            // Update in the pois array
+                            setPois(prevPois => prevPois.map(poi => poi.id === selectedPoi.id ? data[0] : poi));
+                          }
+                          refreshPois();
+                        }
+                      } catch (error) {
+                        console.error('💥 Error updating POI:', error);
+                        alert('Errore durante l\'aggiornamento del POI');
+                        // Revert local change
+                        setSelectedPoi(prev => prev ? { ...prev, indirizzo: selectedPoi.indirizzo } : null);
+                      } finally {
+                        setUpdatingPoiId(null);
+                      }
+                    }}
+                    disabled={updatingPoiId === selectedPoi.id}
+                    className="w-full px-2 py-1 text-sm border rounded"
+                    placeholder="Inserisci indirizzo..."
+                  />
+                </div>
+
+                <div className="text-sm text-gray-600 space-y-1">
+                  <p>Username: {selectedPoi.username || 'N/D'}</p>
+                  <p>Team: {selectedPoi.team || 'N/D'}</p>
+                  <p>Tipo: {selectedPoi.tipo || 'N/D'}</p>
+                  {selectedPoi.note && <p>Note: {selectedPoi.note}</p>}
+                </div>
+
+                {/* Action buttons - full set with permissions */}
+                <div className="space-y-2">
+                  {(() => {
+                    // Helper function to create share button (always visible)
+                    const shareButton = (
+                      <button
+                        key="share"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const shareText = `${selectedPoi.latitudine}, ${selectedPoi.longitudine}`;
+                          if (navigator.share) {
+                            navigator.share({
+                              title: `Punto di Interesse - ${selectedPoi.indirizzo}`,
+                              text: `Coordinate: ${shareText}`,
+                              url: `https://www.google.com/maps/search/?api=1&query=${selectedPoi.latitudine},${selectedPoi.longitudine}`
+                            }).catch(() => {
+                              navigator.clipboard.writeText(shareText);
+                              alert('Coordinate copiate negli appunti: ' + shareText);
+                            });
+                          } else {
+                            navigator.clipboard.writeText(shareText);
+                            alert('Coordinate copiate negli appunti: ' + shareText);
+                          }
+                        }}
+                        className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
+                      >
+                        📤 Condividi
+                      </button>
+                    );
+
+                    // Helper function to create delete button (conditional)
+                    const createDeleteButton = () => {
+                      let canDelete = false;
+                      let buttonClass = "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+
+                      // Determine if user can delete this POI
+                      // Admin level 2 and 1 can always delete existing POIs
+                      if (user && user.admin !== undefined && user.admin >= 1) {
+                        canDelete = true;
+                      }
+                      // Admin level 0 can delete green and red POIs if created by them today
+                      else if (user && user.admin === 0 && (selectedPoi.ispezionabile === 1 || selectedPoi.ispezionabile === 0)) {
+                        const poiDate = new Date(selectedPoi.created_at);
+                        const today = new Date();
+                        const isCreatedToday = poiDate.getDate() === today.getDate() &&
+                                               poiDate.getMonth() === today.getMonth() &&
+                                               poiDate.getFullYear() === today.getFullYear();
+                        if (isCreatedToday && selectedPoi.username === user.username) canDelete = true;
+                      }
+
+                      if (canDelete) {
+                        buttonClass = "text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1";
+                      }
+
+                      return (
+                        <button
+                          key="delete"
+                          onClick={canDelete ? async (e) => {
+                            e.stopPropagation();
+                            const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Il POI verrà nascosto ma potrà essere recuperato se necessario.');
+                            if (!confirmed) return;
+                            try {
+                              let tableName = 'points';
+                              if (selectedPoi.anno) {
+                                tableName = selectedPoi.anno === 2024 ? 'points_old_2024' : 'points_old_2025';
+                              }
+
+                              // Soft delete: update ispezionabile to 4 and set deletion metadata
+                              const { error } = await supabase
+                                .from(tableName)
+                                .update({
+                                  ispezionabile: 4,
+                                  eliminatore: user?.username,
+                                  data_eliminazione: new Date().toISOString()
+                                })
+                                .eq('id', selectedPoi.id);
+
+                              if (!error) {
+                                refreshPois([selectedPoi.latitudine, selectedPoi.longitudine], 14);
+                                // Close modal and deselect POI
+                                setSelectedPoiId(null);
+                                setSelectedPoi(null);
+                              } else {
+                                console.error('Error soft deleting POI:', error);
+                                alert('Errore durante l\'eliminazione del POI');
+                              }
+                            } catch (err) {
+                              console.error('Error soft deleting POI:', err);
+                              alert('Errore durante l\'eliminazione del POI');
+                            }
+                          } : undefined}
+                          disabled={!canDelete}
+                          className={buttonClass}
+                        >
+                          🗑️ Elimina
+                        </button>
+                      );
+                    };
+
+                    // Helper function to create cantiere finito button (only for green cantieri)
+                    const createCantiereFinitoButton = () => {
+                      const canMarkFinished = !selectedPoi.anno && selectedPoi.ispezionabile === 1 && selectedPoi.tipo === 'cantiere' && user && user.admin !== undefined && user.admin >= 0;
+                      const buttonClass = canMarkFinished
+                        ? "text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
+                        : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+
+                      return (
+                        <button
+                          key="cantiere-finito"
+                          onClick={canMarkFinished ? async (e) => {
+                            e.stopPropagation();
+                            const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
+                            if (!confirmed) return;
+                            refreshPois([selectedPoi.latitudine, selectedPoi.longitudine], 14, selectedPoi.id);
+                            try {
+                              const { error } = await supabase
+                                .from('points')
+                                .update({
+                                  ispezionabile: 2,
+                                  created_at: new Date().toISOString(),
+                                  team: user?.team || selectedPoi.team
+                                })
+                                .eq('id', selectedPoi.id);
+                              if (!error) {
+                                // Update local state
+                                setSelectedPoi(prev => prev ? { ...prev, ispezionabile: 2, created_at: new Date().toISOString() } : null);
+                                setPois(prevPois => prevPois.map(poi => poi.id === selectedPoi.id ? { ...poi, ispezionabile: 2, created_at: new Date().toISOString() } : poi));
+                                refreshPois([selectedPoi.latitudine, selectedPoi.longitudine], 14);
+                              } else {
+                                alert('Errore nell\'aggiornamento del POI');
+                              }
+                            } catch (err) {
+                              console.error('Error updating POI:', err);
+                              alert('Errore nell\'aggiornamento del POI');
+                            }
+                          } : undefined}
+                          disabled={!canMarkFinished}
+                          className={buttonClass}
+                        >
+                          🏗️ Cantiere finito
+                        </button>
+                      );
+                    };
+
+                    // Helper function to create ispezionato button (only for green POIs)
+                    const createIspezionatoButton = () => {
+                      const canMarkInspected = !selectedPoi.anno && selectedPoi.ispezionabile === 1 && user && user.admin !== undefined && user.admin >= 0;
+                      const buttonClass = canMarkInspected
+                        ? "text-xs px-2 py-1 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm flex-1"
+                        : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+
+                      return (
+                        <button
+                          key="ispezionato"
+                          onClick={canMarkInspected ? async (e) => {
+                            e.stopPropagation();
+                            const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
+                            if (!confirmed) return;
+                            refreshPois([selectedPoi.latitudine, selectedPoi.longitudine], 14, selectedPoi.id);
+                            try {
+                              const { error } = await supabase
+                                .from('points')
+                                .update({
+                                  ispezionabile: 0,
+                                  created_at: new Date().toISOString(),
+                                  team: user?.team || selectedPoi.team
+                                })
+                                .eq('id', selectedPoi.id);
+                              if (!error) {
+                                refreshPois([selectedPoi.latitudine, selectedPoi.longitudine], 14);
+                                // Close modal and deselect POI
+                                setSelectedPoiId(null);
+                                setSelectedPoi(null);
+                              }
+                            } catch (err) {
+                              console.error('Error toggling ispezionabile:', err);
+                            }
+                          } : undefined}
+                          disabled={!canMarkInspected}
+                          className={buttonClass}
+                        >
+                          👮‍♂️ Ispezionato
+                        </button>
+                      );
+                    };
+
+                    // Helper function to create segnala inattività button (only for green cantieri)
+                    const createSegnalaInattivitaButton = () => {
+                      const canReportInactive = !selectedPoi.anno && selectedPoi.ispezionabile === 1 && selectedPoi.tipo === 'cantiere' && user && user.admin !== undefined && user.admin >= 0;
+                      const buttonClass = canReportInactive
+                        ? "text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm flex-1"
+                        : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+
+                      return (
+                        <button
+                          key="segnala-inattivita"
+                          onClick={canReportInactive ? async (e) => {
+                            e.stopPropagation();
+                            const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
+                            if (!confirmed) return;
+                            refreshPois([selectedPoi.latitudine, selectedPoi.longitudine], 14, selectedPoi.id);
+                            try {
+                              const { error } = await supabase
+                                .from('points')
+                                .update({ data_inattivita: new Date().toISOString() })
+                                .eq('id', selectedPoi.id);
+                              if (error) {
+                                alert('Errore durante la segnalazione di inattività');
+                              } else {
+                                // Update local state
+                                setSelectedPoi(prev => prev ? { ...prev, data_inattivita: new Date().toISOString() } : null);
+                                setPois(prevPois => prevPois.map(poi => poi.id === selectedPoi.id ? { ...poi, data_inattivita: new Date().toISOString() } : poi));
+                                refreshPois([selectedPoi.latitudine, selectedPoi.longitudine], 14);
+                              }
+                            } catch (err) {
+                              alert('Errore durante la segnalazione di inattività');
+                            }
+                          } : undefined}
+                          disabled={!canReportInactive}
+                          className={buttonClass}
+                        >
+                          ⚠️ Segnala inattività
+                        </button>
+                      );
+                    };
+
+                    // Fixed 5-slot layout: always same structure for uniform popup sizes
+                    const buttonSlots = [
+                      shareButton,                          // Slot 1: Always visible
+                      createDeleteButton(),                // Slot 2: Conditional delete
+                      createCantiereFinitoButton(),        // Slot 3: Only for green cantieri
+                      createIspezionatoButton(),           // Slot 4: Only for green POIs
+                      createSegnalaInattivitaButton()      // Slot 5: Only for green cantieri
+                    ];
+
+                    // Return fixed layout with 2 rows (3 buttons each)
+                    return (
+                      <>
+                        <div className="flex gap-2">
+                          {buttonSlots.slice(0, 3)}
+                        </div>
+                        <div className="flex gap-2">
+                          {buttonSlots.slice(3, 5)}
+                          {/* Cancel button - available for all admin levels */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedPoiId(null);
+                              setSelectedPoi(null);
+                            }}
+                            className="text-xs px-2 py-1 rounded font-medium bg-red-500 text-white hover:bg-red-600 shadow-sm flex-1"
+                          >
+                            ❌ Annulla
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
