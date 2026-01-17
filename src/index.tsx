@@ -16,21 +16,29 @@ const clearAllCaches = async () => {
       console.log('🧹 Cleared CacheStorage caches:', cacheNames.length);
     }
 
-    // Clear localStorage (except for user preferences if needed)
+    // Clear localStorage (except for user preferences and auth data)
     // Keep only essential data, clear everything else
-    const keysToKeep = ['user', 'theme']; // Add any keys you want to preserve
-    const allKeys = Object.keys(localStorage);
+    const localKeysToKeep = ['user', 'theme']; // Add any keys you want to preserve
+    const allLocalKeys = Object.keys(localStorage);
 
-    allKeys.forEach(key => {
-      if (!keysToKeep.includes(key)) {
+    allLocalKeys.forEach(key => {
+      if (!localKeysToKeep.includes(key)) {
         localStorage.removeItem(key);
       }
     });
 
-    // Clear sessionStorage
-    sessionStorage.clear();
+    // Clear sessionStorage (except for authentication data)
+    // Keep currentUser for authentication persistence
+    const sessionKeysToKeep = ['currentUser'];
+    const allSessionKeys = Object.keys(sessionStorage);
 
-    console.log('🧹 Cleared browser storage (localStorage, sessionStorage)');
+    allSessionKeys.forEach(key => {
+      if (!sessionKeysToKeep.includes(key)) {
+        sessionStorage.removeItem(key);
+      }
+    });
+
+    console.log('🧹 Cleared browser storage (preserved auth data)');
   } catch (error) {
     console.warn('⚠️ Error clearing caches:', error);
   }
