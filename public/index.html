@@ -18,6 +18,30 @@
     <title>Points of Interest App</title>
   </head>
   <body>
+    <!-- Safari iOS Cache-Busting Script -->
+    <script>
+      (function() {
+        // Check if we're on Safari iOS
+        var isSafariIOS = /^((?!chrome|android).)*safari/i.test(navigator.userAgent) &&
+                         /iPad|iPhone|iPod/.test(navigator.userAgent) &&
+                         !window.MSStream;
+
+        if (isSafariIOS) {
+          var currentUrl = window.location.href;
+          var url = new URL(currentUrl);
+
+          // Check if cache-busting parameter already exists
+          if (!url.searchParams.has('v')) {
+            // Add timestamp as cache-busting parameter
+            url.searchParams.set('v', Date.now().toString());
+
+            // Reload page with new URL
+            window.location.replace(url.toString());
+          }
+        }
+      })();
+    </script>
+
     <noscript>You need to enable JavaScript to run this app.</noscript>
     <div id="root"></div>
   </body>
