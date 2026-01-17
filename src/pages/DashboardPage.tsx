@@ -589,19 +589,26 @@ const DashboardPage: React.FC = () => {
   // Handle POI selection/deselection
   const handlePoiSelect = useCallback((poi: PointOfInterest | null) => {
     if (poi) {
-      // Select POI - make it large and center map on it
+      // Select POI - make it large but don't center map yet
       setSelectedPoiId(poi.id);
       setHighlightedPoiId(poi.id); // Keep highlighted even after popup closes
       // Reset working POI when selecting a different POI
       setWorkingPoiId(null);
-      // Center map on selected POI with zoom 8 (even wider view)
-      refreshPois([poi.latitudine, poi.longitudine], 8);
+      // Don't center map here - will center when popup closes
     } else {
-      // Deselect POI - make all normal but keep highlighted
+      // Deselect POI - center map on the POI that was just closed
       setSelectedPoiId(null);
+      // Center map on the POI that was just deselected (popup closed)
+      if (highlightedPoiId) {
+        // Find the POI coordinates from the current POI list
+        const poiToCenter = pois.find(p => p.id === highlightedPoiId);
+        if (poiToCenter) {
+          refreshPois([poiToCenter.latitudine, poiToCenter.longitudine], 8);
+        }
+      }
       // Note: highlightedPoiId stays set so icon remains enlarged
     }
-  }, [refreshPois]);
+  }, [refreshPois, highlightedPoiId, pois]);
 
   // Handle password change
   const handlePasswordChange = useCallback(async (newPassword: string): Promise<boolean> => {
