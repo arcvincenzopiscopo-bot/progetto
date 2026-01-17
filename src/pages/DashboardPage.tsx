@@ -590,8 +590,8 @@ const DashboardPage: React.FC = () => {
       setSelectedPoiId(poi.id);
       // Reset working POI when selecting a different POI
       setWorkingPoiId(null);
-      // Center map on selected POI with zoom 14 (better usability than 16)
-      refreshPois([poi.latitudine, poi.longitudine], 14);
+      // Center map on selected POI with zoom 10 (wider view)
+      refreshPois([poi.latitudine, poi.longitudine], 10);
     } else {
       // Deselect POI - make all normal
       setSelectedPoiId(null);
