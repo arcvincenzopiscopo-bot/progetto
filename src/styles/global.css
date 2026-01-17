@@ -420,18 +420,18 @@ body .existing-poi-content * {
       line-height: 1.2 !important;
     }
 
-    /* Compact buttons for existing POI popup */
+    /* Compact buttons for existing POI popup - tighter spacing */
     .existing-poi-content button {
-      font-size: 11px !important;
-      padding: 6px 8px !important;
-      min-height: 36px !important;
+      font-size: 10px !important;
+      padding: 4px 6px !important;
+      min-height: 32px !important;
       line-height: 1 !important;
     }
 
-    /* Optimized button layout - 3 rows with 2 equal-width buttons each */
+    /* Optimized button layout - 3 rows with 2 equal-width buttons each, tighter gaps */
     .existing-poi-content .space-y-2 > div {
       display: flex !important;
-      gap: 4px !important;
+      gap: 2px !important;
     }
 
     /* Ensure all buttons in each row have equal width */
@@ -475,9 +475,9 @@ body .existing-poi-content * {
     }
 
     .existing-poi-content button {
-      font-size: 10px !important;
-      padding: 4px 6px !important;
-      min-height: 32px !important;
+      font-size: 9px !important;
+      padding: 3px 4px !important;
+      min-height: 28px !important;
     }
 
     .existing-poi-content label {

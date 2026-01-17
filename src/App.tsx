@@ -6,8 +6,6 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import PrivateRoute from './components/Auth/PrivateRoute';
 import ErrorBoundary from './components/ErrorBoundary';
-import PWAUpdateNotification from './components/PWAUpdateNotification';
-import { usePWAUpdate } from './hooks/usePWAUpdate';
 
 // Development Banner Component
 const DevelopmentBanner: React.FC = () => {
@@ -60,16 +58,9 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 function App() {
-  const { updateAvailable, updateApp, dismissUpdate } = usePWAUpdate();
-
   return (
     <ErrorBoundary>
       <DevelopmentBanner />
-      <PWAUpdateNotification
-        updateAvailable={updateAvailable}
-        onUpdate={updateApp}
-        onDismiss={dismissUpdate}
-      />
       <Router
         future={{
           v7_startTransition: true,

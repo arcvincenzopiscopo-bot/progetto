@@ -551,11 +551,11 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                         />
                       </div>
 
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <p>Username: {poi.username || 'N/D'}</p>
-                        <p>Team: {poi.team || 'N/D'}</p>
-                        <p>Tipo: {poi.tipo || 'N/D'}</p>
-                        {poi.note && <p>Note: {poi.note}</p>}
+                      <div className="text-sm text-gray-600">
+                        <p className="mb-0">Username: {poi.username || 'N/D'}</p>
+                        <p className="mb-0">Team: {poi.team || 'N/D'}</p>
+                        <p className="mb-0">Tipo: {poi.tipo || 'N/D'}</p>
+                        {poi.note && <p className="mb-0">Note: {poi.note}</p>}
                       </div>
 
                       {/* Action buttons with admin-level permissions */}
