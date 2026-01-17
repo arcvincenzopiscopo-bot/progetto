@@ -428,18 +428,16 @@ body .existing-poi-content * {
       line-height: 1 !important;
     }
 
-    /* Optimized button layout - 2x3 grid instead of 3+2+1 */
-    .existing-poi-content .space-y-2 > div:first-child,
-    .existing-poi-content .space-y-2 > div:last-child {
-      display: grid !important;
-      grid-template-columns: 1fr 1fr 1fr !important;
+    /* Optimized button layout - 3 rows with 2 equal-width buttons each */
+    .existing-poi-content .space-y-2 > div {
+      display: flex !important;
       gap: 4px !important;
     }
 
-    /* Ensure cancel button spans full width in second row */
-    .existing-poi-content .space-y-2 > div:last-child button:last-child {
-      grid-column: 1 / -1 !important;
-      margin-top: 4px !important;
+    /* Ensure all buttons in each row have equal width */
+    .existing-poi-content .space-y-2 > div button {
+      flex: 1 !important;
+      min-width: 0 !important; /* Allow flex shrinking */
     }
 
     /* Reduce gaps in button containers */

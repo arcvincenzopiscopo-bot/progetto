@@ -801,14 +801,19 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                             createSegnalaInattivitaButton()      // Slot 5: Only for green cantieri
                           ];
 
-                          // Return fixed layout with 2 rows (3 buttons each)
+                          // Return fixed layout with 3 rows (2 buttons each)
                           return (
                             <>
                               <div className="flex gap-2">
-                                {buttonSlots.slice(0, 3)}
+                                {buttonSlots[0]} {/* Share */}
+                                {buttonSlots[1]} {/* Delete */}
                               </div>
                               <div className="flex gap-2">
-                                {buttonSlots.slice(3, 5)}
+                                {buttonSlots[2]} {/* Cantiere finito */}
+                                {buttonSlots[3]} {/* Ispezionato */}
+                              </div>
+                              <div className="flex gap-2">
+                                {buttonSlots[4]} {/* Segnala inattività */}
                                 {/* Cancel button - available for all admin levels */}
                                 <button
                                   onClick={(e) => {
