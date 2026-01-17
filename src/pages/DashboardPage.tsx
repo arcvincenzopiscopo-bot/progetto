@@ -48,12 +48,8 @@ const DashboardPage: React.FC = () => {
   const [addressFieldEditable, setAddressFieldEditable] = useState<boolean>(false); // Track if address field is editable
   const [editingAddress, setEditingAddress] = useState<{ [key: string]: string | undefined }>({}); // Track editing state for POI addresses
 
-  // Reset address field editability when POI changes
+  // Prevent auto-focus on modal inputs when POI selection changes
   useLayoutEffect(() => {
-    console.log('🔄 Resetting address field editability for POI:', selectedPoiId, 'Current editable state:', addressFieldEditable);
-    setAddressFieldEditable(false);
-    console.log('✅ Address field set to non-editable');
-
     // Prevent auto-focus on modal inputs
     const preventAutoFocus = (e: FocusEvent) => {
       const target = e.target as HTMLInputElement;
