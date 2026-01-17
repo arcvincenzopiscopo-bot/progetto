@@ -396,6 +396,97 @@ body .existing-poi-content * {
     padding: 12px 16px;
   }
 
+  /* EXISTING POI POPUP MOBILE OPTIMIZATIONS */
+  /* Reduce spacing and text sizes for existing POI popups on mobile */
+  @media (max-width: 768px) {
+    /* Existing POI popup container - more compact */
+    .existing-poi-content {
+      padding: 10px !important;
+      gap: 6px !important;
+    }
+
+    /* Smaller text for existing POI info */
+    .existing-poi-content p {
+      font-size: 12px !important;
+      margin-bottom: 2px !important;
+      line-height: 1.1 !important;
+    }
+
+    /* Compact address input */
+    .existing-poi-content input[type="text"] {
+      font-size: 14px !important;
+      padding: 6px 8px !important;
+      min-height: 36px !important;
+      line-height: 1.2 !important;
+    }
+
+    /* Compact buttons for existing POI popup */
+    .existing-poi-content button {
+      font-size: 11px !important;
+      padding: 6px 8px !important;
+      min-height: 36px !important;
+      line-height: 1 !important;
+    }
+
+    /* Optimized button layout - 2x3 grid instead of 3+2+1 */
+    .existing-poi-content .space-y-2 > div:first-child,
+    .existing-poi-content .space-y-2 > div:last-child {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr 1fr !important;
+      gap: 4px !important;
+    }
+
+    /* Ensure cancel button spans full width in second row */
+    .existing-poi-content .space-y-2 > div:last-child button:last-child {
+      grid-column: 1 / -1 !important;
+      margin-top: 4px !important;
+    }
+
+    /* Reduce gaps in button containers */
+    .existing-poi-content .flex.gap-2 {
+      gap: 4px !important;
+    }
+
+    /* Compact label text */
+    .existing-poi-content label {
+      font-size: 11px !important;
+      margin-bottom: 2px !important;
+    }
+
+    /* Smaller line height for all text */
+    .existing-poi-content * {
+      line-height: 1.1 !important;
+    }
+  }
+
+  /* Extra compact for very small screens */
+  @media (max-width: 480px) {
+    .existing-poi-content {
+      padding: 8px !important;
+      gap: 4px !important;
+    }
+
+    .existing-poi-content p {
+      font-size: 11px !important;
+    }
+
+    .existing-poi-content input[type="text"] {
+      font-size: 13px !important;
+      padding: 4px 6px !important;
+      min-height: 32px !important;
+    }
+
+    .existing-poi-content button {
+      font-size: 10px !important;
+      padding: 4px 6px !important;
+      min-height: 32px !important;
+    }
+
+    .existing-poi-content label {
+      font-size: 10px !important;
+    }
+  }
+
   /* Modal overlay adjustments */
   .modal-overlay-mobile {
     padding: 16px !important;
