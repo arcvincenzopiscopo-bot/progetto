@@ -674,14 +674,19 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                                   try {
                                     // Delete photo from Cloudinary if exists
                                     if (poi.photo_url) {
+                                      console.log('🗑️ [POI DELETE] POI has photo, starting Cloudinary deletion process');
+                                      console.log('🗑️ [POI DELETE] Photo URL:', poi.photo_url);
                                       try {
-                                        console.log('🗑️ Deleting photo from Cloudinary:', poi.photo_url);
+                                        console.log('🗑️ [POI DELETE] Calling deletePhotoFromCloudinary...');
                                         await deletePhotoFromCloudinary(poi.photo_url);
-                                        console.log('✅ Photo deleted from Cloudinary successfully');
+                                        console.log('✅ [POI DELETE] Photo deleted from Cloudinary successfully');
                                       } catch (photoError) {
-                                        console.error('❌ Error deleting photo from Cloudinary:', photoError);
+                                        console.error('❌ [POI DELETE] Error deleting photo from Cloudinary:', photoError);
+                                        console.warn('⚠️ [POI DELETE] Photo deletion failed, but POI deletion will continue');
                                         // Don't block POI deletion if photo deletion fails
                                       }
+                                    } else {
+                                      console.log('ℹ️ [POI DELETE] POI has no photo, skipping Cloudinary deletion');
                                     }
 
                                     let tableName = 'points';

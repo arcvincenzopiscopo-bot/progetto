@@ -534,8 +534,7 @@ const DashboardPage: React.FC = () => {
         }
         const newPoi = data[0];
         setPois(prevPois => [...prevPois, newPoi]);
-        // Automatically select and highlight the newly created POI
-        setSelectedPoiId(newPoi.id);
+        // Automatically highlight the newly created POI (enlarge icon only, no popup)
         setHighlightedPoiId(newPoi.id);
         setShowAddForm(false);
         setNewPoiLocation(null);
