@@ -1,4 +1,6 @@
 /* Global Base Styles - Minimal Reset */
+
+/* Tailwind CSS directives - processed by PostCSS, valid for Tailwind framework */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -202,6 +204,22 @@ body .existing-poi-content * {
   max-width: 600px;
 }
 
+/* Fixed width address field with horizontal scrolling */
+.fixed-width-address {
+  max-width: 20ch;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Higher specificity for fixed width address in POI form */
+body .poi-form-mobile .fixed-width-address,
+.fixed-width-address {
+  max-width: 20ch !important;
+  overflow-x: auto !important;
+  white-space: nowrap !important;
+  display: inline-block !important;
+}
+
 /* Make form elements responsive */
 .popup-form-input {
   width: 100%;
@@ -394,6 +412,95 @@ body .existing-poi-content * {
     min-height: 44px;
     font-size: 16px;
     padding: 12px 16px;
+  }
+
+  /* EXISTING POI POPUP MOBILE OPTIMIZATIONS */
+  /* Reduce spacing and text sizes for existing POI popups on mobile */
+  @media (max-width: 768px) {
+    /* Existing POI popup container - more compact */
+    .existing-poi-content {
+      padding: 10px !important;
+      gap: 6px !important;
+    }
+
+    /* Smaller text for existing POI info */
+    .existing-poi-content p {
+      font-size: 12px !important;
+      margin-bottom: 2px !important;
+      line-height: 1.1 !important;
+    }
+
+    /* Compact address input */
+    .existing-poi-content input[type="text"] {
+      font-size: 14px !important;
+      padding: 6px 8px !important;
+      min-height: 36px !important;
+      line-height: 1.2 !important;
+    }
+
+    /* Compact buttons for existing POI popup - tighter spacing and 50% smaller overall (additional 30% reduction) */
+    .existing-poi-content button {
+      font-size: 5px !important; /* 7px * 0.7 ≈ 5px (additional 30% reduction, now 50% total) */
+      padding: 2px 3px !important; /* 3px 4px * 0.7 ≈ 2px 3px (additional 30% reduction, now 50% total) */
+      min-height: 15px !important; /* 22px * 0.7 ≈ 15px (additional 30% reduction, now 50% total) */
+      line-height: 1 !important;
+    }
+
+    /* Optimized button layout - 3 rows with 2 equal-width buttons each, tighter gaps */
+    .existing-poi-content .space-y-2 > div {
+      display: flex !important;
+      gap: 2px !important;
+    }
+
+    /* Ensure all buttons in each row have equal width */
+    .existing-poi-content .space-y-2 > div button {
+      flex: 1 !important;
+      min-width: 0 !important; /* Allow flex shrinking */
+    }
+
+    /* Reduce gaps in button containers */
+    .existing-poi-content .flex.gap-2 {
+      gap: 4px !important;
+    }
+
+    /* Compact label text */
+    .existing-poi-content label {
+      font-size: 11px !important;
+      margin-bottom: 2px !important;
+    }
+
+    /* Smaller line height for all text */
+    .existing-poi-content * {
+      line-height: 1.1 !important;
+    }
+  }
+
+  /* Extra compact for very small screens */
+  @media (max-width: 480px) {
+    .existing-poi-content {
+      padding: 8px !important;
+      gap: 4px !important;
+    }
+
+    .existing-poi-content p {
+      font-size: 11px !important;
+    }
+
+    .existing-poi-content input[type="text"] {
+      font-size: 13px !important;
+      padding: 4px 6px !important;
+      min-height: 32px !important;
+    }
+
+    .existing-poi-content button {
+      font-size: 6px !important; /* 9px * 0.7 = 6.3px (30% smaller) */
+      padding: 3px 4px !important;
+      min-height: 28px !important;
+    }
+
+    .existing-poi-content label {
+      font-size: 10px !important;
+    }
   }
 
   /* Modal overlay adjustments */

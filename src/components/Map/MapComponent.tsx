@@ -1,34 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import Map, { Marker, Popup, NavigationControl, GeolocateControl, MapRef, MapLayerMouseEvent } from '@vis.gl/react-maplibre';
+import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../../services/supabaseClient';
-import { deletePhotoFromCloudinary } from '../../services/authService';
-import { getAddressWithCache } from '../../services/geocodingService';
-import POIFormPopup from '../POI/POIFormPopup';
-import {
-  greenIcon,
-  redIcon,
-  yellowIcon,
-  magentaIcon,
-  darkGreyIcon,
-  largeDefaultIcon,
-  largeGreenIcon,
-  largeRedIcon,
-  largeYellowIcon,
-  largeMagentaIcon,
-  largeDarkGreyIcon,
-  userLocationIcon,
-  constructionGreenIcon,
-  constructionRedIcon,
-  constructionYellowIcon,
-  constructionMagentaIcon,
-  constructionDarkGreyIcon,
-  largeConstructionGreenIcon,
-  largeConstructionRedIcon,
-  largeConstructionYellowIcon,
-  largeConstructionMagentaIcon,
-  largeConstructionDarkGreyIcon
-} from '../../constants/icons';
 
 interface PointOfInterest {
   id: string;
@@ -54,7 +27,6 @@ interface MapComponentProps {
   initialPosition?: [number, number];
   mapCenter?: [number, number] | null;
   mapZoom?: number;
-  mapBearing?: number; // Bearing (rotation) of the map in degrees
   onPoiUpdated?: (poiPosition?: [number, number], zoomLevel?: number, workingPoiId?: string) => void;
   onPoiSelect?: (poi: PointOfInterest | null) => void; // Callback when POI is selected/deselected
   currentTeam?: string;
@@ -74,117 +46,339 @@ interface MapComponentProps {
   height?: string;
   workingPoiId?: string | null; // ID of POI currently being worked on
   selectedPoiId?: string | null; // ID of POI currently selected
+  highlightedPoiId?: string | null; // ID of POI that should stay highlighted after popup closes
   creatingNewPoi?: boolean; // Whether a new POI is currently being created
+  // User info for permission logic
+  currentUser?: any; // User object for admin level and username
+  // Callback for POI actions
+  onPoiDeleted?: (poiId: string) => void;
+  // Rotation props
+  enableRotation?: boolean; // Enable map rotation following heading
+  heading?: number | null; // Current GPS heading in degrees (0-360)
 }
 
 
-
-const MapClickHandler: React.FC<{
-  onMapClick: (lat: number, lng: number) => void;
-  onPoiSelect?: (poi: PointOfInterest | null) => void; // Callback for POI selection/deselection
-  newPoiLocation?: { lat: number; lng: number } | null;
-  onAddPoi?: (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => void;
-  onCancelAddPoi?: () => void;
-}> = ({ onMapClick, onPoiSelect, newPoiLocation }) => {
-  useMapEvents({
-    click: (e) => {
-      const { lat, lng } = e.latlng;
-      onMapClick(lat, lng);
-    },
-  });
-
-  return null;
-};
-
-// Component to handle map clicks for POI deselection
-const MapDeselectHandler: React.FC<{
-  onPoiSelect?: (poi: PointOfInterest | null) => void;
-}> = ({ onPoiSelect }) => {
-  useMapEvents({
-    click: (e) => {
-      // Check if the click was on a marker by looking at the original event target
-      // If it's not on a marker, deselect all POIs
-      const target = e.originalEvent.target as HTMLElement;
-      const isOnMarker = target.closest('.leaflet-marker-icon') !== null;
-
-      if (!isOnMarker && onPoiSelect) {
-        onPoiSelect(null); // Deselect all POIs
-      }
-    },
-  });
-
-  return null;
-};
-
-
-
-const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick, selectedPoi, initialPosition, mapCenter, mapZoom, mapBearing = 0, onPoiUpdated, onPoiSelect, currentTeam, adminLevel = 0, currentUsername, newPoiLocation, onAddPoi, onCancelAddPoi, filterShowInspectable = true, filterShowNonInspectable = true, filterShowPendingApproval = true, filterShowCantiere = true, filterShowAltro = true, filterShow2024 = false, filterShow2025 = false, filterShowToday = false, height, workingPoiId = null, selectedPoiId = null, creatingNewPoi = false }) => {
-  // State for map center - initialize once and don't change on position updates
-  const [centerPosition, setCenterPosition] = useState<[number, number]>(
-    () => initialPosition || [41.9028, 12.4964]
-  );
-
-  // Update center when mapCenter prop changes (explicit centering)
+// GPS Rotation Handler for MapLibre GL JS - Now uses pre-computed smoothed heading for battery optimization
+const GPSRotationHandler: React.FC<{
+  enableRotation?: boolean;
+  heading?: number | null;
+  mapRef: React.RefObject<MapRef>;
+}> = ({ enableRotation, heading, mapRef }) => {
   useEffect(() => {
-    if (mapCenter) {
-      setCenterPosition(mapCenter);
-    }
-  }, [mapCenter]);
+    if (!enableRotation || !mapRef.current || !heading) return;
 
-  const [mapKey, setMapKey] = useState(Date.now());
+    const map = mapRef.current;
+    const targetBearing = heading; // heading is now pre-smoothed
+
+    // Only update if bearing changed significantly (increased threshold for smoother experience)
+    const currentBearing = map.getBearing();
+    if (Math.abs(currentBearing - targetBearing) > 5) { // Increased from 2 to 5 degrees
+      map.rotateTo(targetBearing, { duration: 600 }); // Increased from 200 to 600ms for smoother transitions
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`GPS rotation: ${targetBearing.toFixed(1)}° (pre-smoothed)`);
+      }
+    }
+  }, [enableRotation, heading, mapRef]);
+
+  return null;
+};
+
+// Manual Rotation Handler for right-click rotation
+const ManualRotationHandler: React.FC<{
+  enableRotation?: boolean;
+  mapRef: React.RefObject<MapRef>;
+}> = ({ enableRotation, mapRef }) => {
+  useEffect(() => {
+    if (!enableRotation || !mapRef.current) return;
+
+    const map = mapRef.current;
+    let isRightMouseDown = false;
+    let startAngle = 0;
+    let currentBearing = 0;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      if (e.button === 2) { // Right mouse button
+        e.preventDefault();
+        isRightMouseDown = true;
+
+        // Get mouse position relative to map center
+        const rect = (e.target as HTMLElement).getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const dx = e.clientX - rect.left - centerX;
+        const dy = e.clientY - rect.top - centerY;
+        startAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+        currentBearing = map.getBearing();
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Manual rotation started');
+        }
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isRightMouseDown) return;
+
+      e.preventDefault();
+
+      // Get mouse position relative to map center
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+
+      const dx = e.clientX - rect.left - centerX;
+      const dy = e.clientY - rect.top - centerY;
+      const mouseAngle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+      // Calculate new bearing
+      const angleDiff = mouseAngle - startAngle;
+      const newBearing = currentBearing + angleDiff;
+
+      // Apply rotation
+      map.rotateTo(newBearing, { duration: 0 });
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Manual rotation: ${newBearing.toFixed(1)}°`);
+      }
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      if (e.button === 2) {
+        isRightMouseDown = false;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('Manual rotation ended');
+        }
+      }
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      e.preventDefault(); // Prevent context menu
+    };
+
+    // Add event listeners to map container
+    const mapContainer = map.getContainer();
+    mapContainer.addEventListener('mousedown', handleMouseDown);
+    mapContainer.addEventListener('mousemove', handleMouseMove);
+    mapContainer.addEventListener('mouseup', handleMouseUp);
+    mapContainer.addEventListener('contextmenu', handleContextMenu);
+
+    return () => {
+      mapContainer.removeEventListener('mousedown', handleMouseDown);
+      mapContainer.removeEventListener('mousemove', handleMouseMove);
+      mapContainer.removeEventListener('mouseup', handleMouseUp);
+      mapContainer.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, [enableRotation, mapRef]);
+
+  return null;
+};
+
+const MapComponent: React.FC<MapComponentProps> = React.memo(({
+  pois,
+  onMapClick,
+  selectedPoi,
+  initialPosition,
+  mapCenter,
+  mapZoom,
+  onPoiUpdated,
+  onPoiSelect,
+  currentTeam,
+  adminLevel = 0,
+  currentUsername,
+  newPoiLocation,
+  onAddPoi,
+  onCancelAddPoi,
+  filterShowInspectable = true,
+  filterShowNonInspectable = true,
+  filterShowPendingApproval = true,
+  filterShowCantiere = true,
+  filterShowAltro = true,
+  filterShow2024 = false,
+  filterShow2025 = false,
+  filterShowToday = false,
+  height,
+  workingPoiId = null,
+  selectedPoiId = null,
+  highlightedPoiId = null,
+  creatingNewPoi = false,
+  enableRotation,
+  heading
+}) => {
+  const mapRef = useRef<MapRef>(null);
+  const [viewState, setViewState] = useState({
+    longitude: initialPosition?.[1] || 12.4964, // Back to Rome (original position)
+    latitude: initialPosition?.[0] || 41.9028,  // Back to Rome (original position)
+    zoom: mapZoom || 13,                        // Back to city zoom (original)
+    bearing: 0,
+    pitch: 0
+  });
 
   // State for editing POI addresses
   const [editingAddress, setEditingAddress] = useState<{ [key: string]: string | undefined }>({});
   const [updatingAddress, setUpdatingAddress] = useState<Set<string>>(new Set());
 
-  // Handle address editing for all POIs (historical and current)
+  // Shared rotation state for both map and marker - single smoothing calculation for battery optimization
+  const [headingHistory, setHeadingHistory] = useState<number[]>([]);
+  const [smoothedHeading, setSmoothedHeading] = useState<number | null>(null);
+  const maxHistorySize = 3; // Keep last 3 readings for smoothing
+  const rotationThreshold = 5; // Minimum degree change to trigger rotation (degrees)
+
+  // Single smoothing calculation for both map and marker rotation - battery optimized
+  useEffect(() => {
+    if (!enableRotation || heading === null || heading === undefined) return;
+
+    // Add current heading to history for smoothing
+    setHeadingHistory(prev => {
+      const newHistory = [...prev, heading];
+      return newHistory.slice(-maxHistorySize); // Keep only recent readings
+    });
+
+    // Calculate smoothed heading (average of recent readings)
+    const newSmoothedHeading = headingHistory.reduce((sum, h) => sum + h, heading) / (headingHistory.length + 1);
+
+    // Only update if bearing changed significantly
+    if (smoothedHeading === null || Math.abs(smoothedHeading - newSmoothedHeading) > rotationThreshold) {
+      setSmoothedHeading(newSmoothedHeading);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Shared rotation: ${newSmoothedHeading.toFixed(1)}° (smoothed from ${headingHistory.length + 1} readings)`);
+      }
+    }
+  }, [enableRotation, heading, headingHistory, smoothedHeading]);
+
+  // Update view state when initial position becomes available (GPS location)
+  useEffect(() => {
+    if (initialPosition && !mapCenter) {
+      // Only center on GPS if user hasn't manually centered the map
+      // Preserve manual zoom by using prev.zoom instead of mapZoom
+      setViewState(prev => ({
+        ...prev,
+        longitude: initialPosition[1],
+        latitude: initialPosition[0],
+        zoom: prev.zoom // Always preserve manual zoom
+      }));
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log('📍 Centering map on GPS location:', initialPosition);
+      }
+    }
+  }, [initialPosition, mapCenter]);
+
+  // Update view state when center or zoom changes
+  useEffect(() => {
+    if (mapCenter) {
+      setViewState(prev => ({
+        ...prev,
+        longitude: mapCenter[1],
+        latitude: mapCenter[0],
+        zoom: mapZoom || prev.zoom
+      }));
+    }
+  }, [mapCenter, mapZoom]);
+
+
+
+  // Handle map clicks
+  const handleMapClick = useCallback((event: MapLayerMouseEvent) => {
+    if (onMapClick) {
+      onMapClick(event.lngLat.lat, event.lngLat.lng);
+    }
+  }, [onMapClick]);
+
+
+
+  // Filter POIs based on current filters and viewport for performance
+  const filteredPois = pois.filter((poi) => {
+    // Always exclude soft deleted POIs (ispezionabile === 4)
+    if (poi.ispezionabile === 4) return false;
+
+    if (filterShowToday) {
+      const poiDate = new Date(poi.created_at);
+      const today = new Date();
+      const isToday = poiDate.getDate() === today.getDate() &&
+                     poiDate.getMonth() === today.getMonth() &&
+                     poiDate.getFullYear() === today.getFullYear();
+      if (!isToday) return false;
+    }
+
+    if (poi.anno) {
+      if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;
+      if (poi.tipo === 'altro' && !filterShowAltro) return false;
+      if (poi.anno === 2024 && !filterShow2024) return false;
+      if (poi.anno === 2025 && !filterShow2025) return false;
+      return true;
+    }
+
+    if (poi.ispezionabile === 1 && !filterShowInspectable) return false;
+    if (poi.ispezionabile === 0 && !filterShowNonInspectable) return false;
+    if (poi.ispezionabile === 2 && !filterShowPendingApproval) return false;
+    if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;
+    if (poi.tipo === 'altro' && !filterShowAltro) return false;
+    return true;
+  });
+
+  // DISABLED: Virtualize markers for MAXIMUM FLUIDITY - show all filtered POIs always
+  // This consumes more resources but provides buttery smooth navigation
+  const visiblePois = filteredPois; // Always render all filtered POIs
+
+  // Handle address editing for all POIs
   const handleAddressEdit = async (poiId: string, newAddress: string, anno?: number) => {
     if (!newAddress.trim() || updatingAddress.has(poiId)) return;
 
+    console.log('🔄 Starting address edit for POI:', poiId, 'New address:', newAddress.trim());
     setUpdatingAddress(prev => new Set(prev).add(poiId));
 
     try {
-      // Import searchAddress function for geocoding
       const { searchAddress } = await import('../../services/geocodingService');
-
-      // First, geocode the new address to get coordinates
+      console.log('🔍 Calling geocoding service...');
       const searchResults = await searchAddress(newAddress.trim());
+
+      console.log('📍 Geocoding results:', searchResults);
 
       let updateData: any = { indirizzo: newAddress.trim() };
 
-      // If geocoding was successful, update coordinates too
       if (searchResults && searchResults.length > 0) {
         const bestResult = searchResults[0];
-        updateData.latitudine = parseFloat(bestResult.lat);
-        updateData.longitudine = parseFloat(bestResult.lon);
+        const newLat = parseFloat(bestResult.lat);
+        const newLng = parseFloat(bestResult.lon);
+
+        console.log('📌 Updating coordinates - Old:', 'New:', { lat: newLat, lng: newLng });
+        updateData.latitudine = newLat;
+        updateData.longitudine = newLng;
+      } else {
+        console.warn('⚠️ No geocoding results found for address:', newAddress.trim());
       }
 
-      // Determine which table to update based on year
-      const tableName = anno ? (anno === 2024 ? 'points_old_2024' : 'points_old_2025') : 'points';
+      console.log('💾 Update data:', updateData);
 
-      const { error } = await supabase
+      const tableName = anno ? (anno === 2024 ? 'points_old_2024' : 'points_old_2025') : 'points';
+      console.log('🗄️ Updating table:', tableName, 'for POI ID:', poiId);
+
+      const { data, error } = await supabase
         .from(tableName)
         .update(updateData)
-        .eq('id', poiId);
+        .eq('id', poiId)
+        .select();
+
+      console.log('🗃️ Database update result:', { data, error });
 
       if (error) {
-        console.error('Error updating POI address:', error);
+        console.error('❌ Error updating POI address:', error);
         alert('Errore durante l\'aggiornamento dell\'indirizzo');
-        // Revert the local state on error
         setEditingAddress(prev => ({ ...prev, [poiId]: undefined }));
       } else {
-        console.log('POI address updated successfully');
-        // Refresh POI data
+        console.log('✅ POI address updated successfully:', data);
         if (onPoiUpdated) {
+          console.log('🔄 Calling onPoiUpdated callback');
           onPoiUpdated();
         }
-        // Clear editing state
         setEditingAddress(prev => ({ ...prev, [poiId]: undefined }));
       }
     } catch (error) {
-      console.error('Error updating POI:', error);
+      console.error('💥 Error updating POI:', error);
       alert('Errore durante l\'aggiornamento del POI');
-      // Revert the local state on error
       setEditingAddress(prev => ({ ...prev, [poiId]: undefined }));
     } finally {
       setUpdatingAddress(prev => {
@@ -195,430 +389,501 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({ pois, onMapClick
     }
   };
 
+  // DISABLED: Debounced view state update for MAXIMUM FLUIDITY
+  // Direct state updates for buttery smooth navigation (higher resource usage)
 
 
-  useEffect(() => {
-    // Force re-render when mapCenter or mapZoom changes (for centering on POI actions)
-    if (mapCenter || mapZoom) {
-      setMapKey(Date.now());
-    }
-  }, [mapCenter, mapZoom]);
 
   return (
-    <MapContainer
-      key={mapKey}
-      center={centerPosition}
-      zoom={mapZoom || 13}
-      zoomControl={true}
-      style={{ height: height || '100%', width: '100%', position: 'relative', zIndex: 1 }}
-    >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      />
+    <div style={{ height: height || '100%', width: '100%', position: 'relative' }}>
+      <Map
+        {...viewState}
+        onMove={(evt: any) => setViewState(evt.viewState)} // Direct updates for maximum fluidity
+        onClick={handleMapClick}
+        ref={mapRef}
+        style={{ width: '100%', height: '100%' }}
 
-      {/* User's current location marker */}
-      {initialPosition && (
-        <Marker
-          position={initialPosition}
-          icon={userLocationIcon}
-          eventHandlers={{
-            click: (e) => {
-              e.originalEvent.stopPropagation();
-              // Trigger POI creation at current location
-              onMapClick(initialPosition[0], initialPosition[1]);
-            },
-          }}
+        // Advanced MapLibre GL JS optimizations for global navigation
+        minZoom={1}                           // Global view
+        maxZoom={20}                          // Street level detail
+        dragRotate={false}                    // No accidental mouse rotation
+        touchZoomRotate={true}                // Keep manual mobile rotation
+        renderWorldCopies={false}             // No world copies for cleaner map
+        pitchWithRotate={false}               // No tilt during rotation
+
+        mapStyle={{
+          version: 8,
+          sources: {
+            'osm': {
+              type: 'raster',
+              tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+              tileSize: 256,
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+              // Performance optimization for raster tiles
+              maxzoom: 20,
+              minzoom: 0
+            }
+          },
+          layers: [{
+            id: 'osm-layer',
+            type: 'raster',
+            source: 'osm',
+            // Additional performance hints
+            paint: {
+              'raster-fade-duration': 0  // Instant tile transitions
+            }
+          }]
+        }}
+      >
+        {/* Navigation controls */}
+        <NavigationControl position="top-right" />
+
+        {/* GPS location control */}
+        <GeolocateControl
+          position="top-right"
+          trackUserLocation={true}
         />
-      )}
 
-      {pois
-        .filter((poi) => {
-          // Apply today filter first (affects all POIs)
-          if (filterShowToday) {
-            const poiDate = new Date(poi.created_at);
-            const today = new Date();
-            const isToday = poiDate.getDate() === today.getDate() &&
-                           poiDate.getMonth() === today.getMonth() &&
-                           poiDate.getFullYear() === today.getFullYear();
-            if (!isToday) return false;
-          }
-
-          // For historical POIs, only apply type and year filters
-          if (poi.anno) {
-            if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;
-            if (poi.tipo === 'altro' && !filterShowAltro) return false;
-            if (poi.anno === 2024 && !filterShow2024) return false;
-            if (poi.anno === 2025 && !filterShow2025) return false;
-            return true;
-          }
-
-          // For current POIs, apply all filters including status
-          if (poi.ispezionabile === 1 && !filterShowInspectable) return false;
-          if (poi.ispezionabile === 0 && !filterShowNonInspectable) return false;
-          if (poi.ispezionabile === 2 && !filterShowPendingApproval) return false;
-          if (poi.tipo === 'cantiere' && !filterShowCantiere) return false;
-          if (poi.tipo === 'altro' && !filterShowAltro) return false;
-          return true;
-        })
-        .map((poi) => {
-        // Determine which icon to use based on working/selected state first, then construction type, then year/status
-        // Priority: Working POI -> large colored icon (double size, maintains original color)
-        // Then: Selected POI -> large colored icon (double size, maintains original color)
-        // Then: Construction POIs (cantiere, 2024, 2025) -> construction emoji icons
-        // Then: Regular POIs -> colored markers based on status
-        let markerIcon;
-        const isWorkingOrSelected = workingPoiId === poi.id || selectedPoiId === poi.id;
-        const isConstructionType = poi.tipo === 'cantiere' || poi.anno === 2024 || poi.anno === 2025;
-
-        if (isWorkingOrSelected) {
-          // This POI is currently being worked on or selected - use large icon with original color
-          if (isConstructionType) {
-            // Use large construction icons for construction-type POIs
-            if (poi.anno === 2024) {
-              markerIcon = largeConstructionMagentaIcon; // 🏗️ Large magenta construction for 2024 working/selected POI
-            } else if (poi.anno === 2025) {
-              markerIcon = largeConstructionDarkGreyIcon; // 🏗️ Large dark grey construction for 2025 working/selected POI
-            } else if (poi.ispezionabile === 2) {
-              markerIcon = largeConstructionYellowIcon; // 🏗️ Large yellow construction for pending approval working/selected POI
-            } else {
-              markerIcon = poi.ispezionabile === 1 ? largeConstructionGreenIcon : largeConstructionRedIcon; // 🏗️ Large green or red construction
-            }
-          } else {
-            // Use regular large icons for non-construction POIs
-            if (poi.ispezionabile === 2) {
-              markerIcon = largeYellowIcon; // 🟡 Large yellow for pending approval working/selected POI
-            } else {
-              markerIcon = poi.ispezionabile === 1 ? largeGreenIcon : largeRedIcon; // 🟢 Large green or 🔴 Large red
-            }
-          }
-        } else if (isConstructionType) {
-          // Construction-type POIs use construction emoji icons
-          if (poi.anno === 2024) {
-            markerIcon = constructionMagentaIcon; // 🏗️ Magenta construction for 2024
-          } else if (poi.anno === 2025) {
-            markerIcon = constructionDarkGreyIcon; // 🏗️ Dark grey construction for 2025
-          } else if (poi.ispezionabile === 2) {
-            markerIcon = constructionYellowIcon; // 🏗️ Yellow construction for pending approval
-          } else {
-            markerIcon = poi.ispezionabile === 1 ? constructionGreenIcon : constructionRedIcon; // 🏗️ Green or red construction
-          }
-        } else {
-          // Regular POIs use standard colored markers
-          if (poi.ispezionabile === 2) {
-            markerIcon = yellowIcon;
-          } else {
-            markerIcon = poi.ispezionabile === 1 ? greenIcon : redIcon;
-          }
-        }
-
-        return (
+        {/* User's current location marker */}
+        {initialPosition && (
           <Marker
-            key={`${poi.id}-${poi.anno || 'current'}-${poi.created_at}`}
-            position={[poi.latitudine, poi.longitudine]}
-            icon={markerIcon}
-            eventHandlers={{
-              click: (e) => {
-                e.originalEvent.stopPropagation(); // Prevent map click event
-                if (onPoiSelect) {
-                  onPoiSelect(poi); // Select this POI
-                }
-              },
-            }}
+            longitude={initialPosition[1]}
+            latitude={initialPosition[0]}
+            anchor="bottom"
           >
-            <Popup maxWidth={400} minWidth={300} className="existing-poi-popup">
-              <div className="border-2 border-indigo-600 rounded-lg p-3 bg-white">
-                <div className="space-y-3">
-                  <p className="text-sm font-medium text-gray-700 mb-1">
-                    {poi.anno === 2024 || poi.anno === 2025 ? 'inserito nel db in data ' :
-                     poi.ispezionabile === 1 ? 'Proposto da ispezionare in data ' :
-                     poi.ispezionabile === 0 ? 'Ispezionato in data: ' :
-                     poi.ispezionabile === 2 ? 'Creato in data: ' : ''}
-                    {new Date(poi.created_at).toLocaleString()}
-                  </p>
-                  {/* Editable address for all POIs */}
-                  <div className="mb-1">
-                    <label className="block text-xs text-gray-500 mb-1">Indirizzo (modificabile):</label>
-                    <input
-                      type="text"
-                      value={editingAddress[poi.id] !== undefined ? editingAddress[poi.id] : poi.indirizzo || ''}
-                      onChange={(e) => setEditingAddress(prev => ({ ...prev, [poi.id]: e.target.value }))}
-                      onBlur={(e) => handleAddressEdit(poi.id, e.target.value, poi.anno)}
-                      disabled={updatingAddress.has(poi.id)}
-                      className={`w-full px-2 py-1 text-sm border rounded ${
-                        updatingAddress.has(poi.id)
-                          ? 'bg-gray-100 border-gray-300 cursor-not-allowed'
-                          : 'bg-white border-gray-300 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
-                      }`}
-                      placeholder="Inserisci indirizzo..."
-                    />
-                    {updatingAddress.has(poi.id) && (
-                      <span className="text-xs text-blue-600 ml-2">🔄 Aggiornando...</span>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-600 mb-1">Username: {poi.username || 'N/D'}</p>
-                  <p className="text-sm text-gray-600 mb-1">Team: {poi.team || 'N/D'}</p>
-                  <p className="text-sm text-gray-600 mb-1">Tipo: {poi.tipo || 'N/D'}</p>
-                  {poi.note && <p className="text-sm text-gray-600 mb-1">Note: {poi.note}</p>}
-                  {poi.data_inattivita && (
-                    <p className="text-sm text-gray-600 mb-1">
-                      Inattività segnalata in {new Date(poi.data_inattivita).toLocaleString()}
-                    </p>
-                  )}
-                  {poi.photo_url && (
-                    <div className="mt-2 mb-2">
-                      <a href={poi.photo_url} target="_blank" rel="noopener noreferrer" className="block">
-                        <img
-                          src={poi.photo_url}
-                          alt="Foto POI"
-                          className="w-24 h-24 object-cover rounded-md border border-gray-300 cursor-pointer hover:opacity-80 transition-opacity"
-                          style={{ width: '100px', height: '100px' }}
-                          onError={(e) => {
-                            console.error('Errore nel caricamento della foto:', poi.photo_url);
-                            e.currentTarget.style.display = 'none';
-                          }}
-                        />
-                      </a>
-                      <p className="text-xs text-gray-500 text-center mt-1">Clicca per ingrandire</p>
-                    </div>
-                  )}
-                  {/* Fixed 5-slot button layout for uniform popup sizes */}
-                  <div className="space-y-2">
-                    {(() => {
-                      // Helper function to create share button (always visible)
-                      const shareButton = (
-                        <button
-                          key="share"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const shareText = `${poi.latitudine}, ${poi.longitudine}`;
-                            if (navigator.share) {
-                              navigator.share({
-                                title: `Punto di Interesse - ${poi.indirizzo}`,
-                                text: `Coordinate: ${shareText}`,
-                                url: `https://www.google.com/maps/search/?api=1&query=${poi.latitudine},${poi.longitudine}`
-                              }).catch(() => {
-                                navigator.clipboard.writeText(shareText);
-                                alert('Coordinate copiate negli appunti: ' + shareText);
-                              });
-                            } else {
-                              navigator.clipboard.writeText(shareText);
-                              alert('Coordinate copiate negli appunti: ' + shareText);
-                            }
-                          }}
-                          className="text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
-                        >
-                          📤 Condividi
-                        </button>
-                      );
+            <div style={{
+              fontSize: '24px',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transform: heading !== null && heading !== undefined ? `rotate(${heading}deg)` : 'none',
+              transformOrigin: 'center center',
+              transition: 'transform 0.6s ease-out' // Match map rotation duration
+            }}>
+              👮‍♂️
+            </div>
+          </Marker>
+        )}
 
-                      // Helper function to create delete button (conditional)
-                      const createDeleteButton = () => {
-                        let canDelete = false;
-                        let buttonClass = "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+        {/* POI markers - using virtualized visible POIs for better performance */}
+        {visiblePois.map((poi) => {
+          // Determine marker color and icon based on POI status and year
+          const isWorkingOrSelected = workingPoiId === poi.id || selectedPoiId === poi.id || highlightedPoiId === poi.id;
 
-                        // Determine if user can delete this POI
-                        // Admin level 2 and 1 can always delete existing POIs
-                        if (adminLevel >= 1) {
-                          canDelete = true;
-                        }
-                        // Admin level 0 can delete green and red POIs if created by them today
-                        else if (adminLevel === 0 && (poi.ispezionabile === 1 || poi.ispezionabile === 0)) {
-                          const poiDate = new Date(poi.created_at);
-                          const today = new Date();
-                          const isCreatedToday = poiDate.getDate() === today.getDate() &&
-                                                 poiDate.getMonth() === today.getMonth() &&
-                                                 poiDate.getFullYear() === today.getFullYear();
-                          if (isCreatedToday && poi.username === currentUsername) canDelete = true;
-                        }
+          // Debug logging for selected POI size
+          if (process.env.NODE_ENV === 'development') {
+            if (isWorkingOrSelected) {
+              console.log('🎯 POI selezionato/grande:', poi.id, 'workingPoiId:', workingPoiId, 'selectedPoiId:', selectedPoiId, 'highlightedPoiId:', highlightedPoiId, 'size: 45px');
+            }
+          }
 
-                        if (canDelete) {
-                          buttonClass = "text-xs px-2 py-1 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1";
-                        }
+          let markerColor = '#10B981'; // Default green for inspectable
+          let markerIcon = '✅'; // Default checkmark for inspectable
 
-                        return (
-                          <button
-                            key="delete"
-                            onClick={canDelete ? async (e) => {
-                              e.stopPropagation();
-                              const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Questa azione non può essere annullata.');
-                              if (!confirmed) return;
-                              try {
-                                let tableName = 'points';
-                                if (poi.anno) {
-                                  tableName = poi.anno === 2024 ? 'points_old_2024' : 'points_old_2025';
-                                }
-                                if (poi.photo_url) {
-                                  await deletePhotoFromCloudinary(poi.photo_url).catch(() => {});
-                                }
-                                const { error } = await supabase.from(tableName).delete().eq('id', poi.id);
-                                if (!error && onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                              } catch (err) {
-                                console.error('Error deleting POI:', err);
-                              }
-                            } : undefined}
-                            disabled={!canDelete}
-                            className={buttonClass}
-                          >
-                            🗑️ Elimina
-                          </button>
-                        );
-                      };
+          // Scalable marker size based on zoom level for better usability at high zoom
+          const baseSize = 30;
+          const selectedSize = 45;
+          const zoomScale = Math.max(0, (viewState.zoom - 10) * 2); // Scale factor starting from zoom 10
+          let markerSize = Math.min(baseSize + zoomScale, 60); // Max 60px to avoid oversized markers
 
-                      // Helper function to create cantiere finito button (only for green cantieri)
-                      const createCantiereFinitoButton = () => {
-                        const canMarkFinished = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel >= 0;
-                        const buttonClass = canMarkFinished
-                          ? "text-xs px-2 py-1 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
-                          : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+          if (isWorkingOrSelected) {
+            markerSize = Math.min(selectedSize + zoomScale, 75); // Larger for selected/working, max 75px
+          }
 
-                        return (
-                          <button
-                            key="cantiere-finito"
-                            onClick={canMarkFinished ? async (e) => {
-                              e.stopPropagation();
-                              const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
-                              if (!confirmed) return;
-                              if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                              try {
-                                const { error } = await supabase
-                                  .from('points')
-                                  .update({
-                                    ispezionabile: 2,
-                                    created_at: new Date().toISOString(),
-                                    team: currentTeam || poi.team
-                                  })
-                                  .eq('id', poi.id);
-                                if (!error) {
-                                  setMapKey(Date.now());
-                                  if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                } else {
-                                  alert('Errore nell\'aggiornamento del POI');
-                                }
-                              } catch (err) {
-                                console.error('Error updating POI:', err);
-                                alert('Errore nell\'aggiornamento del POI');
-                              }
-                            } : undefined}
-                            disabled={!canMarkFinished}
-                            className={buttonClass}
-                          >
-                            🏗️ Cantiere finito
-                          </button>
-                        );
-                      };
+          // Icon based on POI type
+          if (poi.tipo === 'cantiere') {
+            markerIcon = '🏗️'; // Construction crane for all construction sites
+          } else if (poi.tipo === 'altro') {
+            markerIcon = '📍'; // Pushpin for other POI types (Google Maps POI symbol)
+          } else {
+            markerIcon = '📍'; // Default to pushpin for unknown types
+          }
 
-                      // Helper function to create ispezionato button (only for green POIs)
-                      const createIspezionatoButton = () => {
-                        const canMarkInspected = !poi.anno && poi.ispezionabile === 1 && adminLevel >= 0;
-                        const buttonClass = canMarkInspected
-                          ? "text-xs px-2 py-1 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm flex-1"
-                          : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+          // Color based on priority order
+          if (poi.anno === 2024) {
+            markerColor = '#D946EF'; // Magenta for 2024
+          } else if (poi.anno === 2025) {
+            markerColor = '#6B7280'; // Grey for 2025
+          } else if (poi.ispezionabile === 0) {
+            markerColor = '#EF4444'; // Red for inspected
+          } else if (poi.ispezionabile === 1) {
+            markerColor = '#10B981'; // Green for inspectable
+          } else if (poi.ispezionabile === 2) {
+            markerColor = '#F59E0B'; // Yellow for pending approval
+          } else {
+            markerColor = '#10B981'; // Default green
+          }
 
-                        return (
-                          <button
-                            key="ispezionato"
-                            onClick={canMarkInspected ? async (e) => {
-                              e.stopPropagation();
-                              const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
-                              if (!confirmed) return;
-                              if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                              try {
-                                const { error } = await supabase
-                                  .from('points')
-                                  .update({
-                                    ispezionabile: 0,
-                                    created_at: new Date().toISOString(),
-                                    team: currentTeam || poi.team
-                                  })
-                                  .eq('id', poi.id);
-                                if (!error) {
-                                  setMapKey(Date.now());
-                                  if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                }
-                              } catch (err) {
-                                console.error('Error toggling ispezionabile:', err);
-                              }
-                            } : undefined}
-                            disabled={!canMarkInspected}
-                            className={buttonClass}
-                          >
-                            👮‍♂️ Ispezionato
-                          </button>
-                        );
-                      };
-
-                      // Helper function to create segnala inattività button (only for green cantieri)
-                      const createSegnalaInattivitaButton = () => {
-                        const canReportInactive = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel >= 0;
-                        const buttonClass = canReportInactive
-                          ? "text-xs px-2 py-1 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm flex-1"
-                          : "text-xs px-2 py-1 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
-
-                        return (
-                          <button
-                            key="segnala-inattivita"
-                            onClick={canReportInactive ? async (e) => {
-                              e.stopPropagation();
-                              const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
-                              if (!confirmed) return;
-                              if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
-                              try {
-                                const { error } = await supabase
-                                  .from('points')
-                                  .update({ data_inattivita: new Date().toISOString() })
-                                  .eq('id', poi.id);
-                                if (error) {
-                                  alert('Errore durante la segnalazione di inattività');
-                                } else {
-                                  if (onPoiUpdated) onPoiUpdated([poi.latitudine, poi.longitudine], 14);
-                                }
-                              } catch (err) {
-                                alert('Errore durante la segnalazione di inattività');
-                              }
-                            } : undefined}
-                            disabled={!canReportInactive}
-                            className={buttonClass}
-                          >
-                            ⚠️ Segnala inattività
-                          </button>
-                        );
-                      };
-
-                      // Fixed 5-slot layout: always same structure for uniform popup sizes
-                      const buttonSlots = [
-                        shareButton,                          // Slot 1: Always visible
-                        createDeleteButton(),                // Slot 2: Conditional delete
-                        createCantiereFinitoButton(),        // Slot 3: Only for green cantieri
-                        createIspezionatoButton(),           // Slot 4: Only for green POIs
-                        createSegnalaInattivitaButton()      // Slot 5: Only for green cantieri
-                      ];
-
-                      // Return fixed layout with 2 rows (3 buttons + 2 buttons)
-                      return (
-                        <>
-                          <div className="flex gap-2">
-                            {buttonSlots.slice(0, 3)}
-                          </div>
-                          <div className="flex gap-2">
-                            {buttonSlots.slice(3, 5)}
-                          </div>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
+          return (
+            <Marker
+              key={`${poi.id}-${poi.anno || 'current'}-${poi.created_at}`}
+              longitude={poi.longitudine}
+              latitude={poi.latitudine}
+              anchor="bottom"
+              onClick={(e: any) => {
+                e.originalEvent.stopPropagation();
+                if (onPoiSelect) onPoiSelect(poi);
+              }}
+            >
+              <div style={{
+                background: markerColor,
+                border: '2px solid white',
+                borderRadius: '50%',
+                width: `${markerSize}px`,
+                height: `${markerSize}px`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: isWorkingOrSelected ? '18px' : '14px',
+                fontWeight: 'bold',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                cursor: 'pointer'
+              }}>
+                {markerIcon}
               </div>
-          </Popup>
-        </Marker>
-        );
-      })}
 
+              {/* POI popup - only render when POI is selected */}
+              {selectedPoiId === poi.id && (
+                <Popup
+                  longitude={poi.longitudine}
+                  latitude={poi.latitudine}
+                  anchor="bottom"
+                  onClose={() => onPoiSelect?.(null)}
+                  closeOnClick={false}
+                  maxWidth="400px"
+                >
+                  <div className="border-2 border-indigo-600 rounded-lg p-3 bg-white poi-form-mobile">
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-gray-700">
+                        {poi.anno === 2024 || poi.anno === 2025 ? 'inserito nel db in data ' :
+                         poi.ispezionabile === 1 ? 'Proposto da ispezionare in data ' :
+                         poi.ispezionabile === 0 ? 'Ispezionato in data: ' :
+                         poi.ispezionabile === 2 ? 'Creato in data: ' : ''}
+                        {new Date(poi.created_at).toLocaleString()}
+                      </p>
 
+                      {/* Editable address */}
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Indirizzo (editabile):</label>
+                        <input
+                          type="text"
+                          value={
+                            editingAddress[poi.id] !== undefined
+                              ? editingAddress[poi.id]
+                              : (poi.indirizzo || '')
+                          }
+                          onChange={(e) => setEditingAddress(prev => ({ ...prev, [poi.id]: e.target.value }))}
+                          onBlur={(e) => handleAddressEdit(poi.id, e.target.value, poi.anno)}
+                          disabled={updatingAddress.has(poi.id)}
+                          className="w-full max-w-[35ch] px-2 py-1 text-sm border rounded overflow-auto fixed-width-address"
+                          style={{ minWidth: '35ch', maxWidth: '35ch' }}
+                          placeholder="Inserisci indirizzo..."
+                          title={poi.indirizzo || ''}
+                          maxLength={35}
+                        />
+                      </div>
 
-      <MapClickHandler onMapClick={onMapClick} onAddPoi={onAddPoi} onCancelAddPoi={onCancelAddPoi} />
-      <MapDeselectHandler onPoiSelect={onPoiSelect} />
-    </MapContainer>
+                      <div className="text-sm text-gray-600">
+                        <p className="mb-0">Username: {poi.username || 'N/D'}</p>
+                        <p className="mb-0">Team: {poi.team || 'N/D'}</p>
+                        <p className="mb-0">Tipo: {poi.tipo || 'N/D'}</p>
+                        {poi.note && <p className="mb-0">Note: {poi.note}</p>}
+                      </div>
+
+                      {/* Action buttons with admin-level permissions */}
+                      <div className="space-y-2">
+                        {(() => {
+                          // Helper function to create share button (always visible)
+                          const shareButton = (
+                            <button
+                              key="share"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const shareText = `${poi.latitudine}, ${poi.longitudine}`;
+                                if (navigator.share) {
+                                  navigator.share({
+                                    title: `Punto di Interesse - ${poi.indirizzo}`,
+                                    text: `Coordinate: ${shareText}`,
+                                    url: `https://www.google.com/maps/search/?api=1&query=${poi.latitudine},${poi.longitudine}`
+                                  }).catch(() => {
+                                    navigator.clipboard.writeText(shareText);
+                                    alert('Coordinate copiate negli appunti: ' + shareText);
+                                  });
+                                } else {
+                                  navigator.clipboard.writeText(shareText);
+                                  alert('Coordinate copiate negli appunti: ' + shareText);
+                                }
+                              }}
+                              className="text-xs px-1 py-0.5 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
+                            >
+                              📤 Condividi
+                            </button>
+                          );
+
+                          // Helper function to create delete button (conditional)
+                          const createDeleteButton = () => {
+                            let canDelete = false;
+                            let buttonClass = "text-xs px-1 py-0.5 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+
+                            // Determine if user can delete this POI
+                            // Admin level 2 and 1 can always delete existing POIs
+                            if (adminLevel !== undefined && adminLevel >= 1) {
+                              canDelete = true;
+                            }
+                            // Admin level 0 can delete green and red POIs if created by them today
+                            else if (adminLevel === 0 && (poi.ispezionabile === 1 || poi.ispezionabile === 0)) {
+                              const poiDate = new Date(poi.created_at);
+                              const today = new Date();
+                              const isCreatedToday = poiDate.getDate() === today.getDate() &&
+                                                     poiDate.getMonth() === today.getMonth() &&
+                                                     poiDate.getFullYear() === today.getFullYear();
+                              if (isCreatedToday && poi.username === currentUsername) canDelete = true;
+                            }
+
+                            if (canDelete) {
+                              buttonClass = "text-xs px-1 py-0.5 rounded font-medium bg-red-600 text-white hover:bg-red-700 shadow-sm flex-1";
+                            }
+
+                            return (
+                              <button
+                                key="delete"
+                                onClick={canDelete ? async (e) => {
+                                  e.stopPropagation();
+                                  const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Il POI verrà nascosto ma potrà essere recuperato se necessario.');
+                                  if (!confirmed) return;
+                                  try {
+                                    let tableName = 'points';
+                                    if (poi.anno) {
+                                      tableName = poi.anno === 2024 ? 'points_old_2024' : 'points_old_2025';
+                                    }
+
+                                    // Soft delete: update ispezionabile to 4 and set deletion metadata
+                                    const { error } = await supabase
+                                      .from(tableName)
+                                      .update({
+                                        ispezionabile: 4,
+                                        eliminatore: currentUsername,
+                                        data_eliminazione: new Date().toISOString()
+                                      })
+                                      .eq('id', poi.id);
+
+                                    if (!error) {
+                                      if (onPoiUpdated) {
+                                        onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                      }
+                                      // Close modal and deselect POI
+                                      if (onPoiSelect) onPoiSelect(null);
+                                    } else {
+                                      console.error('Error soft deleting POI:', error);
+                                      alert('Errore durante l\'eliminazione del POI');
+                                    }
+                                  } catch (err) {
+                                    console.error('Error soft deleting POI:', err);
+                                    alert('Errore durante l\'eliminazione del POI');
+                                  }
+                                } : undefined}
+                                disabled={!canDelete}
+                                className={buttonClass}
+                              >
+                                🗑️ Elimina
+                              </button>
+                            );
+                          };
+
+                          // Helper function to create cantiere finito button (only for green cantieri)
+                          const createCantiereFinitoButton = () => {
+                            const canMarkFinished = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel !== undefined && adminLevel >= 0;
+                            const buttonClass = canMarkFinished
+                              ? "text-xs px-1 py-0.5 rounded font-medium bg-blue-500 text-white hover:bg-blue-600 shadow-sm flex-1"
+                              : "text-xs px-1 py-0.5 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+
+                            return (
+                              <button
+                                key="cantiere-finito"
+                                onClick={canMarkFinished ? async (e) => {
+                                  e.stopPropagation();
+                                  const confirmed = window.confirm('Sei sicuro di voler marcare questo cantiere come finito? Il POI passerà in attesa di approvazione.');
+                                  if (!confirmed) return;
+                                  if (onPoiUpdated) {
+                                    onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                                  }
+                                  try {
+                                    const { error } = await supabase
+                                      .from('points')
+                                      .update({
+                                        ispezionabile: 2,
+                                        created_at: new Date().toISOString(),
+                                        team: currentTeam || poi.team
+                                      })
+                                      .eq('id', poi.id);
+                                    if (!error) {
+                                      // Update local state
+                                      if (onPoiUpdated) {
+                                        onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                      }
+                                    } else {
+                                      alert('Errore nell\'aggiornamento del POI');
+                                    }
+                                  } catch (err) {
+                                    console.error('Error updating POI:', err);
+                                    alert('Errore nell\'aggiornamento del POI');
+                                  }
+                                } : undefined}
+                                disabled={!canMarkFinished}
+                                className={buttonClass}
+                              >
+                                🏗️ Finito
+                              </button>
+                            );
+                          };
+
+                          // Helper function to create ispezionato button (only for green POIs)
+                          const createIspezionatoButton = () => {
+                            const canMarkInspected = !poi.anno && poi.ispezionabile === 1 && adminLevel !== undefined && adminLevel >= 0;
+                            const buttonClass = canMarkInspected
+                              ? "text-xs px-1 py-0.5 rounded font-medium bg-green-500 text-white hover:bg-green-600 shadow-sm flex-1"
+                              : "text-xs px-1 py-0.5 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+
+                            return (
+                              <button
+                                key="ispezionato"
+                                onClick={canMarkInspected ? async (e) => {
+                                  e.stopPropagation();
+                                  const confirmed = window.confirm('Sei sicuro di voler cambiare lo stato di questo punto di interesse?');
+                                  if (!confirmed) return;
+                                  if (onPoiUpdated) {
+                                    onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                                  }
+                                  try {
+                                    const { error } = await supabase
+                                      .from('points')
+                                      .update({
+                                        ispezionabile: 0,
+                                        created_at: new Date().toISOString(),
+                                        team: currentTeam || poi.team
+                                      })
+                                      .eq('id', poi.id);
+                                    if (!error) {
+                                      if (onPoiUpdated) {
+                                        onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                      }
+                                      // Close modal and deselect POI
+                                      if (onPoiSelect) onPoiSelect(null);
+                                    }
+                                  } catch (err) {
+                                    console.error('Error toggling ispezionabile:', err);
+                                  }
+                                } : undefined}
+                                disabled={!canMarkInspected}
+                                className={buttonClass}
+                              >
+                                👮‍♂️ Ispez.to
+                              </button>
+                            );
+                          };
+
+                          // Helper function to create segnala inattività button (only for green cantieri)
+                          const createSegnalaInattivitaButton = () => {
+                            const canReportInactive = !poi.anno && poi.ispezionabile === 1 && poi.tipo === 'cantiere' && adminLevel !== undefined && adminLevel >= 0;
+                            const buttonClass = canReportInactive
+                              ? "text-xs px-1 py-0.5 rounded font-medium bg-orange-500 text-white hover:bg-orange-600 shadow-sm flex-1"
+                              : "text-xs px-1 py-0.5 rounded font-medium bg-gray-400 text-gray-600 cursor-not-allowed shadow-sm flex-1";
+
+                            return (
+                              <button
+                                key="segnala-inattivita"
+                                onClick={canReportInactive ? async (e) => {
+                                  e.stopPropagation();
+                                  const confirmed = window.confirm('Sei sicuro di voler segnalarlo come inattivo?');
+                                  if (!confirmed) return;
+                                  if (onPoiUpdated) {
+                                    onPoiUpdated([poi.latitudine, poi.longitudine], 14, poi.id);
+                                  }
+                                  try {
+                                    const { error } = await supabase
+                                      .from('points')
+                                      .update({ data_inattivita: new Date().toISOString() })
+                                      .eq('id', poi.id);
+                                    if (error) {
+                                      alert('Errore durante la segnalazione di inattività');
+                                    } else {
+                                      // Update local state
+                                      if (onPoiUpdated) {
+                                        onPoiUpdated([poi.latitudine, poi.longitudine], 14);
+                                      }
+                                    }
+                                  } catch (err) {
+                                    alert('Errore durante la segnalazione di inattività');
+                                  }
+                                } : undefined}
+                                disabled={!canReportInactive}
+                                className={buttonClass}
+                              >
+                                ⚠️ Segnala inattività
+                              </button>
+                            );
+                          };
+
+                          // Fixed 5-slot layout: always same structure for uniform popup sizes
+                          const buttonSlots = [
+                            shareButton,                          // Slot 1: Always visible
+                            createDeleteButton(),                // Slot 2: Conditional delete
+                            createCantiereFinitoButton(),        // Slot 3: Only for green cantieri
+                            createIspezionatoButton(),           // Slot 4: Only for green POIs
+                            createSegnalaInattivitaButton()      // Slot 5: Only for green cantieri
+                          ];
+
+                          // Return fixed layout with 3 rows (2 buttons each)
+                          return (
+                            <>
+                              <div className="flex gap-2">
+                                {buttonSlots[0]} {/* Share */}
+                                {buttonSlots[1]} {/* Delete */}
+                              </div>
+                              <div className="flex gap-2">
+                                {buttonSlots[2]} {/* Cantiere finito */}
+                                {buttonSlots[3]} {/* Ispezionato */}
+                              </div>
+                              <div className="flex gap-2">
+                                {buttonSlots[4]} {/* Segnala inattività */}
+                                {/* Cancel button - available for all admin levels */}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onPoiSelect) onPoiSelect(null);
+                                  }}
+                                  className="text-xs px-1 py-0.5 rounded font-medium bg-red-500 text-white hover:bg-red-600 shadow-sm flex-1"
+                                >
+                                  ❌ Annulla
+                                </button>
+                              </div>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  </div>
+                </Popup>
+              )}
+
+            </Marker>
+          );
+        })}
+
+        {/* GPS and Manual Rotation Handlers */}
+        <GPSRotationHandler
+          enableRotation={enableRotation}
+          heading={smoothedHeading}
+          mapRef={mapRef}
+        />
+        <ManualRotationHandler
+          enableRotation={enableRotation}
+          mapRef={mapRef}
+        />
+      </Map>
+    </div>
   );
 });
 

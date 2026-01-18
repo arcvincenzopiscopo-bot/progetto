@@ -637,3 +637,12 @@ export function formatSearchResult(result: SearchResult): string {
     return displayName.length > 60 ? displayName.substring(0, 57) + '...' : displayName;
   }
 }
+
+// Export cache clearing functions for external access
+export function clearGeocodingCache(): void {
+  geocodingCache.clear();
+}
+
+export function clearSearchCache(): void {
+  searchCache.clear();
+}

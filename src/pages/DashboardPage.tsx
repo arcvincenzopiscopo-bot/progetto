@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense, useLayoutEffect } from 'react';
 import { useCustomAuth } from '../context/CustomAuthContext';
 import { supabase } from '../services/supabaseClient';
 import { uploadPhoto, updatePassword } from '../services/authService';
 import { getAddressWithCache } from '../services/geocodingService';
 import { usePWAInstall } from '../hooks/usePWAInstall';
+import { useGpsHeading } from '../hooks/useGpsHeading';
 import SearchBox from '../components/UI/SearchBox';
 import FilterButton from '../components/UI/FilterButton';
 import PasswordChangePopup from '../components/Auth/PasswordChangePopup';
@@ -19,8 +20,9 @@ const POIFormPopup = React.lazy(() => import('../components/POI/POIFormPopup'));
 
 
 const DashboardPage: React.FC = () => {
-  const { user } = useCustomAuth();
+  const { user, logout } = useCustomAuth();
   const { isInstallable, installPWA } = usePWAInstall();
+  const { heading } = useGpsHeading(); // GPS heading for map rotation
   const [pois, setPois] = useState<PointOfInterest[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [newPoiLocation, setNewPoiLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -37,17 +39,50 @@ const DashboardPage: React.FC = () => {
   });
   const [mapCenter, setMapCenter] = useState<[number, number] | null>(null); // Separate state for map centering
   const [mapZoom, setMapZoom] = useState<number>(13); // Separate state for map zoom level
-  const [mapBearing, setMapBearing] = useState<number>(0); // Map rotation (bearing) in degrees
   const [mapKey, setMapKey] = useState<number>(0); // Force map re-render when needed
   const [workingPoiId, setWorkingPoiId] = useState<string | null>(null); // Track POI currently being worked on
   const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null); // Track POI currently selected
+  const [highlightedPoiId, setHighlightedPoiId] = useState<string | null>(null); // Track POI that should stay highlighted after popup closes
   const [creatingNewPoi, setCreatingNewPoi] = useState<boolean>(false); // Track if new POI is being created
   const [showPasswordChange, setShowPasswordChange] = useState<boolean>(false); // Track if password change popup should be shown
 
+  // Prevent auto-focus on modal inputs when POI selection changes
+  useLayoutEffect(() => {
+    // Prevent auto-focus on modal inputs
+    const preventAutoFocus = (e: FocusEvent) => {
+      const target = e.target as HTMLInputElement;
+      if (target.tagName === 'INPUT' && target.type === 'text') {
+        console.log('🚫 Preventing auto-focus on input field');
+        e.preventDefault();
+        e.stopPropagation();
+        target.blur();
+      }
+    };
+
+    // Add focus prevention temporarily
+    document.addEventListener('focusin', preventAutoFocus, true);
+
+    // Remove after a short delay
+    const timeoutId = setTimeout(() => {
+      document.removeEventListener('focusin', preventAutoFocus, true);
+      console.log('🔓 Focus prevention removed');
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('focusin', preventAutoFocus, true);
+    };
+  }, [selectedPoiId]);
+
   // Loading states for granular feedback
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isLoadingPois, setIsLoadingPois] = useState<boolean>(true); // Loading POI data
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isGeocodingAddress, setIsGeocodingAddress] = useState<boolean>(false); // Geocoding new POI address
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [updatingPoiId, setUpdatingPoiId] = useState<string | null>(null); // Track which POI is being updated
+
+
 
   // Update task progress - marking completed steps
   // [x] Estendere geocodingService per ricerca indirizzi
@@ -64,6 +99,9 @@ const DashboardPage: React.FC = () => {
         .from('points')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Escludi sempre i POI eliminati (soft deleted)
+      query = query.neq('ispezionabile', 4);
 
       // Filtra i POI in base ai privilegi dell'utente
       if (user?.admin === 0) {
@@ -262,49 +300,15 @@ const DashboardPage: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    // Advanced direction tracking system with device sensors priority
-    // PRIORITY: Device sensors (compass) > GPS position calculation (fallback)
-    // OPTIMIZATION: GPS stopped when app in background to save battery
-
+    // Monitor user's current location continuously (like GPS navigators)
+    // IMPORTANT: This only uses native browser GPS - NO external API calls
+    // OPTIMIZATION: GPS is stopped when app is in background to save battery
     let watchId: number | null = null;
     let lastUpdateTime = 0;
-    let previousPosition: [number, number] | null = null;
-    let sensorListener: ((event: DeviceOrientationEvent) => void) | null = null;
-    const MIN_UPDATE_INTERVAL = 5000; // Minimum 5 seconds between updates
+    const MIN_UPDATE_INTERVAL = 2500; // Minimum 2.5 seconds between updates
 
-    // Helper function to calculate bearing from GPS positions (fallback)
-    const calculateBearingFromGPS = (prevPos: [number, number], currentPos: [number, number]): number => {
-      const [lat1, lon1] = prevPos;
-      const [lat2, lon2] = currentPos;
-
-      // Convert to radians
-      const lat1Rad = lat1 * Math.PI / 180;
-      const lat2Rad = lat2 * Math.PI / 180;
-      const deltaLonRad = (lon2 - lon1) * Math.PI / 180;
-
-      // Calculate bearing using formula
-      const y = Math.sin(deltaLonRad) * Math.cos(lat2Rad);
-      const x = Math.cos(lat1Rad) * Math.sin(lat2Rad) - Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(deltaLonRad);
-
-      // Calculate angle in degrees and normalize to 0-360
-      const bearing = Math.atan2(y, x) * 180 / Math.PI;
-      return (bearing + 360) % 360;
-    };
-
-    // Device orientation handler (compass sensor)
-    const handleDeviceOrientation = (event: DeviceOrientationEvent) => {
-      if (event.alpha !== null) {
-        // alpha = rotation around Z-axis (compass heading)
-        // Invert for standard compass orientation
-        const heading = 360 - event.alpha;
-        setMapBearing(heading);
-      }
-    };
-
-    // GPS fallback direction tracking
-    const startGPSDirectionTracking = () => {
-      console.log('Direction: Starting GPS-based direction tracking (sensor fallback)');
-
+    // Helper function to start GPS monitoring
+    const startGpsMonitoring = () => {
       if (navigator.geolocation && watchId === null) {
         watchId = navigator.geolocation.watchPosition(
           (position) => {
@@ -331,19 +335,10 @@ const DashboardPage: React.FC = () => {
                 Math.pow((newPosition[1] - prevPosition[1]) * 111320 * Math.cos(newPosition[0] * Math.PI / 180), 2) // Adjust for longitude
               );
 
-              // Only update if moved more than 10 meters (accuracy check removed to avoid complexity)
-              if (distance > 10) {
+              // Only update if moved more than 5 meters (accuracy check removed to avoid complexity)
+              if (distance > 5) {
                 console.log('GPS: Position updated:', newPosition, 'Distance moved:', Math.round(distance), 'm, Accuracy:', accuracy, 'm, Time since last:', Math.round((currentTime - lastUpdateTime) / 1000), 's');
-
-                // Calculate bearing from GPS movement (fallback only)
-                if (previousPosition) {
-                  const bearing = calculateBearingFromGPS(previousPosition, newPosition);
-                  console.log('GPS Direction: Movement bearing calculated:', Math.round(bearing), '°');
-                  setMapBearing(bearing);
-                }
-
                 lastUpdateTime = currentTime;
-                previousPosition = newPosition; // Update for next calculation
                 return newPosition;
               }
 
@@ -372,49 +367,7 @@ const DashboardPage: React.FC = () => {
       }
     };
 
-    // Initialize direction tracking system
-    const initializeDirectionTracking = async () => {
-      console.log('Direction: Initializing advanced direction tracking system');
-
-      // Check if device orientation sensors are available
-      if (typeof DeviceOrientationEvent !== 'undefined') {
-        console.log('Direction: Device sensors available, requesting permissions');
-
-        // iOS requires explicit permission request
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-        if (isIOS && typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
-          try {
-            console.log('Direction: Requesting iOS sensor permissions');
-            const permission = await (DeviceOrientationEvent as any).requestPermission();
-
-            if (permission === 'granted') {
-              console.log('Direction: iOS sensor permission granted, activating compass');
-              // Add device orientation listener
-              sensorListener = handleDeviceOrientation;
-              window.addEventListener('deviceorientation', sensorListener);
-            } else {
-              console.log('Direction: iOS sensor permission denied, using GPS fallback');
-              startGPSDirectionTracking();
-            }
-          } catch (error) {
-            console.error('Direction: Error requesting iOS sensor permission:', error);
-            console.log('Direction: Falling back to GPS tracking');
-            startGPSDirectionTracking();
-          }
-        } else {
-          // Android/Desktop - sensors available directly
-          console.log('Direction: Activating device sensors (Android/Desktop)');
-          sensorListener = handleDeviceOrientation;
-          window.addEventListener('deviceorientation', sensorListener);
-        }
-      } else {
-        console.log('Direction: Device sensors not supported, using GPS fallback');
-        startGPSDirectionTracking();
-      }
-    };
-
-    // Stop GPS monitoring (for battery optimization)
+    // Helper function to stop GPS monitoring
     const stopGpsMonitoring = () => {
       if (watchId !== null) {
         navigator.geolocation.clearWatch(watchId);
@@ -423,55 +376,45 @@ const DashboardPage: React.FC = () => {
       }
     };
 
-    // Stop sensor tracking
-    const stopSensorTracking = () => {
-      if (sensorListener) {
-        window.removeEventListener('deviceorientation', sensorListener);
-        console.log('Direction: Stopped sensor tracking');
-        sensorListener = null;
-      }
-    };
-
     // Handle page visibility changes to save battery
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        // Page is hidden (app in background) - stop all tracking to save battery
-        console.log('Tracking: Page hidden - stopping all tracking to save battery');
+        // Page is hidden (app in background) - stop GPS to save battery
+        console.log('GPS: Page hidden - stopping GPS monitoring to save battery');
         stopGpsMonitoring();
-        stopSensorTracking();
       } else {
-        // Page is visible again - restart direction tracking
-        console.log('Tracking: Page visible - restarting direction tracking');
-        initializeDirectionTracking();
+        // Page is visible again - restart GPS monitoring
+        console.log('GPS: Page visible - restarting GPS monitoring');
+        startGpsMonitoring();
       }
     };
 
-    // Start direction tracking initially if page is visible
+    // Start GPS monitoring initially if page is visible
     if (!document.hidden) {
-      initializeDirectionTracking();
+      startGpsMonitoring();
     }
 
     // Add visibility change listener
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Cleanup function when component unmounts
+    // Cleanup function to stop watching position and remove listeners when component unmounts
     return () => {
       stopGpsMonitoring();
-      stopSensorTracking();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      console.log('Direction: Component unmounted - cleanup complete');
+      console.log('GPS: Component unmounted - cleanup complete');
     };
   }, []);
 
   const handleAddPoi = useCallback(async (indirizzo: string, ispezionabile: number, tipo: string, note?: string, photo?: File) => {
     if (!newPoiLocation || !user) return;
 
-    // Check for existing POI with same coordinates
+    // Check for existing ACTIVE POI with same coordinates (exclude soft deleted POIs)
     const { data: existingPois, error: checkError } = await supabase
       .from('points')
       .select('id')
       .eq('latitudine', newPoiLocation.lat)
-      .eq('longitudine', newPoiLocation.lng);
+      .eq('longitudine', newPoiLocation.lng)
+      .neq('ispezionabile', 4); // Exclude soft deleted POIs from duplicate check
 
     if (checkError) {
       if (process.env.NODE_ENV === 'development') {
@@ -482,7 +425,7 @@ const DashboardPage: React.FC = () => {
     }
 
     if (existingPois && existingPois.length > 0) {
-      alert('Esiste già un POI con queste coordinate. Non è possibile inserire duplicati.');
+      alert('Esiste già un POI attivo con queste coordinate. Non è possibile inserire duplicati.');
       return;
     }
 
@@ -591,8 +534,9 @@ const DashboardPage: React.FC = () => {
         }
         const newPoi = data[0];
         setPois(prevPois => [...prevPois, newPoi]);
-        // Automatically select the newly created POI
+        // Automatically select and highlight the newly created POI
         setSelectedPoiId(newPoi.id);
+        setHighlightedPoiId(newPoi.id);
         setShowAddForm(false);
         setNewPoiLocation(null);
         setCreatingNewPoi(false); // Reset creating state on success
@@ -604,11 +548,12 @@ const DashboardPage: React.FC = () => {
       alert('Errore nella creazione del POI. Riprova.');
       setCreatingNewPoi(false); // Reset creating state on error
     }
-  }, [newPoiLocation, user, fetchPois]);
+  }, [newPoiLocation, user]);
 
   const handleMapClick = useCallback((lat: number, lng: number) => {
-    // Reset any working POI when clicking on map to add new POI
+    // Reset any working POI and highlighted POI when clicking on map to add new POI
     setWorkingPoiId(null);
+    setHighlightedPoiId(null); // Clear highlighted POI when clicking on map
     setNewPoiLocation({ lat, lng });
     setShowAddForm(true);
   }, []);
@@ -644,15 +589,26 @@ const DashboardPage: React.FC = () => {
   // Handle POI selection/deselection
   const handlePoiSelect = useCallback((poi: PointOfInterest | null) => {
     if (poi) {
-      // Select POI - make it large
+      // Select POI - make it large but don't center map yet
       setSelectedPoiId(poi.id);
+      setHighlightedPoiId(poi.id); // Keep highlighted even after popup closes
       // Reset working POI when selecting a different POI
       setWorkingPoiId(null);
+      // Don't center map here - will center when popup closes
     } else {
-      // Deselect POI - make all normal
+      // Deselect POI - center map on the POI that was just closed
       setSelectedPoiId(null);
+      // Center map on the POI that was just deselected (popup closed)
+      if (highlightedPoiId) {
+        // Find the POI coordinates from the current POI list
+        const poiToCenter = pois.find(p => p.id === highlightedPoiId);
+        if (poiToCenter) {
+          refreshPois([poiToCenter.latitudine, poiToCenter.longitudine], 14);
+        }
+      }
+      // Note: highlightedPoiId stays set so icon remains enlarged
     }
-  }, []);
+  }, [refreshPois, highlightedPoiId, pois]);
 
   // Handle password change
   const handlePasswordChange = useCallback(async (newPassword: string): Promise<boolean> => {
@@ -674,7 +630,7 @@ const DashboardPage: React.FC = () => {
   }, [user]);
 
   // Memoized user role calculation - only recalculates when user.admin changes
-  const userRole = useMemo(() => {
+  const userRole = useMemo(() => { // eslint-disable-line @typescript-eslint/no-unused-vars
     const adminLevel = user?.admin || 0;
     switch (adminLevel) {
       case 0:
@@ -710,7 +666,6 @@ const DashboardPage: React.FC = () => {
               initialPosition={currentPosition}
               mapCenter={mapCenter}
               mapZoom={mapZoom}
-              mapBearing={mapBearing}
               onPoiUpdated={refreshPois}
               onPoiSelect={handlePoiSelect}
               currentTeam={user?.team}
@@ -733,7 +688,10 @@ const DashboardPage: React.FC = () => {
               height="100%"
               workingPoiId={workingPoiId}
               selectedPoiId={selectedPoiId}
+              highlightedPoiId={highlightedPoiId}
               creatingNewPoi={creatingNewPoi}
+              enableRotation={true} // Enable GPS-based map rotation
+              heading={heading} // GPS heading for map rotation
             />
           </MapErrorBoundary>
         </Suspense>
@@ -829,7 +787,9 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Center Map & Direction Buttons - Bottom center */}
+
+
+        {/* Center Map and Logout Buttons - Bottom center */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-2">
           <button
             onClick={() => {
@@ -860,24 +820,24 @@ const DashboardPage: React.FC = () => {
                 }
               }
             }}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center justify-center space-x-2 shadow-lg center-map-button min-w-[120px]"
+            className="bg-red-600 text-white px-3 py-1.5 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center space-x-2 shadow-lg center-map-button"
           >
             <span>📍</span>
-            <span>Centra</span>
+            <span>Centra la mappa</span>
           </button>
 
+          {/* Logout Button */}
           <button
             onClick={() => {
-              // Orient map to current movement direction (bearing)
-              // If no direction available, orient to north (0°)
-              console.log('Direction: Orienting map to bearing:', mapBearing, '°');
-              // Force map re-render to apply new bearing
-              setMapKey(prev => prev + 1);
+              if (window.confirm('Sei sicuro di voler effettuare il logout?')) {
+                logout();
+              }
             }}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg border border-blue-700 hover:bg-blue-700 font-medium transition-colors inline-flex items-center justify-center space-x-2 shadow-lg direction-button min-w-[120px]"
+            className="bg-gray-600 text-white px-3 py-1.5 rounded-lg border border-gray-700 hover:bg-gray-700 font-medium transition-colors inline-flex items-center space-x-2 shadow-lg"
+            title="Esci"
           >
-            <span>➡️</span>
-            <span>Marcia</span>
+            <span>🚪</span>
+            <span>Esci</span>
           </button>
         </div>
       </div>
@@ -912,6 +872,13 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Existing POI Modal - DISABLED to use only map popup */}
+      {/* {selectedPoi && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[3000] modal-overlay-mobile">
+          ... (modal content removed - using only map popup)
+        </div>
+      )} */}
 
       {/* Password Change Popup */}
       <PasswordChangePopup
