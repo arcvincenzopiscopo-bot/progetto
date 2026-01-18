@@ -611,7 +611,7 @@ const DashboardPage: React.FC = () => {
       }
       // Note: highlightedPoiId stays set so icon remains enlarged
     }
-  }, [refreshPois, highlightedPoiId, pois]);
+  }, [refreshPois, highlightedPoiId, pois, mapZoom]);
 
   // Handle password change
   const handlePasswordChange = useCallback(async (newPassword: string): Promise<boolean> => {
