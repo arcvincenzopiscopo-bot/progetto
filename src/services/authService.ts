@@ -332,27 +332,38 @@ export const uploadPhoto = async (file: File, poiId: string): Promise<string> =>
 // Funzione per eliminare una foto da Cloudinary
 export const deletePhotoFromCloudinary = async (photoUrl: string): Promise<void> => {
   try {
+    console.log('🔍 [DEBUG] Iniziando eliminazione foto da Cloudinary');
+    console.log('🔍 [DEBUG] URL foto ricevuta:', photoUrl);
+
     // Estrai il public_id dall'URL di Cloudinary
     // URL format: https://res.cloudinary.com/dnewqku2w/image/upload/v1234567890/poi-photos/poi-123-456789.jpg
     // Dobbiamo estrarre solo il public_id senza il timestamp e l'estensione
     // Esempio: da "v1767535800/poi-photos/poi-aabcc1d6-3f0a-40ed-bde3-9873bd820838-1767535800713"
     // Dobbiamo ottenere "poi-photos/poi-aabcc1d6-3f0a-40ed-bde3-9873bd820838-1767535800713"
 
+    console.log('🔍 [DEBUG] Rimuovendo protocollo e dominio dall\'URL...');
     // Rimuovi il protocollo e il dominio
     const urlWithoutProtocol = photoUrl.replace('https://res.cloudinary.com/dnewqku2w/image/upload/', '');
+    console.log('🔍 [DEBUG] URL senza protocollo:', urlWithoutProtocol);
+
     // Dividi per ottenere le parti dopo il dominio
     const parts = urlWithoutProtocol.split('/');
+    console.log('🔍 [DEBUG] Parti URL divise:', parts);
+
     // Prendi solo le parti della cartella e del filename (ignora il timestamp v1234567890)
     const folderAndFile = parts.filter(part => !part.startsWith('v')).join('/');
+    console.log('🔍 [DEBUG] Cartella e file (senza timestamp):', folderAndFile);
+
     // Rimuovi l'estensione .jpg
     const publicId = folderAndFile.split('.')[0];
+    console.log('🔍 [DEBUG] Public ID estratto:', publicId);
 
     if (!publicId) {
-      console.error('Impossibile estrarre il public_id dall\'URL della foto');
+      console.error('❌ [ERROR] Impossibile estrarre il public_id dall\'URL della foto');
       return;
     }
 
-    console.log('Tentativo di eliminazione della foto da Cloudinary:', publicId);
+    console.log('✅ [SUCCESS] Public ID estratto con successo:', publicId);
 
     // Verifica se le credenziali Cloudinary sono disponibili
     const cloudName = process.env.REACT_APP_CLOUDINARY_CLOUD_NAME || 'dnewqku2w';

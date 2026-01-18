@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Map, { Marker, Popup, NavigationControl, GeolocateControl, MapRef, MapLayerMouseEvent } from '@vis.gl/react-maplibre';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { supabase } from '../../services/supabaseClient';
+import { deletePhotoFromCloudinary } from '../../services/authService';
 
 interface PointOfInterest {
   id: string;
@@ -592,6 +593,23 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                         {poi.note && <p className="mb-0">Note: {poi.note}</p>}
                       </div>
 
+                      {/* Photo preview - only show if photo exists */}
+                      {poi.photo_url && (
+                        <div className="mt-2">
+                          <label className="block text-xs text-gray-500 mb-1">Foto:</label>
+                          <img
+                            src={poi.photo_url}
+                            alt="Foto POI"
+                            className="w-16 h-16 object-cover rounded border border-gray-300 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(poi.photo_url, '_blank', 'noopener,noreferrer');
+                            }}
+                            title="Clicca per vedere la foto grande"
+                          />
+                        </div>
+                      )}
+
                       {/* Action buttons with admin-level permissions */}
                       <div className="space-y-2">
                         {(() => {
@@ -654,6 +672,23 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                                   const confirmed = window.confirm('Sei sicuro di voler eliminare questo punto di interesse? Il POI verrà nascosto ma potrà essere recuperato se necessario.');
                                   if (!confirmed) return;
                                   try {
+                                    // Delete photo from Cloudinary if exists
+                                    if (poi.photo_url) {
+                                      console.log('🗑️ [POI DELETE] POI has photo, starting Cloudinary deletion process');
+                                      console.log('🗑️ [POI DELETE] Photo URL:', poi.photo_url);
+                                      try {
+                                        console.log('🗑️ [POI DELETE] Calling deletePhotoFromCloudinary...');
+                                        await deletePhotoFromCloudinary(poi.photo_url);
+                                        console.log('✅ [POI DELETE] Photo deleted from Cloudinary successfully');
+                                      } catch (photoError) {
+                                        console.error('❌ [POI DELETE] Error deleting photo from Cloudinary:', photoError);
+                                        console.warn('⚠️ [POI DELETE] Photo deletion failed, but POI deletion will continue');
+                                        // Don't block POI deletion if photo deletion fails
+                                      }
+                                    } else {
+                                      console.log('ℹ️ [POI DELETE] POI has no photo, skipping Cloudinary deletion');
+                                    }
+
                                     let tableName = 'points';
                                     if (poi.anno) {
                                       tableName = poi.anno === 2024 ? 'points_old_2024' : 'points_old_2025';
