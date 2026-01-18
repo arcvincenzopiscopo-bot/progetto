@@ -45,6 +45,7 @@ const DashboardPage: React.FC = () => {
   const [highlightedPoiId, setHighlightedPoiId] = useState<string | null>(null); // Track POI that should stay highlighted after popup closes
   const [creatingNewPoi, setCreatingNewPoi] = useState<boolean>(false); // Track if new POI is being created
   const [showPasswordChange, setShowPasswordChange] = useState<boolean>(false); // Track if password change popup should be shown
+  const [rotationEnabled, setRotationEnabled] = useState<boolean>(true); // Control map rotation (default: on)
 
   // Prevent auto-focus on modal inputs when POI selection changes
   useLayoutEffect(() => {
@@ -689,7 +690,7 @@ const DashboardPage: React.FC = () => {
               selectedPoiId={selectedPoiId}
               highlightedPoiId={highlightedPoiId}
               creatingNewPoi={creatingNewPoi}
-              enableRotation={true} // Enable GPS-based map rotation
+              enableRotation={rotationEnabled} // Control GPS-based map rotation with toggle
               heading={heading} // GPS heading for map rotation
             />
           </MapErrorBoundary>
@@ -788,8 +789,21 @@ const DashboardPage: React.FC = () => {
 
 
 
-        {/* Center Map and Logout Buttons - Bottom center */}
+        {/* Rotation Toggle, Center Map and Logout Buttons - Bottom center */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-2">
+          {/* Rotation Toggle Button */}
+          <button
+            onClick={() => setRotationEnabled(prev => !prev)}
+            className={`text-white px-3 py-1.5 rounded-lg border font-medium transition-colors inline-flex items-center space-x-2 shadow-lg ${
+              rotationEnabled
+                ? 'bg-green-600 border-green-700 hover:bg-green-700'
+                : 'bg-red-600 border-red-700 hover:bg-red-700'
+            }`}
+            title={rotationEnabled ? 'Disabilita rotazione automatica' : 'Abilita rotazione automatica'}
+          >
+            <span>🧭</span>
+            <span>Rotazione {rotationEnabled ? 'on' : 'off'}</span>
+          </button>
           <button
             onClick={() => {
               if (currentPosition) {
