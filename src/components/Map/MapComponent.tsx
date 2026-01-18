@@ -600,14 +600,30 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                               : (poi.indirizzo || '')
                           }
                           onChange={(e) => setEditingAddress(prev => ({ ...prev, [poi.id]: e.target.value }))}
-                          onBlur={(e) => handleAddressEdit(poi.id, e.target.value, poi.anno, poi)}
                           disabled={updatingAddress.has(poi.id)}
                           className="w-full max-w-[35ch] px-2 py-1 text-sm border rounded overflow-auto fixed-width-address"
                           style={{ minWidth: '35ch', maxWidth: '35ch' }}
                           placeholder="Inserisci indirizzo..."
                           title={poi.indirizzo || ''}
-                          maxLength={35}
+                          maxLength={100}
                         />
+
+                        {/* Update address link - only show if address has been changed */}
+                        {editingAddress[poi.id] !== undefined && editingAddress[poi.id] !== (poi.indirizzo || '') && (
+                          <div className="mt-1">
+                            <span
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const newAddress = editingAddress[poi.id] || '';
+                                handleAddressEdit(poi.id, newAddress, poi.anno, poi);
+                              }}
+                              className="text-xs text-blue-600 hover:text-blue-800 cursor-pointer underline"
+                              title="Clicca per aggiornare l'indirizzo e le coordinate"
+                            >
+                              Aggiorna indirizzo
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="text-sm text-gray-600">

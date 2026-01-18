@@ -603,7 +603,10 @@ const DashboardPage: React.FC = () => {
         // Find the POI coordinates from the current POI list
         const poiToCenter = pois.find(p => p.id === highlightedPoiId);
         if (poiToCenter) {
-          refreshPois([poiToCenter.latitudine, poiToCenter.longitudine], 14);
+          // If current zoom is greater than 14, preserve it; otherwise use 14
+          const targetZoom = mapZoom > 14 ? mapZoom : 14;
+          console.log('🎯 Closing POI popup - Centering on POI with zoom:', targetZoom, '(current zoom:', mapZoom, ')');
+          refreshPois([poiToCenter.latitudine, poiToCenter.longitudine], targetZoom);
         }
       }
       // Note: highlightedPoiId stays set so icon remains enlarged
