@@ -325,8 +325,15 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
   const visiblePois = filteredPois; // Always render all filtered POIs
 
   // Handle address editing for all POIs
-  const handleAddressEdit = async (poiId: string, newAddress: string, anno?: number) => {
+  const handleAddressEdit = async (poiId: string, newAddress: string, anno?: number, poi?: PointOfInterest) => {
     if (!newAddress.trim() || updatingAddress.has(poiId)) return;
+
+    // Get POI data if not provided
+    const poiData = poi || pois.find(p => p.id === poiId);
+    if (!poiData) {
+      console.error('❌ POI not found for editing:', poiId);
+      return;
+    }
 
     console.log('🔄 Starting address edit for POI:', poiId, 'New address:', newAddress.trim());
     setUpdatingAddress(prev => new Set(prev).add(poiId));
@@ -345,9 +352,26 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
         const newLat = parseFloat(bestResult.lat);
         const newLng = parseFloat(bestResult.lon);
 
-        console.log('📌 Updating coordinates - Old:', 'New:', { lat: newLat, lng: newLng });
-        updateData.latitudine = newLat;
-        updateData.longitudine = newLng;
+        // Calculate distance between original and new coordinates
+        const distance = Math.sqrt(
+          Math.pow((newLat - poiData.latitudine) * 111320, 2) + // 111320 meters per degree latitude
+          Math.pow((newLng - poiData.longitudine) * 111320 * Math.cos(poiData.latitudine * Math.PI / 180), 2)
+        );
+
+        console.log('📌 Coordinate comparison:', {
+          original: { lat: poiData.latitudine, lng: poiData.longitudine },
+          geocoded: { lat: newLat, lng: newLng },
+          distance: Math.round(distance) + ' meters'
+        });
+
+        // If coordinates are very close (< 50 meters), keep original coordinates to avoid marker movement
+        if (distance < 50) {
+          console.log('✅ Coordinates are very close, keeping original coordinates');
+        } else {
+          console.log('🔄 Coordinates differ significantly, updating with geocoded coordinates');
+          updateData.latitudine = newLat;
+          updateData.longitudine = newLng;
+        }
       } else {
         console.warn('⚠️ No geocoding results found for address:', newAddress.trim());
       }
@@ -576,7 +600,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                               : (poi.indirizzo || '')
                           }
                           onChange={(e) => setEditingAddress(prev => ({ ...prev, [poi.id]: e.target.value }))}
-                          onBlur={(e) => handleAddressEdit(poi.id, e.target.value, poi.anno)}
+                          onBlur={(e) => handleAddressEdit(poi.id, e.target.value, poi.anno, poi)}
                           disabled={updatingAddress.has(poi.id)}
                           className="w-full max-w-[35ch] px-2 py-1 text-sm border rounded overflow-auto fixed-width-address"
                           style={{ minWidth: '35ch', maxWidth: '35ch' }}
