@@ -605,7 +605,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                           style={{ minWidth: '35ch', maxWidth: '35ch' }}
                           placeholder="Inserisci indirizzo..."
                           title={poi.indirizzo || ''}
-                          maxLength={35}
+                          maxLength={100}
                         />
 
                         {/* Update address link - only show if address has been changed */}
