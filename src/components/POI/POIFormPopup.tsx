@@ -58,7 +58,7 @@ const POIFormPopup: React.FC<POIFormPopupProps> = ({ location, onAddPoi, onCance
             id="add-poi-indirizzo"
             type="text"
             value={isLoadingAddress ? "Caricamento indirizzo..." : address}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 fixed-width-address"
             readOnly
             maxLength={20}
           />

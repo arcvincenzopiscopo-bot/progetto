@@ -202,6 +202,13 @@ body .existing-poi-content * {
   max-width: 600px;
 }
 
+/* Fixed width address field with horizontal scrolling */
+.fixed-width-address {
+  max-width: 20ch;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
 /* Make form elements responsive */
 .popup-form-input {
   width: 100%;
