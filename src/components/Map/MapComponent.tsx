@@ -58,31 +58,17 @@ interface MapComponentProps {
 }
 
 
-// GPS Rotation Handler for MapLibre GL JS - Optimized with smoothing
+// GPS Rotation Handler for MapLibre GL JS - Now uses pre-computed smoothed heading for battery optimization
 const GPSRotationHandler: React.FC<{
   enableRotation?: boolean;
   heading?: number | null;
   mapRef: React.RefObject<MapRef>;
 }> = ({ enableRotation, heading, mapRef }) => {
-  // State for smoothing GPS heading data
-  const [headingHistory, setHeadingHistory] = useState<number[]>([]);
-  const maxHistorySize = 3; // Keep last 3 readings for smoothing
-
   useEffect(() => {
     if (!enableRotation || !mapRef.current || !heading) return;
 
     const map = mapRef.current;
-
-    // Add current heading to history for smoothing
-    setHeadingHistory(prev => {
-      const newHistory = [...prev, heading];
-      return newHistory.slice(-maxHistorySize); // Keep only recent readings
-    });
-
-    // Calculate smoothed heading (average of recent readings)
-    const smoothedHeading = headingHistory.reduce((sum, h) => sum + h, heading) / (headingHistory.length + 1);
-
-    const targetBearing = smoothedHeading; // Use smoothed heading instead of raw
+    const targetBearing = heading; // heading is now pre-smoothed
 
     // Only update if bearing changed significantly (increased threshold for smoother experience)
     const currentBearing = map.getBearing();
@@ -90,10 +76,10 @@ const GPSRotationHandler: React.FC<{
       map.rotateTo(targetBearing, { duration: 600 }); // Increased from 200 to 600ms for smoother transitions
 
       if (process.env.NODE_ENV === 'development') {
-        console.log(`GPS rotation: ${targetBearing.toFixed(1)}° (smoothed from ${headingHistory.length + 1} readings)`);
+        console.log(`GPS rotation: ${targetBearing.toFixed(1)}° (pre-smoothed)`);
       }
     }
-  }, [enableRotation, heading, mapRef, headingHistory]);
+  }, [enableRotation, heading, mapRef]);
 
   return null;
 };
@@ -232,6 +218,35 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
   // State for editing POI addresses
   const [editingAddress, setEditingAddress] = useState<{ [key: string]: string | undefined }>({});
   const [updatingAddress, setUpdatingAddress] = useState<Set<string>>(new Set());
+
+  // Shared rotation state for both map and marker - single smoothing calculation for battery optimization
+  const [headingHistory, setHeadingHistory] = useState<number[]>([]);
+  const [smoothedHeading, setSmoothedHeading] = useState<number | null>(null);
+  const maxHistorySize = 3; // Keep last 3 readings for smoothing
+  const rotationThreshold = 5; // Minimum degree change to trigger rotation (degrees)
+
+  // Single smoothing calculation for both map and marker rotation - battery optimized
+  useEffect(() => {
+    if (!enableRotation || heading === null || heading === undefined) return;
+
+    // Add current heading to history for smoothing
+    setHeadingHistory(prev => {
+      const newHistory = [...prev, heading];
+      return newHistory.slice(-maxHistorySize); // Keep only recent readings
+    });
+
+    // Calculate smoothed heading (average of recent readings)
+    const newSmoothedHeading = headingHistory.reduce((sum, h) => sum + h, heading) / (headingHistory.length + 1);
+
+    // Only update if bearing changed significantly
+    if (smoothedHeading === null || Math.abs(smoothedHeading - newSmoothedHeading) > rotationThreshold) {
+      setSmoothedHeading(newSmoothedHeading);
+
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`Shared rotation: ${newSmoothedHeading.toFixed(1)}° (smoothed from ${headingHistory.length + 1} readings)`);
+      }
+    }
+  }, [enableRotation, heading, headingHistory, smoothedHeading]);
 
   // Update view state when initial position becomes available (GPS location)
   useEffect(() => {
@@ -444,7 +459,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
               justifyContent: 'center',
               transform: heading !== null && heading !== undefined ? `rotate(${heading}deg)` : 'none',
               transformOrigin: 'center center',
-              transition: 'transform 0.3s ease-out' // Smooth rotation transition
+              transition: 'transform 0.6s ease-out' // Match map rotation duration
             }}>
               👮‍♂️
             </div>
@@ -562,11 +577,11 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                           onChange={(e) => setEditingAddress(prev => ({ ...prev, [poi.id]: e.target.value }))}
                           onBlur={(e) => handleAddressEdit(poi.id, e.target.value, poi.anno)}
                           disabled={updatingAddress.has(poi.id)}
-                          className="w-full max-w-[40ch] px-2 py-1 text-sm border rounded overflow-auto"
-                          style={{ minWidth: '40ch', maxWidth: '40ch' }}
+                          className="w-full max-w-[35ch] px-2 py-1 text-sm border rounded overflow-auto fixed-width-address"
+                          style={{ minWidth: '35ch', maxWidth: '35ch' }}
                           placeholder="Inserisci indirizzo..."
                           title={poi.indirizzo || ''}
-                          maxLength={30}
+                          maxLength={35}
                         />
                       </div>
 
@@ -860,7 +875,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
         {/* GPS and Manual Rotation Handlers */}
         <GPSRotationHandler
           enableRotation={enableRotation}
-          heading={heading}
+          heading={smoothedHeading}
           mapRef={mapRef}
         />
         <ManualRotationHandler

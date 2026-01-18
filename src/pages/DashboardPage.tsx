@@ -834,10 +834,10 @@ const DashboardPage: React.FC = () => {
               }
             }}
             className="bg-gray-600 text-white px-3 py-1.5 rounded-lg border border-gray-700 hover:bg-gray-700 font-medium transition-colors inline-flex items-center space-x-2 shadow-lg"
-            title="Logout"
+            title="Esci"
           >
             <span>🚪</span>
-            <span>Logout</span>
+            <span>Esci</span>
           </button>
         </div>
       </div>

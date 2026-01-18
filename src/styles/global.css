@@ -209,6 +209,15 @@ body .existing-poi-content * {
   white-space: nowrap;
 }
 
+/* Higher specificity for fixed width address in POI form */
+body .poi-form-mobile .fixed-width-address,
+.fixed-width-address {
+  max-width: 20ch !important;
+  overflow-x: auto !important;
+  white-space: nowrap !important;
+  display: inline-block !important;
+}
+
 /* Make form elements responsive */
 .popup-form-input {
   width: 100%;
