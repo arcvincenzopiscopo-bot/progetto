@@ -1,4 +1,6 @@
 /* Global Base Styles - Minimal Reset */
+
+/* Tailwind CSS directives - processed by PostCSS, valid for Tailwind framework */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -436,11 +438,11 @@ body .poi-form-mobile .fixed-width-address,
       line-height: 1.2 !important;
     }
 
-    /* Compact buttons for existing POI popup - tighter spacing and 30% smaller overall */
+    /* Compact buttons for existing POI popup - tighter spacing and 50% smaller overall (additional 30% reduction) */
     .existing-poi-content button {
-      font-size: 7px !important; /* 10px * 0.7 = 7px (30% smaller) */
-      padding: 3px 4px !important; /* 4px 6px * 0.7 ≈ 3px 4px (30% smaller) */
-      min-height: 22px !important; /* 32px * 0.7 ≈ 22px (30% smaller) */
+      font-size: 5px !important; /* 7px * 0.7 ≈ 5px (additional 30% reduction, now 50% total) */
+      padding: 2px 3px !important; /* 3px 4px * 0.7 ≈ 2px 3px (additional 30% reduction, now 50% total) */
+      min-height: 15px !important; /* 22px * 0.7 ≈ 15px (additional 30% reduction, now 50% total) */
       line-height: 1 !important;
     }
 
