@@ -300,6 +300,23 @@ const DashboardPage: React.FC = () => {
     }
   }, [user]);
 
+  // Show privacy and usage information alert on first visit
+  useEffect(() => {
+    const hasSeenWelcomeMessage = localStorage.getItem('hasSeenWelcomeMessage');
+    if (!hasSeenWelcomeMessage && user) {
+      const welcomeMessage = `Se sei qui significa che hai deciso di utilizzare questo strumento, voglio ricordarti qualcosa:
+
+• I dati di geolocalizzazione dell'utente non vengono in alcun modo salvati, verranno salvate solo le coordinate dei POI inseriti
+• L'elenco delle attività da controllare indicate dal POI sulla mappa non sostituisce la normale attività di controllo a vista
+• Un'attività già controllata può sempre essere ricontrollata, che sia presente nell'elenco o meno
+• Ricorda che la localizzazione delle attività può non essere precisa
+• Nel campo note o in qualunque campo editabile non inserire mai dati personali (nomi, cognomi, rag. Soc. num. Tel)`;
+
+      alert(welcomeMessage);
+      localStorage.setItem('hasSeenWelcomeMessage', 'true');
+    }
+  }, [user]);
+
   useEffect(() => {
     // Monitor user's current location continuously (like GPS navigators)
     // IMPORTANT: This only uses native browser GPS - NO external API calls
@@ -743,7 +760,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex gap-[0.19cm] justify-center">
             <div className="w-24">
               <FilterButton
-                label="Ispez.li"
+                label="Cont.li"
                 emoji="🟢"
                 active={filters.showInspectable}
                 onClick={() => setFilters(prev => ({ ...prev, showInspectable: !prev.showInspectable }))}
@@ -752,7 +769,7 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="w-24">
               <FilterButton
-                label="Ispez.ti"
+                label="Cont.ti"
                 emoji="🔴"
                 active={filters.showNonInspectable}
                 onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
