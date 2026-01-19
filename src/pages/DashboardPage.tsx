@@ -814,7 +814,7 @@ const DashboardPage: React.FC = () => {
           {/* Rotation Toggle Button */}
           <button
             onClick={() => setRotationEnabled(prev => !prev)}
-            className={`text-white px-2 py-1.5 rounded-lg border font-medium transition-colors inline-flex items-center shadow-lg ${
+            className={`text-white px-3 py-1.5 rounded-lg border font-medium transition-colors inline-flex items-center shadow-lg ${
               rotationEnabled
                 ? 'bg-green-600 border-green-700 hover:bg-green-700'
                 : 'bg-red-600 border-red-700 hover:bg-red-700'
@@ -852,7 +852,7 @@ const DashboardPage: React.FC = () => {
                 }
               }
             }}
-            className="bg-red-600 text-white px-2 py-1.5 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center shadow-lg center-map-button"
+            className="bg-red-600 text-white px-3 py-1.5 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center shadow-lg center-map-button"
             title="Centra la mappa"
           >
             <span>📍 Centra</span>
