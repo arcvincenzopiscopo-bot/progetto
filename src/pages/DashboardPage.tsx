@@ -300,6 +300,23 @@ const DashboardPage: React.FC = () => {
     }
   }, [user]);
 
+  // Show privacy and usage information alert on first visit
+  useEffect(() => {
+    const hasSeenWelcomeMessage = localStorage.getItem('hasSeenWelcomeMessage');
+    if (!hasSeenWelcomeMessage && user) {
+      const welcomeMessage = `Se sei qui significa che hai deciso di utilizzare questo strumento, voglio ricordarti qualcosa:
+
+• I dati di geolocalizzazione dell'utente non vengono in alcun modo salvati, verranno salvate solo le coordinate dei POI inseriti
+• L'elenco delle attività da controllare indicate dal POI sulla mappa non sostituisce la normale attività di controllo a vista
+• Un'attività già controllata può sempre essere ricontrollata sempre, che sia presente nell'elenco o che non lo sia
+• Ricorda che la localizzazione delle attività può non essere precisa
+• Nel campo note o in qualunque campo editabile non inserire mai dati personali (nomi, cognomi, rag. Soc. num. Tel)`;
+
+      alert(welcomeMessage);
+      localStorage.setItem('hasSeenWelcomeMessage', 'true');
+    }
+  }, [user]);
+
   useEffect(() => {
     // Monitor user's current location continuously (like GPS navigators)
     // IMPORTANT: This only uses native browser GPS - NO external API calls
