@@ -809,7 +809,7 @@ const DashboardPage: React.FC = () => {
 
 
 
-        {/* Rotation Toggle, Center Map and Logout Buttons - Bottom center */}
+        {/* Rotation Toggle and Center Map Buttons - Bottom center */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-2">
           {/* Rotation Toggle Button */}
           <button
@@ -821,7 +821,7 @@ const DashboardPage: React.FC = () => {
             }`}
             title={rotationEnabled ? 'Disabilita rotazione automatica' : 'Abilita rotazione automatica'}
           >
-            <span>🧭</span>
+            <span>🧭 Rot Mappa</span>
           </button>
           <button
             onClick={() => {
@@ -855,20 +855,7 @@ const DashboardPage: React.FC = () => {
             className="bg-red-600 text-white px-2 py-1.5 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center shadow-lg center-map-button"
             title="Centra la mappa"
           >
-            <span>📍</span>
-          </button>
-
-          {/* Logout Button */}
-          <button
-            onClick={() => {
-              if (window.confirm('Sei sicuro di voler effettuare il logout?')) {
-                logout();
-              }
-            }}
-            className="bg-gray-600 text-white px-2 py-1.5 rounded-lg border border-gray-700 hover:bg-gray-700 font-medium transition-colors inline-flex items-center shadow-lg"
-            title="Esci"
-          >
-            <span>🚪</span>
+            <span>📍 Centra</span>
           </button>
         </div>
       </div>
