@@ -593,9 +593,9 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                       <p className="text-sm font-medium text-gray-700">
                         {poi.anno === 2024 || poi.anno === 2025 ? 'inserito nel db in data ' :
                          poi.ispezionabile === 1 ? 'Proposto da ispezionare in data ' :
-                         poi.ispezionabile === 0 ? 'Controllato nel mese di ' :
+                         poi.ispezionabile === 0 ? 'Inserito nel mese di ' :
                          poi.ispezionabile === 2 ? 'Creato in data: ' : ''}
-                        {poi.ispezionabile === 0 ? getMonthName(new Date(poi.created_at).getMonth()) : new Date(poi.created_at).toLocaleString()}
+                        {poi.ispezionabile === 0 ? `${getMonthName(new Date(poi.created_at).getMonth())} ${poi.anno || new Date(poi.created_at).getFullYear()}` : new Date(poi.created_at).toLocaleString()}
                       </p>
 
                       {/* Editable address */}
