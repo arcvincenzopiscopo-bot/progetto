@@ -207,6 +207,15 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
   enableRotation,
   heading
 }) => {
+
+  // Helper function to get month name in Italian
+  const getMonthName = (monthIndex: number): string => {
+    const months = [
+      'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
+      'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
+    ];
+    return months[monthIndex] || '';
+  };
   const mapRef = useRef<MapRef>(null);
   const [viewState, setViewState] = useState({
     longitude: initialPosition?.[1] || 12.4964, // Back to Rome (original position)
@@ -486,7 +495,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
               transformOrigin: 'center center',
               transition: 'transform 0.6s ease-out' // Match map rotation duration
             }}>
-              👮‍♂️
+      ➤
             </div>
           </Marker>
         )}
@@ -584,9 +593,9 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                       <p className="text-sm font-medium text-gray-700">
                         {poi.anno === 2024 || poi.anno === 2025 ? 'inserito nel db in data ' :
                          poi.ispezionabile === 1 ? 'Proposto da ispezionare in data ' :
-                         poi.ispezionabile === 0 ? 'Ispezionato in data: ' :
+                         poi.ispezionabile === 0 ? 'Controllato nel mese di ' :
                          poi.ispezionabile === 2 ? 'Creato in data: ' : ''}
-                        {new Date(poi.created_at).toLocaleString()}
+                        {poi.ispezionabile === 0 ? getMonthName(new Date(poi.created_at).getMonth()) : new Date(poi.created_at).toLocaleString()}
                       </p>
 
                       {/* Editable address */}
@@ -854,7 +863,7 @@ const MapComponent: React.FC<MapComponentProps> = React.memo(({
                                 disabled={!canMarkInspected}
                                 className={buttonClass}
                               >
-                                👮‍♂️ Ispez.to
+                                👮‍♂️ Control.to
                               </button>
                             );
                           };
