@@ -308,7 +308,7 @@ const DashboardPage: React.FC = () => {
 
 • I dati di geolocalizzazione dell'utente non vengono in alcun modo salvati, verranno salvate solo le coordinate dei POI inseriti
 • L'elenco delle attività da controllare indicate dal POI sulla mappa non sostituisce la normale attività di controllo a vista
-• Un'attività già controllata può sempre essere ricontrollata sempre, che sia presente nell'elenco o che non lo sia
+• Un'attività già controllata può sempre essere ricontrollata, che sia presente nell'elenco o meno
 • Ricorda che la localizzazione delle attività può non essere precisa
 • Nel campo note o in qualunque campo editabile non inserire mai dati personali (nomi, cognomi, rag. Soc. num. Tel)`;
 
