@@ -821,7 +821,7 @@ const DashboardPage: React.FC = () => {
             }`}
             title={rotationEnabled ? 'Disabilita rotazione automatica' : 'Abilita rotazione automatica'}
           >
-            <span>Rotazione mappa 🧭</span>
+            <span>Rot. Mappa 🧭</span>
           </button>
           <button
             onClick={() => {
