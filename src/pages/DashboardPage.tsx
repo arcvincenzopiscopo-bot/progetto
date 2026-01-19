@@ -810,11 +810,11 @@ const DashboardPage: React.FC = () => {
 
 
         {/* Rotation Toggle and Center Map Buttons - Bottom center */}
-        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-2">
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-[1000] flex gap-2 flex-nowrap map-controls-mobile">
           {/* Rotation Toggle Button */}
           <button
             onClick={() => setRotationEnabled(prev => !prev)}
-            className={`text-white px-3 py-1.5 rounded-lg border font-medium transition-colors inline-flex items-center shadow-lg ${
+            className={`text-white px-3 py-1.5 rounded-lg border font-medium transition-colors inline-flex items-center shadow-lg rotation-button ${
               rotationEnabled
                 ? 'bg-green-600 border-green-700 hover:bg-green-700'
                 : 'bg-red-600 border-red-700 hover:bg-red-700'
@@ -852,7 +852,7 @@ const DashboardPage: React.FC = () => {
                 }
               }
             }}
-            className="bg-red-600 text-white px-3 py-1.5 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center shadow-lg center-map-button"
+            className="bg-red-600 text-white px-3 py-1.5 rounded-lg border border-red-700 hover:bg-red-700 font-medium transition-colors inline-flex items-center shadow-lg center-map-button center-button"
             title="Centra la mappa"
           >
             <span>📍 Centra</span>

@@ -551,6 +551,27 @@ body .poi-form-mobile .fixed-width-address,
   justify-content: center;
 }
 
+/* Map controls responsive adjustments for mobile */
+@media (max-width: 768px) {
+  .map-controls-mobile {
+    gap: 0.5rem !important; /* Reduce gap between buttons */
+  }
+
+  .map-controls-mobile button {
+    padding: 0.5rem 1rem !important; /* Reduce padding */
+    font-size: 14px !important; /* Smaller font */
+    min-height: 40px !important; /* Ensure touch-friendly size */
+  }
+
+  .map-controls-mobile .rotation-button {
+    min-width: 140px !important;
+  }
+
+  .map-controls-mobile .center-button {
+    min-width: 120px !important;
+  }
+}
+
 /* Install PWA button enhancement */
 .install-pwa-button {
   z-index: 10;
