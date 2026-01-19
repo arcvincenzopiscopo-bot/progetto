@@ -760,7 +760,7 @@ const DashboardPage: React.FC = () => {
           <div className="flex gap-[0.19cm] justify-center">
             <div className="w-24">
               <FilterButton
-                label="Ispez.li"
+                label="Cont.li"
                 emoji="🟢"
                 active={filters.showInspectable}
                 onClick={() => setFilters(prev => ({ ...prev, showInspectable: !prev.showInspectable }))}
@@ -769,7 +769,7 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="w-24">
               <FilterButton
-                label="Ispez.ti"
+                label="Cont.ti"
                 emoji="🔴"
                 active={filters.showNonInspectable}
                 onClick={() => setFilters(prev => ({ ...prev, showNonInspectable: !prev.showNonInspectable }))}
